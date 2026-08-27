@@ -42,22 +42,22 @@ export const listings = mysqlTable(
   "listings",
   {
     id: id(),
-    publicId: char("public_id", { length: 10 }).notNull().unique(), // /propiedad/{slug}-{public_id}
+    publicId: char("public_id", { length: 10 }).notNull().unique(), // /bostad/{slug}-{public_id}
     slug: varchar("slug", { length: 180 }).notNull(),
     operation: mysqlEnum("operation", [
-      "venta",
-      "alquiler",
-      "alquiler_temporal",
+      "venta", // /kopa
+      "alquiler", // /hyra — long let
+      "alquiler_vacacional", // /korttidshyra — holiday let, licence-regulated
     ]).notNull(),
     propertyType: mysqlEnum("property_type", [
-      "casa",
-      "departamento",
-      "terreno",
-      "duplex",
-      "comercial",
-      "oficina",
-      "deposito",
-      "quinta",
+      "villa", // /villa — chalet independiente
+      "apartamento", // /lagenhet
+      "atico", // /takvaning — penthouse; a distinct price tier in Spain, not a flag on apartamento
+      "adosado", // /radhus
+      "duplex", // /etagelagenhet
+      "finca", // /lantegendom — rural, and the type most likely to carry legal_status problems
+      "terreno", // /tomt
+      "local", // /lokal — commercial
     ]).notNull(),
     status: mysqlEnum("status", [
       "draft",
@@ -71,43 +71,126 @@ export const listings = mysqlTable(
       .notNull()
       .default("draft"),
 
-    title: varchar("title", { length: 180 }).notNull(),
-    descriptionEs: text("description_es"),
     /**
-     * The English door's copy (PLAN.md D6). Written only by
-     * `npm run cron:translate` (src/lib/translate.ts) — never by a form, never
-     * in the request path, and never by hand: an operator edit here would be
-     * silently overwritten the next time the Spanish text changes.
+     * Localised copy: the direction is inverted from the Paraguay original.
+     * Spanish arrives from the agency feed and Swedish is derived — except
+     * when a Swedish relocation agent writes the listing themselves, in
+     * which case Swedish is the source. `sourceLang` records which.
      */
-    titleEn: varchar("title_en", { length: 180 }),
-    descriptionEn: text("description_en"),
+    sourceLang: mysqlEnum("source_lang", ["es", "sv"]).notNull().default("es"),
+    title: varchar("title", { length: 180 }).notNull(), // in sourceLang
+    descriptionEs: text("description_es"), // agency feed copy
     /**
-     * sha256 of the Spanish source the English above was translated from. It
-     * is what separates "already translated" from "translated, then the seller
-     * rewrote the description": without it the job would either re-translate
-     * the whole table every run or never refresh a word of it.
+     * The served Swedish copy. Written only by `npm run cron:translate`
+     * (src/lib/translate.ts, inverted to es→sv) — never by a form, never in
+     * the request path, and never by hand: an operator edit here would be
+     * silently overwritten the next time the Spanish text changes. Unlike
+     * propia.node's `title_en` (which nothing read), this pair IS served —
+     * the card, detail page and metadata read `titleSv ?? title` from day
+     * one, with a "maskinöversatt från spanska" marker when the row came
+     * from the cron rather than a human source.
      */
-    translationHash: char("translation_hash", { length: 64 }),
+    titleSv: varchar("title_sv", { length: 180 }),
+    descriptionSv: text("description_sv"),
+    /**
+     * sha256 of the Spanish source the Swedish above was translated from.
+     * Suffixed by target language on purpose: the unsuffixed
+     * `translation_hash` only worked with exactly one target, and adding
+     * English later without a suffix would re-translate everything nightly
+     * or refresh nothing.
+     */
+    translationHashSv: char("translation_hash_sv", { length: 64 }),
 
-    priceAmount: decimal("price_amount", { precision: 14, scale: 2 }).notNull(),
-    priceCurrency: mysqlEnum("price_currency", ["USD", "PYG"]).notNull(),
-    priceUsd: decimal("price_usd", { precision: 12, scale: 2 }).notNull(), // normalized at write time; ALL filtering uses this
-    cuotaGs: decimal("cuota_gs", { precision: 14, scale: 0 }), // cached monthly payment, recomputed by cron (src/lib/cuota.ts)
+    priceEur: decimal("price_eur", { precision: 12, scale: 2 }).notNull(), // the price, and the only filter column — SEK is computed at render, never stored
 
     bedrooms: tinyint("bedrooms", { unsigned: true }), // NULL = N/A (terreno); 0 = monoambiente
     bathrooms: tinyint("bathrooms", { unsigned: true }),
     parking: tinyint("parking", { unsigned: true }),
-    areaM2: decimal("area_m2", { precision: 10, scale: 2 }), // interior
-    landM2: decimal("land_m2", { precision: 12, scale: 2 }), // terreno / lote
+    // Spain distinguishes built vs. usable area, and the difference is
+    // 10–15% — builtM2 is the ONLY faceted/indexed area column (what feeds
+    // carry and Idealista shows); usableM2 is display-only.
+    builtM2: decimal("built_m2", { precision: 10, scale: 2 }), // superficie construida
+    usableM2: decimal("usable_m2", { precision: 10, scale: 2 }), // superficie útil — interior, excludes walls/shared area
+    plotM2: decimal("plot_m2", { precision: 12, scale: 2 }), // parcela
+    yearBuilt: smallint("year_built", { unsigned: true }),
     propertyState: mysqlEnum("property_state", [
-      "entrega_inmediata",
+      "obra_nueva", // new build, delivered
+      "sobre_plano", // off-plan
       "en_construccion",
-      "en_pozo",
-      "usado",
+      "segunda_mano", // resale
     ]),
     amenities: json("amenities"), // display only, never filtered in SQL v1
 
-    locationId: fk("location_id").notNull(), // deepest known level, ideally barrio
+    /**
+     * The Catastro's 20-char identifier for the physical property.
+     * Government-issued and globally unique, which makes it three things at
+     * once: the strongest anti-fraud signal on the portal, a link target
+     * into Sede Catastro, and an EXACT dedup key that needs none of
+     * dedupKey()'s bucketing guesswork. The unique index over a NULLABLE
+     * column is deliberate: MySQL treats NULLs in a unique index as
+     * all-distinct, so many listings with no cadastral reference never
+     * collide, while any two that share one ARE the same property. Do not
+     * "fix" this in either direction.
+     */
+    referenciaCatastral: char("referencia_catastral", { length: 20 }),
+
+    // Spain's RD 390/2021 requires the energy rating to appear in the
+    // advertisement itself. Not a nice-to-have: a listing cannot move to
+    // status "published" with energyRating NULL (gate lives in the server
+    // action, not the form — see listing-edit.ts).
+    energyRating: mysqlEnum("energy_rating", [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "en_tramite",
+      "exento",
+    ]),
+    energyEmissions: mysqlEnum("energy_emissions", ["A", "B", "C", "D", "E", "F", "G"]),
+    energyKwhM2: decimal("energy_kwh_m2", { precision: 7, scale: 2 }),
+    energyCo2M2: decimal("energy_co2_m2", { precision: 7, scale: 2 }),
+
+    // The landmine field: a meaningful share of coastal/rural Spanish
+    // property lacks a first-occupation licence or sits on unlicensed
+    // rustic land. `desconocido` is the honest default — never a silent "fine".
+    legalStatus: mysqlEnum("legal_status", [
+      "escritura_registrada", // deeded and recorded in the Registro de la Propiedad
+      "obra_nueva_lpo", // new build holding a licencia de primera ocupación
+      "sin_lpo", // built, no first-occupation licence
+      "en_regularizacion", // AFO/DAFO or equivalent under way (common on Andalucían rustic)
+      "desconocido", // the lister did not state it
+    ])
+      .notNull()
+      .default("desconocido"),
+
+    // `chargesStatus` is the lister's declaration; `notaSimpleSeenAt` is the
+    // portal's own verification. Two columns, not one enum, so the UI can say
+    // "seller states: free of charges — not yet verified by us" rather than
+    // laundering a claim into a fact.
+    chargesStatus: mysqlEnum("charges_status", [
+      "libre_de_cargas",
+      "con_hipoteca",
+      "con_cargas",
+      "desconocido",
+    ])
+      .notNull()
+      .default("desconocido"),
+    notaSimpleSeenAt: datetime("nota_simple_seen_at"), // set by an operator only, never by the lister
+
+    ibiAnnualEur: decimal("ibi_annual_eur", { precision: 9, scale: 2 }), // annual municipal property tax
+    communityMonthlyEur: decimal("community_monthly_eur", { precision: 9, scale: 2 }), // comunidad fee — routinely exceeds IBI, the cost Swedish buyers most often miss
+
+    isVpo: boolean("is_vpo").notNull().default(false), // Vivienda de Protección Oficial: price-capped, resale-restricted, effectively closed to non-resident foreign buyers
+
+    landClassification: mysqlEnum("land_classification", ["urbano", "urbanizable", "rustico"]), // terreno/finca only — "rustico" usually means you cannot build
+    buildableM2: decimal("buildable_m2", { precision: 12, scale: 2 }),
+
+    touristLicence: varchar("tourist_licence", { length: 40 }), // the comunidad's registration number (VFT/…, VT-…) — only if alquiler_vacacional ships
+
+    locationId: fk("location_id").notNull(), // deepest known level, ideally zona
     addressText: varchar("address_text", { length: 255 }), // never shown publicly at full precision
     lat: decimal("lat", { precision: 9, scale: 6 }),
     lng: decimal("lng", { precision: 9, scale: 6 }),
@@ -133,7 +216,6 @@ export const listings = mysqlTable(
     verifiedAt: datetime("verified_at"),
     reviewNotes: varchar("review_notes", { length: 280 }), // super-admin reject reason (review queue); cleared on approve
     featuredUntil: datetime("featured_until"), // paid placement
-    foreignExposure: boolean("foreign_exposure").notNull().default(true), // opt-in to realestateinparaguay.com
 
     videoUrl: varchar("video_url", { length: 500 }), // YouTube/social link v1; feeds the video engine
 
@@ -148,7 +230,7 @@ export const listings = mysqlTable(
     /**
      * Category search. Column order follows how the URL scheme actually
      * queries (ARCHITECTURE.md §4): operation and location are always present,
-     * property_type only on /{operacion}/{ciudad}/{tipo}.
+     * property_type only on /{affar}/{ort}/{typ}.
      *
      * property_type used to sit *before* location_id, which meant a city
      * landing page — no type in the path — could only use the (status,
@@ -161,7 +243,7 @@ export const listings = mysqlTable(
       t.operation,
       t.locationId,
       t.propertyType,
-      t.priceUsd,
+      t.priceEur,
     ),
     /**
      * The default category ordering is `published_at desc`, which no index
@@ -198,6 +280,7 @@ export const listings = mysqlTable(
       t.propertyType,
       t.publishedAt,
     ),
+    uniqueIndex("uq_catastral").on(t.referenciaCatastral),
   ],
 );
 
@@ -227,18 +310,26 @@ export const locations = mysqlTable(
     parentId: fk("parent_id"),
     level: mysqlEnum("level", [
       "pais",
-      "departamento",
-      "ciudad",
-      "barrio",
+      "comunidad",
+      "provincia",
+      "municipio",
+      "zona",
     ]).notNull(),
     name: varchar("name", { length: 120 }).notNull(),
     slug: varchar("slug", { length: 140 }).notNull(),
-    fullSlug: varchar("full_slug", { length: 300 }).notNull().unique(), // 'asuncion/recoleta' — precomputed for URL building
+    // The URL path only — 'marbella/nueva-andalucia' — starting at municipio.
+    // comunidad/provincia are grouping and tax-resolution levels that live in
+    // parentId; putting them here would produce a public URL with no ranking
+    // benefit and a lot of ugliness.
+    fullSlug: varchar("full_slug", { length: 300 }).notNull().unique(),
     lat: decimal("lat", { precision: 9, scale: 6 }),
     lng: decimal("lng", { precision: 9, scale: 6 }),
-    listingCounts: json("listing_counts"), // cached {venta:{casa:12,...}} refreshed hourly by cron; powers the thin-page rule
-    guideContentEs: mediumtext("guide_content_es"), // Claude-generated barrio guide (§4.4)
-    guideContentEn: mediumtext("guide_content_en"),
+    listingCounts: json("listing_counts"), // cached {venta:{villa:12,...}} refreshed hourly by cron; powers the thin-page rule
+    // The comunidad autónoma this node belongs to, copied down the tree at
+    // seed time. Materialised rather than resolved by walking parentId, for
+    // the F38 reason: a tree walk inside a query is not sargable.
+    acquisitionRegion: char("acquisition_region", { length: 2 }),
+    guideContentSv: mediumtext("guide_content_sv"), // Claude-generated area guide (§4.4)
     guideUpdatedAt: datetime("guide_updated_at"),
   },
   (t) => [
@@ -258,10 +349,31 @@ export const agencies = mysqlTable("agencies", {
   name: varchar("name", { length: 160 }).notNull(),
   slug: varchar("slug", { length: 180 }).notNull().unique(),
   logoUrl: varchar("logo_url", { length: 500 }),
-  whatsapp: varchar("whatsapp", { length: 30 }),
+  /**
+   * Three lister types share this one table rather than forking
+   * `listingScopeWhere` / `panelScope`. "inmobiliaria" = a Spanish agency;
+   * "relocation" = a Swedish-facing intermediary who is NOT the property's
+   * selling agent — they represent the buyer's side and earn from the
+   * introduction, so the seller card must label it, never blur it into
+   * "agency"; "developer" = a promotora selling its own project units.
+   */
+  kind: mysqlEnum("kind", ["inmobiliaria", "relocation", "developer"])
+    .notNull()
+    .default("inmobiliaria"),
+  countryCode: char("country_code", { length: 2 }).notNull().default("ES"),
+  // CIF/NIF for a Spanish company, organisationsnummer for a Swedish AB — one
+  // column, disambiguated by taxIdCountry, rather than a per-country column
+  // set that is always mostly NULL.
+  taxId: varchar("tax_id", { length: 20 }),
+  taxIdCountry: char("tax_id_country", { length: 2 }),
+  // Estate-agent registry number where the comunidad operates one (AICAT in
+  // Catalonia, the Madrid/Andalucía registries). NULL is correct and common —
+  // most of Spain has no mandatory registration, so absence is not a red flag.
+  registryNumber: varchar("registry_number", { length: 40 }),
+  phone: varchar("phone", { length: 30 }),
   email: varchar("email", { length: 190 }),
   isVerified: boolean("is_verified").notNull().default(false),
-  plan: mysqlEnum("plan", ["free", "destacado", "partner"])
+  plan: mysqlEnum("plan", ["free", "premium", "partner"])
     .notNull()
     .default("free"),
   ghlSubAccountId: varchar("ghl_sub_account_id", { length: 80 }), // future: agency GHL sub-account (CRM product lane)
@@ -277,7 +389,7 @@ export const agents = mysqlTable(
     name: varchar("name", { length: 140 }).notNull(),
     slug: varchar("slug", { length: 160 }).notNull().unique(),
     photoUrl: varchar("photo_url", { length: 500 }),
-    whatsapp: varchar("whatsapp", { length: 30 }),
+    phone: varchar("phone", { length: 30 }),
     isVerified: boolean("is_verified").notNull().default(false),
   },
   (t) => [
@@ -296,8 +408,8 @@ export const agents = mysqlTable(
  * the person accepting: the sign-up form has no role field, exactly as
  * lib/registration.ts refuses one.
  *
- * There is no `email` column on purpose: v1 hands the link over on WhatsApp by
- * hand, and storing an address here would imply a delivery the app does not do.
+ * There is no `email` column on purpose: v1 hands the link over by hand, and
+ * storing an address here would imply a delivery the app does not do.
  */
 export const agencyInvites = mysqlTable(
   "agency_invites",
@@ -331,7 +443,7 @@ export const developers = mysqlTable("developers", {
 });
 
 export const projects = mysqlTable(
-  "projects", // edificios / loteamientos / condominios
+  "projects", // promociones / urbanizaciones
   {
     id: id(),
     developerId: fk("developer_id"),
@@ -339,7 +451,7 @@ export const projects = mysqlTable(
     slug: varchar("slug", { length: 180 }).notNull().unique(),
     projectType: mysqlEnum("project_type", [
       "edificio",
-      "loteamiento",
+      "urbanizacion",
       "condominio",
       "barrio_cerrado",
     ]).notNull(),
@@ -347,9 +459,9 @@ export const projects = mysqlTable(
     lat: decimal("lat", { precision: 9, scale: 6 }),
     lng: decimal("lng", { precision: 9, scale: 6 }),
     stage: mysqlEnum("stage", [
-      "en_pozo",
+      "sobre_plano",
       "en_construccion",
-      "entrega_inmediata",
+      "obra_nueva",
     ]),
     deliveryDate: date("delivery_date"),
     descriptionEs: text("description_es"),
@@ -371,9 +483,9 @@ export const listingSources = mysqlTable(
       "manual",
       "fsbo_ads",
       "whiteglove",
-      "import_tulugar",
-      "import_infocasas",
-      "import_clasipar",
+      "import_idealista",
+      "import_fotocasa",
+      "import_kyero",
       "import_agency_site",
       "api",
     ]).notNull(),
@@ -393,13 +505,15 @@ export const listingSources = mysqlTable(
       .default(0),
     sourceUrl: varchar("source_url", { length: 600 }),
     sourceExternalId: varchar("source_external_id", { length: 120 }),
-    contentHash: char("content_hash", { length: 40 }).notNull(), // sha1(normalized title|price|m2|barrio) → change detection
+    contentHash: char("content_hash", { length: 40 }).notNull(), // sha1(normalized title|price|m2|zona) → change detection
     /**
      * sha1(scope|normalized phone|price_bucket|m2_bucket|location_id|…) — the
      * fuzzy "is this the same property?" key. **Nullable**: NULL means we had
      * too little identity to fuzzy-match this row (in practice, no contact
-     * phone), and the pipeline then refuses to merge it into anything. See
-     * `dedupKey()` in lib/import/normalize.ts for why that matters.
+     * phone), and the pipeline then refuses to merge it into anything, unless
+     * `referenciaCatastral` is present on the listing, in which case dedup
+     * uses that exact key instead and skips the fuzzy path entirely. See
+     * `dedupKey()` in lib/import/normalize.ts for why the null matters.
      */
     dedupKey: char("dedup_key", { length: 40 }),
     firstSeenAt: datetime("first_seen_at").notNull(),
@@ -435,9 +549,9 @@ export const importJobs = mysqlTable(
       "manual",
       "fsbo_ads",
       "whiteglove",
-      "import_tulugar",
-      "import_infocasas",
-      "import_clasipar",
+      "import_idealista",
+      "import_fotocasa",
+      "import_kyero",
       "import_agency_site",
       "api",
     ]).notNull(),
@@ -531,22 +645,27 @@ export const leads = mysqlTable(
       "developer",
       "agent_signup",
     ]).notNull(),
-    vertical: varchar("vertical", { length: 40 }).notNull(), // which domain captured it: 'en','inmobiliaria','alquiler',...
+    vertical: varchar("vertical", { length: 40 }).notNull(), // which domain captured it — value is 'sv' today
     listingId: fk("listing_id"),
     projectId: fk("project_id"),
     name: varchar("name", { length: 140 }),
-    whatsapp: varchar("whatsapp", { length: 30 }).notNull(),
-    email: varchar("email", { length: 190 }),
+    // Sweden is email-first, unlike the inherited WhatsApp-first assumption:
+    // a Swedish buyer expects an email reply, and being asked to WhatsApp a
+    // stranger about a purchase this size reads as unserious. The channel
+    // does not disappear — it moves from being the buyer's channel to being
+    // the agency's.
+    email: varchar("email", { length: 190 }).notNull(),
+    phone: varchar("phone", { length: 30 }),
     message: text("message"),
     utm: json("utm"),
     /**
      * Which inbox owns this lead.
      *
-     * `owner` is the FSBO lane (PLAN.md D8): a listing with no agent and no
-     * agency, published by a private seller through /publicar. Before it
-     * existed those leads fell into `internal` alongside valuation and seller
-     * leads, where only /admin/leads could see them and the founder forwarded
-     * each one by hand. The lane is what lets the seller's own panel find them.
+     * `owner` is the FSBO lane: a listing with no agent and no agency,
+     * published by a private seller. Before it existed those leads fell into
+     * `internal` alongside valuation and seller leads, where only
+     * /admin/leads could see them and the operator forwarded each one by
+     * hand. The lane is what lets the seller's own panel find them.
      */
     routedTo: mysqlEnum("routed_to", [
       "agency",
@@ -572,7 +691,7 @@ export const leads = mysqlTable(
 );
 
 /* ------------------------------------------------------------------ */
-/* 2.6 Money math: market_medians + financing_programs                 */
+/* 2.6 Money math: market_medians + fx_rates + acquisition_costs       */
 /* ------------------------------------------------------------------ */
 
 export const marketMedians = mysqlTable(
@@ -583,8 +702,8 @@ export const marketMedians = mysqlTable(
     locationId: fk("location_id").notNull(),
     propertyType: varchar("property_type", { length: 20 }).notNull(),
     operation: varchar("operation", { length: 20 }).notNull(),
-    medianPriceUsd: decimal("median_price_usd", { precision: 12, scale: 2 }),
-    medianPriceM2Usd: decimal("median_price_m2_usd", {
+    medianPriceEur: decimal("median_price_eur", { precision: 12, scale: 2 }),
+    medianPriceM2Eur: decimal("median_price_m2_eur", {
       precision: 10,
       scale: 2,
     }),
@@ -600,28 +719,65 @@ export const marketMedians = mysqlTable(
   ],
 );
 
-export const financingPrograms = mysqlTable("financing_programs", {
-  code: varchar("code", { length: 40 }).primaryKey(), // 'che_roga_pora','afd_primera_vivienda'
-  name: varchar("name", { length: 120 }).notNull(),
-  annualRate: decimal("annual_rate", { precision: 5, scale: 2 }).notNull(),
-  maxTermMonths: smallint("max_term_months").notNull(),
-  maxAmountGs: decimal("max_amount_gs", { precision: 14, scale: 0 }),
-  minDownPct: decimal("min_down_pct", { precision: 5, scale: 2 }).notNull(),
+/**
+ * ECB EUR/SEK reference rate — written only by `npm run cron:fx`. Same shape
+ * as the old financing_programs table: tiny, cron-owned, read-only to the app.
+ * If the newest row is older than FX_MAX_AGE_DAYS, `formatSek()` returns null
+ * and every SEK line disappears from the site rather than showing a
+ * confidently wrong figure — the EUR price is unaffected either way.
+ */
+export const fxRates = mysqlTable(
+  "fx_rates",
+  {
+    base: char("base", { length: 3 }).notNull(), // 'EUR'
+    quote: char("quote", { length: 3 }).notNull(), // 'SEK'
+    rate: decimal("rate", { precision: 12, scale: 6 }).notNull(),
+    // mode "string": an ECB reference date is 'YYYY-MM-DD', a publication day
+    // and not an instant — mapping it to a Date invites a timezone bug in a
+    // column that has no time in it.
+    observedOn: date("observed_on", { mode: "string" }).notNull(),
+    source: mysqlEnum("source", ["ecb", "manual"]).notNull().default("ecb"),
+    fetchedAt: datetime("fetched_at").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.base, t.quote] })],
+);
+
+/**
+ * Total acquisition cost per comunidad autónoma — ITP/IVA+AJD, notario,
+ * registro, gestoría. Occupies the slot the old financing_programs table
+ * vacated: a tiny, cron-independent reference table computed at render, never
+ * cached on a listing column (there is no per-listing query to avoid — see
+ * src/lib/acquisition-cost.ts). Seed rates ship as PLACEHOLDERS, marked
+ * exactly as the inherited seed-financing.ts marked its AFD rate: these
+ * numbers print money figures on every card, and verifying them against each
+ * comunidad's published scale is a research task, not a code task.
+ */
+export const acquisitionCosts = mysqlTable("acquisition_costs", {
+  region: char("region", { length: 2 }).primaryKey(), // ISO-3166-2:ES subdivision: 'AN','VC','CT','MD','IB','CN','MC'
+  name: varchar("name", { length: 80 }).notNull(), // 'Andalucía'
+  itpPct: decimal("itp_pct", { precision: 5, scale: 2 }).notNull(), // resale transfer tax
+  ivaPct: decimal("iva_pct", { precision: 5, scale: 2 }).notNull().default("10.00"), // new build, state-set
+  ajdPct: decimal("ajd_pct", { precision: 5, scale: 2 }).notNull(), // stamp duty, new build only, regional
+  notaryPctEst: decimal("notary_pct_est", { precision: 5, scale: 2 }).notNull(),
+  registryPctEst: decimal("registry_pct_est", { precision: 5, scale: 2 }).notNull(),
+  legalPctEst: decimal("legal_pct_est", { precision: 5, scale: 2 }).notNull(),
+  effectiveFrom: date("effective_from", { mode: "string" }).notNull(),
+  sourceUrl: varchar("source_url", { length: 400 }), // the comunidad's published scale — the reader must be able to check us
   active: boolean("active").notNull().default(true),
   updatedAt: datetime("updated_at"),
 });
 
 /* ------------------------------------------------------------------ */
-/* 2.7 Users & OTP (WhatsApp OTP delivered via GHL)                    */
+/* 2.7 Users & OTP                                                     */
 /* ------------------------------------------------------------------ */
 
 export const users = mysqlTable("users", {
   id: id(),
   name: varchar("name", { length: 140 }),
-  email: varchar("email", { length: 190 }).unique(),
-  passwordHash: varchar("password_hash", { length: 255 }), // NULL = OTP-only account (email+password login is opt-in; WhatsApp OTP is a later pass)
-  whatsapp: varchar("whatsapp", { length: 30 }).unique(),
-  whatsappVerifiedAt: datetime("whatsapp_verified_at"),
+  email: varchar("email", { length: 190 }).notNull().unique(), // Sweden is email-first — was nullable
+  passwordHash: varchar("password_hash", { length: 255 }), // NULL = OTP-only account
+  phone: varchar("phone", { length: 30 }).unique(),
+  emailVerifiedAt: datetime("email_verified_at"),
   role: mysqlEnum("role", [
     "consumer",
     "agent",
@@ -631,7 +787,18 @@ export const users = mysqlTable("users", {
   ])
     .notNull()
     .default("consumer"),
-  locale: mysqlEnum("locale", ["es", "en"]).notNull().default("es"),
+  locale: mysqlEnum("locale", ["sv", "en", "es"]).notNull().default("sv"), // 'es' is for a Spanish agency's panel, not a public door — not wired to a switcher at MVP
+  /**
+   * Deliberately NOT a full NIE/DNI column. A national ID number is data
+   * whose collection needs a documented lawful basis and retention policy
+   * (GDPR Art. 9 / LOPDGDD); the portal's actual need — "is this person who
+   * they say they are" — is answered by a one-time document check, not a
+   * stored number. The number itself is the notary's business at the
+   * escritura, under their own legal basis.
+   */
+  identityDocType: mysqlEnum("identity_doc_type", ["nie", "dni", "passport", "personnummer"]),
+  identityRefLast4: char("identity_ref_last4", { length: 4 }), // last 4 chars ONLY — enough to recognise which document is on file
+  identityVerifiedAt: datetime("identity_verified_at"), // set by an operator who sighted the document; NULL is the default state, rendered as such
   createdAt: createdAt(),
 });
 
@@ -639,20 +806,20 @@ export const otpCodes = mysqlTable(
   "otp_codes",
   {
     id: id(),
-    whatsapp: varchar("whatsapp", { length: 30 }).notNull(),
+    destination: varchar("destination", { length: 190 }).notNull(), // email address or phone number, per `channel`
+    channel: mysqlEnum("channel", ["email", "sms"]).notNull().default("email"),
     code: char("code", { length: 6 }).notNull(),
     expiresAt: datetime("expires_at").notNull(), // 10-min expiry, resend cooldown
     attempts: tinyint("attempts").notNull().default(0),
     consumedAt: datetime("consumed_at"),
   },
-  (t) => [index("idx_wa").on(t.whatsapp, t.expiresAt)],
+  (t) => [index("idx_dest").on(t.destination, t.expiresAt)],
 );
 
 /**
- * Opaque server-side sessions (ARCHITECTURE.md §1: "Session cookies + WhatsApp
- * OTP via GHL" — no third-party auth library). `id` is the sha256 hex of the
- * random cookie token, so the raw token never touches the database and the
- * lookup is a primary-key hit. Rows are deleted on logout and lazily on expiry.
+ * Opaque server-side sessions. `id` is the sha256 hex of the random cookie
+ * token, so the raw token never touches the database and the lookup is a
+ * primary-key hit. Rows are deleted on logout and lazily on expiry.
  */
 export const sessions = mysqlTable(
   "sessions",
