@@ -35,7 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       siteName: name,
-      locale: "es_PY",
+      locale: "sv_SE",
       images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
     },
   };
