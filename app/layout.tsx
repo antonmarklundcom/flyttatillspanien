@@ -54,7 +54,7 @@ export default async function RootLayout({
   const theme = themeFor(vertical.key) as CSSProperties;
 
   return (
-    <html lang={vertical.locale === "en" ? "en" : "es-PY"} style={theme}>
+    <html lang="sv" style={theme}>
       <head>
         {/* Cormorant Garamond + Jost are self-hosted (audit F50): the
             @font-face rules live in globals.css and the variable woff2 files

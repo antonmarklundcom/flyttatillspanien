@@ -40,26 +40,22 @@ import { safeImageUrl } from "@/lib/external-image";
  * empty tile in a grid built entirely out of photographs.
  */
 const ZONE_CARDS = [
-  { name: "Asunción", slug: "asuncion", img: "/img/zona-asuncion.webp" },
-  {
-    name: "San Bernardino",
-    slug: "san-bernardino",
-    img: "/img/zona-san-bernardino.webp",
-  },
-  { name: "Luque", slug: "luque", img: "/img/zona-luque.webp" },
-  { name: "Encarnación", slug: "encarnacion", img: "/img/zona-encarnacion.webp" },
+  { name: "Marbella", slug: "marbella", img: "/img/hero-home.webp" },
+  { name: "Torrevieja", slug: "torrevieja", img: "/img/hero-home.webp" },
+  { name: "Palma", slug: "palma", img: "/img/hero-home.webp" },
+  { name: "Málaga", slug: "malaga", img: "/img/hero-home.webp" },
 ] as const;
 
 /** Curated, high-population cities — a fixed shortcut row (avoids querying
  * every seeded city, some of which have little to no live inventory yet). */
 const CITY_SHORTCUTS = [
-  "Asunción",
-  "Luque",
-  "San Lorenzo",
-  "Lambaré",
-  "Fernando de la Mora",
-  "Ciudad del Este",
-  "Encarnación",
+  "Marbella",
+  "Estepona",
+  "Torrevieja",
+  "Palma",
+  "Málaga",
+  "Fuengirola",
+  "Madrid",
 ];
 
 /**
@@ -92,9 +88,9 @@ const getHomePayload = unstable_cache(
       getRecentListings(8, vertical),
       listCities(),
       countPublished(vertical),
-      getRecentListingsBy({ operation: "venta", type: "casa", vertical }, 8),
+      getRecentListingsBy({ operation: "venta", type: "villa", vertical }, 8),
       getRecentListingsBy(
-        { operation: "venta", type: "departamento", vertical },
+        { operation: "venta", type: "apartamento", vertical },
         8,
       ),
       getRecentListingsBy({ operation: "alquiler", vertical }, 8),
@@ -127,7 +123,7 @@ const getHomePayload = unstable_cache(
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
+    title: { absolute: `${brand} — ${brandTaglineFor("sv")}` },
     description: (await dict()).home.metaDescription,
     // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
     // `languages` is empty while every door is Spanish — see alternates.ts.
@@ -202,7 +198,7 @@ export default async function Home() {
   const vertical = await currentVertical();
   // Number formatting follows the request's locale, not the copy: the
   // thousands separator is not the same character everywhere.
-  const numberLocale = vertical.locale === "en" ? "en-US" : "es-PY";
+  const numberLocale = "sv-SE";
   const {
     recent,
     cities,
@@ -243,7 +239,7 @@ export default async function Home() {
           <p className="home-hero__subtitle">{t.heroSubtitle}</p>
 
           <div className="home-hero__actions">
-            <Link className="ds-btn ds-btn--primary" href="/venta/asuncion">
+            <Link className="ds-btn ds-btn--primary" href="/kopa/marbella">
               {t.heroSeeListings}
             </Link>
             <Link className="ds-btn ds-btn--on-photo" href="/publicar">
@@ -294,13 +290,13 @@ export default async function Home() {
             <p className="ds-label">{t.zonesKicker}</p>
             <h2>{t.zonesTitle}</h2>
           </div>
-          <Link className="ds-link-underline" href="/venta/asuncion">
+          <Link className="ds-link-underline" href="/kopa/marbella">
             {t.zonesAll}
           </Link>
         </div>
         <div className="ds-grid" style={{ ["--ds-track" as string]: "220px" }}>
           {ZONE_CARDS.map((z) => (
-            <Link key={z.slug} className="ds-photo-card ds-photo-card--zone" href={`/venta/${z.slug}`}>
+            <Link key={z.slug} className="ds-photo-card ds-photo-card--zone" href={`/kopa/${z.slug}`}>
               <img
                 className="ds-photo-card__img"
                 src={z.img}
@@ -437,27 +433,27 @@ export default async function Home() {
         <RecentlyViewed />
         <Row
           title={t.rowRecommended}
-          href="/venta/asuncion"
+          href="/kopa/marbella"
           cards={recent}
         />
         <Row
           title={t.rowHousesForSale}
-          href="/venta/asuncion/casas"
+          href="/kopa/marbella/villor"
           cards={ventaCasas}
         />
         <Row
           title={t.rowFlatsForSale}
-          href="/venta/asuncion/departamentos"
+          href="/kopa/marbella/lagenheter"
           cards={ventaDeptos}
         />
         <Row
           title={t.rowRentals}
-          href="/alquiler/asuncion"
+          href="/hyra/marbella"
           cards={alquileres}
         />
         <Row
           title={t.rowLand}
-          href="/venta/asuncion/terrenos"
+          href="/kopa/marbella/tomter"
           cards={terrenos}
         />
 

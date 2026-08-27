@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getProjectBySlug } from "@/lib/queries";
 import { listingUrl, categoryUrl } from "@/lib/urls";
-import { formatUsd, formatPrice } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { inquiryPrefillFor } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { ContactForm } from "@/components/ContactForm";
@@ -70,7 +70,7 @@ export default async function ProjectPage({ params }: Params) {
   if (!detail) notFound();
 
   const { project, developer, location, units, otherProjects } = detail;
-  const minPrice = units.length > 0 ? Number(units[0].priceUsd) : null;
+  const minPrice = units.length > 0 ? Number(units[0].priceEur) : null;
   const delivery = deliveryLabel(project.deliveryDate);
   const canonical = `${await siteOrigin()}/proyecto/${project.slug}`;
   const waMessage = inquiryPrefillFor(brand, project.name, canonical);
@@ -149,7 +149,7 @@ export default async function ProjectPage({ params }: Params) {
             <div className="listing-price">
               <span className="listing-price__label">Venta</span>{" "}
               <span className="listing-price__amount">
-                desde {formatUsd(minPrice)}
+                desde {formatEur(minPrice)}
               </span>
             </div>
           )}
@@ -204,8 +204,8 @@ export default async function ProjectPage({ params }: Params) {
                         </td>
                         <td>{u.bedrooms ?? "—"}</td>
                         <td>{u.bathrooms ?? "—"}</td>
-                        <td>{u.areaM2 ? `${Math.round(Number(u.areaM2))} m²` : "—"}</td>
-                        <td className="units-table__price">{formatPrice(u)}</td>
+                        <td>{u.builtM2 ? `${Math.round(Number(u.builtM2))} m²` : "—"}</td>
+                        <td className="units-table__price">{formatEur(u.priceEur)}</td>
                         <td>
                           <span className="units-table__state">
                             {u.propertyState

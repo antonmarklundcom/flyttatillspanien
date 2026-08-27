@@ -51,9 +51,10 @@ export function SearchBar({
   locale?: Locale;
 }) {
   const t = getDictionary(locale).searchBar;
-  // Number formatting follows the locale, not the copy: "Hasta US$ 150.000"
-  // and "Up to US$ 150,000" differ in the separator, not just the words.
-  const numberLocale = locale === "en" ? "en-US" : "es-PY";
+  // Number formatting follows the locale, not the copy — kept as a variable
+  // (rather than inlined at the one call site) so a future second locale
+  // widens this instead of introducing a new pattern.
+  const numberLocale = "sv-SE";
   const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
     { value: "venta", label: t.operationBuy },
     { value: "alquiler", label: t.operationRent },

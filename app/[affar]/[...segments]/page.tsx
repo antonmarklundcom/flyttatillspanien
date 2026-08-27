@@ -34,7 +34,7 @@ import {
   parseTypePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
-import { formatUsd } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import {
   bestMedianFor,
   getCityPrices as cityPricesFor,
@@ -537,12 +537,12 @@ export default async function CategoryPage({ params, searchParams }: Params) {
                     contextCell.operation,
                   city: r.city.name,
                   median:
-                    contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd)
+                    contextCell.medianPriceEur != null
+                      ? formatEur(contextCell.medianPriceEur)
                       : "—",
                   perM2:
-                    contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd)
+                    contextCell.medianPriceM2Eur != null
+                      ? formatEur(contextCell.medianPriceM2Eur)
                       : null,
                   sample: contextCell.sampleSize,
                 })
