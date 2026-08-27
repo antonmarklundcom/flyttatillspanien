@@ -1,13 +1,17 @@
 /**
- * CSV adapter (ARCHITECTURE.md §2.4, M2) — turns a white-glove spreadsheet
- * export into RawListing[]. Minimal RFC-4180 parser (quotes, escaped quotes,
- * embedded newlines) so we take no dependency for a format this simple.
+ * CSV adapter — turns a white-glove spreadsheet export into RawListing[].
+ * Minimal RFC-4180 parser (quotes, escaped quotes, embedded newlines) so we
+ * take no dependency for a format this simple.
  *
  * Expected header columns (snake_case; extras ignored, missing optional ones
- * default): operation, property_type, title, description_es, price_amount,
- * price_currency, bedrooms, bathrooms, parking, area_m2, land_m2,
+ * default): operation, property_type, title, description_es, price_eur,
+ * bedrooms, bathrooms, parking, built_m2, usable_m2, plot_m2, year_built,
  * property_state, location_full_slug, location_name, address_text, lat, lng,
- * contact_phone, source_external_id, source_url, image_urls (| separated).
+ * contact_phone, source_external_id, source_url, image_urls (| separated),
+ * plus the Spain legal block: referencia_catastral, energy_rating,
+ * energy_emissions, energy_kwh_m2, energy_co2_m2, legal_status,
+ * charges_status, ibi_annual_eur, community_monthly_eur, is_vpo,
+ * land_classification, buildable_m2, tourist_licence.
  */
 import { parseAmount } from "./normalize";
 import type {
@@ -75,7 +79,7 @@ export function parseCsvRecords(text: string): Record<string, string>[] {
 
 /**
  * Plain numeric cell — counts and coordinates, where '.' really is a decimal
- * point (lat -25.28 must stay -25.28).
+ * point (lat 36.51 must stay 36.51).
  */
 const num = (s: string | undefined): number | undefined => {
   if (!s) return undefined;
@@ -84,13 +88,18 @@ const num = (s: string | undefined): number | undefined => {
 };
 
 /**
- * Money/area cell — es-PY spreadsheets write `85.000` meaning 85 000, so these
- * go through the locale-aware parseAmount the link importer already uses.
- * Reading `85.000` as a JS decimal wrote a $85 listing into the DB (F3).
+ * Money/area cell — Spanish spreadsheets write `285.000` meaning 285 000, so
+ * these go through the locale-aware parseAmount the link importer already
+ * uses. Reading `285.000` as a JS decimal wrote a €285 listing into the DB.
  */
 const amount = (s: string | undefined): number | undefined => {
   if (!s) return undefined;
   return parseAmount(s) ?? undefined;
+};
+
+const bool = (s: string | undefined): boolean | undefined => {
+  if (!s) return undefined;
+  return /^(1|true|si|sí|yes)$/i.test(s.trim());
 };
 
 /** Map one CSV record to a RawListing. Throws with a clear reason if invalid. */
@@ -100,16 +109,13 @@ export function recordToRaw(
 ): RawListing {
   const operation = rec.operation as Operation;
   const propertyType = rec.property_type as PropertyType;
-  const priceAmount = amount(rec.price_amount);
-  const currency = (rec.price_currency || "USD").toUpperCase();
+  const priceEur = amount(rec.price_eur);
 
   if (!rec.title) throw new Error("missing title");
   if (!operation) throw new Error("missing operation");
   if (!propertyType) throw new Error("missing property_type");
-  if (priceAmount === undefined || priceAmount <= 0)
-    throw new Error(`invalid price_amount '${rec.price_amount}'`);
-  if (currency !== "USD" && currency !== "PYG")
-    throw new Error(`invalid price_currency '${rec.price_currency}'`);
+  if (priceEur === undefined || priceEur <= 0)
+    throw new Error(`invalid price_eur '${rec.price_eur}'`);
   if (!rec.location_full_slug && !rec.location_name)
     throw new Error("need location_full_slug or location_name");
 
@@ -121,13 +127,14 @@ export function recordToRaw(
     propertyType,
     title: rec.title,
     descriptionEs: rec.description_es || undefined,
-    priceAmount,
-    priceCurrency: currency,
+    priceEur,
     bedrooms: num(rec.bedrooms),
     bathrooms: num(rec.bathrooms),
     parking: num(rec.parking),
-    areaM2: amount(rec.area_m2),
-    landM2: amount(rec.land_m2),
+    builtM2: amount(rec.built_m2),
+    usableM2: amount(rec.usable_m2),
+    plotM2: amount(rec.plot_m2),
+    yearBuilt: num(rec.year_built),
     propertyState: (rec.property_state as PropertyState) || undefined,
     locationFullSlug: rec.location_full_slug || undefined,
     locationName: rec.location_name || undefined,
@@ -138,5 +145,21 @@ export function recordToRaw(
     imageUrls: rec.image_urls
       ? rec.image_urls.split("|").map((u) => u.trim()).filter(Boolean)
       : undefined,
+    // Spain legal block (docs/SPAIN-PORTAL-DESIGN.md §3.2) — optional
+    // columns, most feeds omit some of them.
+    referenciaCatastral: rec.referencia_catastral || undefined,
+    energyRating: (rec.energy_rating as RawListing["energyRating"]) || undefined,
+    energyEmissions: (rec.energy_emissions as RawListing["energyEmissions"]) || undefined,
+    energyKwhM2: amount(rec.energy_kwh_m2),
+    energyCo2M2: amount(rec.energy_co2_m2),
+    legalStatus: (rec.legal_status as RawListing["legalStatus"]) || undefined,
+    chargesStatus: (rec.charges_status as RawListing["chargesStatus"]) || undefined,
+    ibiAnnualEur: amount(rec.ibi_annual_eur),
+    communityMonthlyEur: amount(rec.community_monthly_eur),
+    isVpo: bool(rec.is_vpo),
+    landClassification:
+      (rec.land_classification as RawListing["landClassification"]) || undefined,
+    buildableM2: amount(rec.buildable_m2),
+    touristLicence: rec.tourist_licence || undefined,
   };
 }

@@ -27,13 +27,14 @@ export const TEMPLATE_COLUMNS = [
   "property_type",
   "title",
   "description_es",
-  "price_amount",
-  "price_currency",
+  "price_eur",
   "bedrooms",
   "bathrooms",
   "parking",
-  "area_m2",
-  "land_m2",
+  "built_m2",
+  "usable_m2",
+  "plot_m2",
+  "year_built",
   "property_state",
   "location_full_slug",
   "location_name",
@@ -44,13 +45,27 @@ export const TEMPLATE_COLUMNS = [
   "source_external_id",
   "source_url",
   "image_urls",
+  // Spain legal block (docs/SPAIN-PORTAL-DESIGN.md §3.2)
+  "referencia_catastral",
+  "energy_rating",
+  "energy_emissions",
+  "energy_kwh_m2",
+  "energy_co2_m2",
+  "legal_status",
+  "charges_status",
+  "ibi_annual_eur",
+  "community_monthly_eur",
+  "is_vpo",
+  "land_classification",
+  "buildable_m2",
+  "tourist_licence",
 ] as const;
 
 export const REQUIRED_COLUMNS = [
   "operation",
   "property_type",
   "title",
-  "price_amount",
+  "price_eur",
 ] as const;
 
 /**
@@ -61,9 +76,9 @@ export const REQUIRED_COLUMNS = [
 export const UPLOAD_SOURCES: readonly ListingSource[] = [
   "whiteglove",
   "import_agency_site",
-  "import_tulugar",
-  "import_infocasas",
-  "import_clasipar",
+  "import_idealista",
+  "import_fotocasa",
+  "import_kyero",
 ];
 
 export type IntakeKind = "csv" | "xlsx";
