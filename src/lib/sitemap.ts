@@ -38,7 +38,7 @@ export interface SitemapEntry {
 
 export interface SitemapOptions {
   /**
-   * Whether to emit /propiedad/{slug} URLs. False on a host whose listing
+   * Whether to emit /bostad/{slug} URLs. False on a host whose listing
    * detail pages canonicalise to another domain (`ownsListingDetail: false` in
    * `src/config/verticals.ts`): such a host still owns its home, search,
    * category and guide pages, but submitting listing URLs it canonicalises

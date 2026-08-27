@@ -184,7 +184,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
                   )}
                   <Link
                     className="panel-btn"
-                    href={`/agencia/propiedad/${row.id}`}
+                    href={`/agencia/bostad/${row.id}`}
                   >
                     {svPanel.editListing}
                   </Link>

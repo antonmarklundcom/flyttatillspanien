@@ -5,7 +5,7 @@ import type { ListingImageRow } from "@/lib/listing-images";
 
 /**
  * Photo management for one listing, shared verbatim by /admin/propiedades/[id]
- * and /agencia/propiedad/[id] — the same arrangement as ListingForm: the
+ * and /agencia/bostad/[id] — the same arrangement as ListingForm: the
  * caller passes its own scoped actions, and the scope guard lives in the query
  * layer, never here.
  *

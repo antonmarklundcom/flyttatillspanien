@@ -171,5 +171,5 @@ export async function confirmImportAction(formData: FormData): Promise<void> {
   });
 
   revalidatePath("/agencia");
-  redirect(`/agencia/propiedad/${listingId}?msg=imported`);
+  redirect(`/agencia/bostad/${listingId}?msg=imported`);
 }

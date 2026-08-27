@@ -64,7 +64,7 @@ export async function siteOrigin(): Promise<string> {
 }
 
 /**
- * Whether /propiedad/{slug} is canonical on the host that served this request.
+ * Whether /bostad/{slug} is canonical on the host that served this request.
  * The primary host always owns it (same reasoning as `isOwnHost`); an enabled
  * vertical owns it only if its config says so; everything else — a feeder, a
  * preview deploy, the raw *.hostingersite.com name — points back at primary.
@@ -78,7 +78,7 @@ function ownsListingDetail(p: HostParts): boolean {
 }
 
 /**
- * Origin for /propiedad/{slug} canonicals. Detail pages exist canonically on
+ * Origin for /bostad/{slug} canonicals. Detail pages exist canonically on
  * the primary host and on the EN site (its own translated pages); a feeder
  * domain that renders one canonicalises it back to the primary host rather
  * than competing with it.

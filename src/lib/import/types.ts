@@ -1,22 +1,25 @@
 /**
- * Importer framework types (ARCHITECTURE.md §2.4, M2).
+ * Importer framework types (ARCHITECTURE.md §2.4, M2; Spain schema per
+ * docs/SPAIN-PORTAL-DESIGN.md).
  *
- * Every intake path — white-glove CSV now, InfoCasas/Clasipar scrapers later
- * (M6) — produces `RawListing[]`. The pipeline (normalize → dedup → upsert)
- * is source-agnostic: adapters only translate their format into this shape.
+ * MVP intake stays CSV/XLSX through planImport/commitImport — XML feed
+ * ingestion (Idealista/Fotocasa/Kyero formats) is v1.1, explicitly out of
+ * scope for the first implementation pass, and goes through this same
+ * pipeline when it lands. `RawListing[]` is what every adapter produces; the
+ * pipeline (normalize → dedup → upsert) is source-agnostic.
  */
 
 export type ListingSource =
   | "manual"
   | "fsbo_ads"
   | "whiteglove"
-  | "import_tulugar"
-  | "import_infocasas"
-  | "import_clasipar"
+  | "import_idealista"
+  | "import_fotocasa"
+  | "import_kyero"
   | "import_agency_site"
   | "api";
 
-export type Operation = "venta" | "alquiler" | "alquiler_temporal";
+export type Operation = "venta" | "alquiler" | "alquiler_vacacional";
 
 /**
  * The enum values as a runtime list, for validating anything that arrives as a
@@ -26,37 +29,37 @@ export type Operation = "venta" | "alquiler" | "alquiler_temporal";
 export const OPERATIONS: readonly Operation[] = [
   "venta",
   "alquiler",
-  "alquiler_temporal",
-];
-
-export const PROPERTY_TYPES: readonly PropertyType[] = [
-  "casa",
-  "departamento",
-  "terreno",
-  "duplex",
-  "comercial",
-  "oficina",
-  "deposito",
-  "quinta",
+  "alquiler_vacacional",
 ];
 
 export type PropertyType =
-  | "casa"
-  | "departamento"
-  | "terreno"
+  | "villa"
+  | "apartamento"
+  | "atico"
+  | "adosado"
   | "duplex"
-  | "comercial"
-  | "oficina"
-  | "deposito"
-  | "quinta";
+  | "finca"
+  | "terreno"
+  | "local";
+
+export const PROPERTY_TYPES: readonly PropertyType[] = [
+  "villa",
+  "apartamento",
+  "atico",
+  "adosado",
+  "duplex",
+  "finca",
+  "terreno",
+  "local",
+];
 
 export type PropertyState =
-  | "entrega_inmediata"
+  | "obra_nueva"
+  | "sobre_plano"
   | "en_construccion"
-  | "en_pozo"
-  | "usado";
+  | "segunda_mano";
 
-/** What an adapter emits — strings arrive loose from spreadsheets/scrapers. */
+/** What an adapter emits — strings arrive loose from spreadsheets/feeds. */
 export interface RawListing {
   source: ListingSource;
   sourceExternalId?: string; // stable id in the source system (dedup within a source)
@@ -67,24 +70,53 @@ export interface RawListing {
   title: string;
   descriptionEs?: string;
 
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
+  priceEur: number;
 
   bedrooms?: number;
   bathrooms?: number;
   parking?: number;
-  areaM2?: number;
-  landM2?: number;
+  builtM2?: number;
+  usableM2?: number;
+  plotM2?: number;
+  yearBuilt?: number;
   propertyState?: PropertyState;
 
-  /** Preferred: exact 'asuncion/recoleta'. Fallback: a name we fuzzy-resolve. */
+  // Spain legal block (docs/SPAIN-PORTAL-DESIGN.md §3.2) — optional on
+  // intake because most feeds omit some of it; the publish gate (server
+  // action, not the form) is what stops an ad going live without
+  // energyRating.
+  referenciaCatastral?: string;
+  energyRating?: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "en_tramite" | "exento";
+  energyEmissions?: "A" | "B" | "C" | "D" | "E" | "F" | "G";
+  energyKwhM2?: number;
+  energyCo2M2?: number;
+  legalStatus?:
+    | "escritura_registrada"
+    | "obra_nueva_lpo"
+    | "sin_lpo"
+    | "en_regularizacion"
+    | "desconocido";
+  chargesStatus?: "libre_de_cargas" | "con_hipoteca" | "con_cargas" | "desconocido";
+  ibiAnnualEur?: number;
+  communityMonthlyEur?: number;
+  isVpo?: boolean;
+  landClassification?: "urbano" | "urbanizable" | "rustico";
+  buildableM2?: number;
+  touristLicence?: string;
+
+  /** Preferred: exact 'marbella/nueva-andalucia'. Fallback: a name we fuzzy-resolve. */
   locationFullSlug?: string;
   locationName?: string;
   addressText?: string;
   lat?: number;
   lng?: number;
 
-  /** Seller/agent phone — hashed into the dedup key, never a listing column. */
+  /**
+   * Seller/agent phone — hashed into the fuzzy dedup key, never a listing
+   * column. When `referenciaCatastral` is present, dedup uses that exact key
+   * instead and skips this fuzzy path entirely (docs/SPAIN-PORTAL-DESIGN.md
+   * §3.2, import consequence).
+   */
   contactPhone?: string;
   imageUrls?: string[]; // fetched to R2 in a later pass, not at import time
 }

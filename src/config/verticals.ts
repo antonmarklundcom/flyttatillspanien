@@ -34,7 +34,7 @@ export interface VerticalConfig {
   /** Only enabled verticals are routed; others 302 to CANONICAL_HOST until launch. */
   enabled: boolean;
   /**
-   * Whether /propiedad/{slug} is canonical on THIS host. There is one door,
+   * Whether /bostad/{slug} is canonical on THIS host. There is one door,
    * so this is always true today — the flag stays because the English door
    * will need it set to false or true deliberately, the same way
    * inmobiliaria.com.py needed it on propia.node.

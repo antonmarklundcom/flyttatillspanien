@@ -17,7 +17,7 @@ export async function agencyUpdateListingAction(formData: FormData): Promise<voi
   const scope = panelScope(await requireAgencyContext());
 
   const parsed = readListingForm(formData);
-  if (!parsed.ok) redirect(`/agencia/propiedad/${parsed.id}?msg=invalid`);
+  if (!parsed.ok) redirect(`/agencia/bostad/${parsed.id}?msg=invalid`);
 
   const affected = await updateListing({
     id: parsed.id,
@@ -26,9 +26,9 @@ export async function agencyUpdateListingAction(formData: FormData): Promise<voi
   });
 
   revalidatePath("/agencia");
-  revalidatePath(`/agencia/propiedad/${parsed.id}`);
+  revalidatePath(`/agencia/bostad/${parsed.id}`);
   revalidateListings();
   redirect(
-    `/agencia/propiedad/${parsed.id}?msg=${affected ? "saved" : "not_found"}`,
+    `/agencia/bostad/${parsed.id}?msg=${affected ? "saved" : "not_found"}`,
   );
 }

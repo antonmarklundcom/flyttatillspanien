@@ -55,7 +55,7 @@ import type { Operation, PropertyType } from "@/lib/import/types";
 // header now feeds the canonical URL too — see src/lib/origin.ts.
 
 type Params = {
-  params: Promise<{ operacion: string; segments: string[] }>;
+  params: Promise<{ affar: string; segments: string[] }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -127,7 +127,7 @@ const countFor = cache(
 
 /** Shared resolution for metadata + page (structure + DB lookups, no listings). */
 const resolve = cache(async function resolve(
-  operacion: string,
+  affar: string,
   segments: string[],
 ): Promise<Resolved | null> {
   // The title is the one piece of resolution that is copy rather than
@@ -135,7 +135,7 @@ const resolve = cache(async function resolve(
   // string arguments, and the locale cannot change within a request, so the
   // lookup does not need to join the key.
   const t = (await dict()).category;
-  const operation = parseOperation(operacion);
+  const operation = parseOperation(affar);
   if (!operation) return null;
   const shape = parseCategorySegments(segments);
   if (!shape) return null;
@@ -196,8 +196,8 @@ export async function generateMetadata({
 }: Params): Promise<Metadata> {
   const brand = await brandName();
   const t = (await dict()).category;
-  const { operacion, segments } = await params;
-  const r = await resolve(operacion, segments);
+  const { affar, segments } = await params;
+  const r = await resolve(affar, segments);
   if (!r) return { title: t.metaNotFound };
 
   const page = parsePage((await searchParams).page);
@@ -248,9 +248,9 @@ export async function generateMetadata({
 export default async function CategoryPage({ params, searchParams }: Params) {
   const [d, locale] = await Promise.all([dict(), currentLocale()]);
   const t: Dictionary["category"] = d.category;
-  const { operacion, segments } = await params;
+  const { affar, segments } = await params;
   const sp = await searchParams;
-  const r = await resolve(operacion, segments);
+  const r = await resolve(affar, segments);
   if (!r) notFound();
 
   // The door this request came through. Its `filters` (VerticalConfig) narrow

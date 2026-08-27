@@ -20,12 +20,12 @@ import type { Operation, PropertyType } from "@/lib/import/types";
 // Live counts per city and per type; no build-time DB on Hostinger.
 export const dynamic = "force-dynamic";
 
-type Params = { params: Promise<{ operacion: string }> };
+type Params = { params: Promise<{ affar: string }> };
 
 /**
  * National operation hub: /venta, /alquiler, /alquiler-temporal.
  *
- * The category route (`/[operacion]/[...segments]`) needs at least one
+ * The category route (`/[affar]/[...segments]`) needs at least one
  * segment, so these bare URLs used to 404 — even though they are exactly
  * where competitors put their top-level "Venta" and "Alquiler" tabs, and
  * where a search for "casas en venta paraguay" wants to land. This page is
@@ -38,8 +38,8 @@ type Params = { params: Promise<{ operacion: string }> };
  */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const brand = await brandName();
-  const { operacion } = await params;
-  const op = parseOperation(operacion);
+  const { affar } = await params;
+  const op = parseOperation(affar);
   if (!op) return { title: brand };
   const copy = (await dict()).hub.copy[op];
   return {
@@ -58,8 +58,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function OperationHubPage({ params }: Params) {
-  const { operacion } = await params;
-  const op = parseOperation(operacion);
+  const { affar } = await params;
+  const op = parseOperation(affar);
   if (!op) notFound();
 
   const [d, locale] = await Promise.all([dict(), currentLocale()]);

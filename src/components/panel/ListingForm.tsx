@@ -12,7 +12,7 @@ const OPERATION_OPTIONS = [
 
 /**
  * The listing edit form, shared verbatim by /admin/propiedades/[id] and
- * /agencia/propiedad/[id]. The two callers differ only in the action they pass
+ * /agencia/bostad/[id]. The two callers differ only in the action they pass
  * and the statuses they may set — the scope guard itself lives in the server
  * action and the query layer, never here, because a form is not a trust
  * boundary.

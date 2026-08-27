@@ -19,7 +19,7 @@
 import type { Operation, PropertyType } from "./import/types";
 import { parseOperation, parseTypePlural } from "./urls";
 
-export type SortOption = "recientes" | "precio_asc" | "precio_desc";
+export type SortOption = "senaste" | "pris_upp" | "pris_ner";
 
 /**
  * Everything a listing query can be narrowed by.
@@ -39,19 +39,19 @@ export interface ListingFacets {
 }
 
 /**
- * The query-string names. Spanish, because they are part of the public URL
- * surface, and `?orden=` next to `?precio_min=` is what the URL scheme
- * (ARCHITECTURE.md §4) already committed to.
+ * The query-string names. Swedish, because they are part of the public URL
+ * surface flyttatillspanien.se serves — see docs/SPAIN-PORTAL-DESIGN.md, i18n
+ * handoff, URL vocabulary table.
  */
 export const FACET_PARAM = {
-  operation: "operacion",
-  propertyType: "tipo",
-  city: "ciudad",
-  barrio: "barrio",
-  priceMin: "precio_min",
-  priceMax: "precio_max",
-  minBedrooms: "dormitorios",
-  sort: "orden",
+  operation: "affar",
+  propertyType: "typ",
+  city: "ort",
+  barrio: "omrade",
+  priceMin: "pris_min",
+  priceMax: "pris_max",
+  minBedrooms: "sovrum",
+  sort: "sortering",
 } as const;
 
 /** The narrowing params a visitor toggles, as opposed to the ones the path fixes. */
@@ -81,7 +81,7 @@ function positive(raw: string | undefined): number | undefined {
 }
 
 function parseSort(raw: string | undefined): SortOption | undefined {
-  return raw === "precio_asc" || raw === "precio_desc" ? raw : undefined;
+  return raw === "pris_upp" || raw === "pris_ner" ? raw : undefined;
 }
 
 /**

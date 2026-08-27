@@ -39,7 +39,7 @@ import type { Locale } from "@/i18n";
  *
  * - `"site"` — every page type an enabled door renders itself (home, the
  *   operation hubs, category pages).
- * - `"listing"` — `/propiedad/{slug}`, which only some hosts own (§2.8). A
+ * - `"listing"` — `/bostad/{slug}`, which only some hosts own (§2.8). A
  *   feeder canonicalises its detail pages back to the primary, so it is not a
  *   language version of anything and must not appear in the set. This mirrors
  *   `ownsListingDetail()` in `origin.ts`; the two read the same flag.

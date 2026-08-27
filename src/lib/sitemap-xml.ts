@@ -57,7 +57,7 @@ const cachedEntries = unstable_cache(
 /**
  * Sorted, because the chunk a URL lands in must not depend on the order MySQL
  * happened to return rows in. Without this, two requests an hour apart could
- * put `/propiedad/casa-x` in chunk 2 and then chunk 3, and a crawler would
+ * put `/bostad/casa-x` in chunk 2 and then chunk 3, and a crawler would
  * re-read every chunk to discover nothing changed. Sorting by path also groups
  * the listing URLs — the ones that actually churn — into their own chunks.
  */

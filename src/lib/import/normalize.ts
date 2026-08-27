@@ -165,7 +165,7 @@ export function dedupKey(
 }
 
 const PUBLIC_ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
-/** 10-char URL id for /propiedad/{slug}-{public_id}. Collisions are ~nil. */
+/** 10-char URL id for /bostad/{slug}-{public_id}. Collisions are ~nil. */
 export function makePublicId(): string {
   let out = "";
   for (let i = 0; i < 10; i++) {

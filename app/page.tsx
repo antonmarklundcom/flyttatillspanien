@@ -388,7 +388,7 @@ export default async function Home() {
               <Link className="ds-btn ds-btn--outline-gold" href="/precios">
                 {t.investPricesCta}
               </Link>
-              <Link className="ds-link-underline ds-link-underline--dark" href="/financiamiento">
+              <Link className="ds-link-underline ds-link-underline--dark" href="/precios">
                 {t.investFinancingCta}
               </Link>
             </div>

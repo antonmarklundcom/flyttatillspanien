@@ -26,10 +26,10 @@ async function scope(): Promise<EditScope> {
 }
 
 async function finish(listingId: number, flash: PhotoFlash): Promise<never> {
-  revalidatePath(`/agencia/propiedad/${listingId}`);
+  revalidatePath(`/agencia/bostad/${listingId}`);
   revalidatePath("/agencia");
   revalidateListings();
-  redirect(`/agencia/propiedad/${listingId}?msg=${flash}`);
+  redirect(`/agencia/bostad/${listingId}?msg=${flash}`);
 }
 
 export async function agencyUploadPhotosAction(formData: FormData): Promise<void> {

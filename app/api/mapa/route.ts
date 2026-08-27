@@ -1,7 +1,7 @@
 /**
  * Bounding-box pin feed for the map view (ARCHITECTURE.md M4).
  *
- * GET /api/mapa?bbox=minLng,minLat,maxLng,maxLat&operacion=venta&tipo=casas
+ * GET /api/mapa?bbox=minLng,minLat,maxLng,maxLat&affar=venta&tipo=casas
  *              &ciudad=asuncion[&barrio=recoleta]&precio_min=…
  *
  * Read-only and public — it serves exactly what the category grid already
