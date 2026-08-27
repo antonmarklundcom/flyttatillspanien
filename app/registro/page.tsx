@@ -7,13 +7,14 @@ import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
 import { MIN_PASSWORD_LENGTH } from "@/lib/registration";
 import { getUsableInvite } from "@/lib/agency-invites";
+import { AGENCY_SIGNUPS_OPEN } from "@/config/site-status";
 import { registerAction } from "./actions";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `Creá tu cuenta`,
-    description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en España.`,
+    title: `Skapa konto`,
+    description: `Lägg upp dina bostäder på ${brand}. Gratis konton för mäklarbyråer och fristående agenter i Spanien.`,
     // Renders per ?invite= token — keep every variant out of the index (F40).
     robots: { index: false, follow: true },
   };
@@ -29,6 +30,7 @@ const ERRORS: Record<string, string> = {
   password: svPanel.registerErrorPassword,
   agency_name: svPanel.registerErrorAgencyName,
   invite: svPanel.registerErrorInvite,
+  signups_closed: svPanel.registerClosedBody,
   generic: svPanel.registerErrorGeneric,
 };
 
@@ -53,6 +55,25 @@ export default async function RegisterPage({
   // or expired token simply falls back to the ordinary sign-up form.
   const invitation = invite ? await getUsableInvite(invite) : null;
   const inviteFailed = Boolean(invite) && invitation == null;
+
+  // Invite-based sign-up stays open regardless of AGENCY_SIGNUPS_OPEN — a
+  // valid invitation is already permissioned by the agency_admin who minted
+  // it. Only the open, unaffiliated form is gated (see registration.ts).
+  if (!AGENCY_SIGNUPS_OPEN && invitation == null) {
+    return (
+      <main className="site-main">
+        <div className="auth-wrap">
+          <div className="auth-card">
+            <h1 className="auth-card__title">{svPanel.registerClosedTitle}</h1>
+            <p className="auth-card__subtitle">{svPanel.registerClosedBody}</p>
+            <p className="auth-note">
+              <Link href="/login">{svPanel.registerToLogin}</Link>
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   // Keep the chosen account type across a failed submit, so an agency that
   // mistyped its email doesn't come back as an independent agent.

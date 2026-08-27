@@ -16,6 +16,7 @@ import { agencies, agents, users } from "@/db/schema";
 import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
+import { AGENCY_SIGNUPS_OPEN } from "@/config/site-status";
 import {
   consumeInvite,
   getUsableInvite,
@@ -48,7 +49,8 @@ export type RegistrationError =
   | "email_taken"
   | "password"
   | "agency_name"
-  | "invite";
+  | "invite"
+  | "signups_closed";
 
 export type RegistrationResult =
   | { ok: true; userId: number }
@@ -84,6 +86,13 @@ async function uniqueAgentSlug(name: string, userId: number): Promise<string> {
 export async function registerAccount(
   input: RegistrationInput,
 ): Promise<RegistrationResult> {
+  // Invite-based sign-up is already permissioned (a single-use token minted
+  // by an agency_admin), so it stays open regardless of this flag. Only a
+  // brand-new, unaffiliated "agency" or "independent" account is refused.
+  if (input.kind !== "invite" && !AGENCY_SIGNUPS_OPEN) {
+    return { ok: false, error: "signups_closed" };
+  }
+
   const name = input.name.trim();
   const email = input.email.trim().toLowerCase();
   const agencyName = input.agencyName?.trim() ?? "";

@@ -156,6 +156,9 @@ export const svPanel = {
   registerErrorPassword: "Lösenordet behöver minst 8 tecken.",
   registerErrorAgencyName: "Skriv mäklarbyråns namn.",
   registerErrorGeneric: "Vi kunde inte skapa kontot. Försök igen.",
+  registerClosedTitle: "Registreringen är stängd just nu",
+  registerClosedBody:
+    "Vi tar just nu bara in mäklarbyråer vi kontaktar direkt. Hör av dig till oss så tar vi kontakt när vi öppnar upp.",
 
   // Registrering via mäklarbyråns inbjudan
   registerKindInvite: (agencyName: string) => `Gå med i ${agencyName}`,
