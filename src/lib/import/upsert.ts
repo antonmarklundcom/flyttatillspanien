@@ -450,19 +450,10 @@ export async function commitImport(
           };
         }
 
-        // A cached cuota computed from the old operation/price is wrong money
-        // on the card; clear it and let cron:cuotas recompute (audit F15).
-        const moneyChanged =
-          previous &&
-          (previous.operation !== raw.operation ||
-            Number(previous.priceEur) !== row.priceEur);
         await db.transaction(async (tx) => {
           await tx
             .update(listings)
-            .set({
-              ...listingFields(raw, row.priceEur!, row.locationId!),
-              ...(moneyChanged ? { cuotaGs: null } : {}),
-            })
+            .set(listingFields(raw, row.priceEur!, row.locationId!))
             .where(eq(listings.id, row.listingId!));
           // lat/lng/location_id are all in listingFields above.
           await syncDisplayCoords(tx, row.listingId!);

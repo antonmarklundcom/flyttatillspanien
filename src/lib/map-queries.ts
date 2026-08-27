@@ -58,12 +58,9 @@ export interface MapPin {
   /** Rounded — see COORD_DECIMALS. Never the stored value. */
   lat: number;
   lng: number;
-  priceUsd: number;
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
-  cuotaGs: number | null;
+  priceEur: number;
   bedrooms: number | null;
-  areaM2: number | null;
+  builtM2: number | null;
   /** True when the position is the barrio/city centroid, not the listing's own. */
   approximate: boolean;
 }
@@ -112,12 +109,9 @@ export async function listingsInBounds(
       lat: listings.displayLat,
       lng: listings.displayLng,
       ownLat: listings.lat,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      cuotaGs: listings.cuotaGs,
+      priceEur: listings.priceEur,
       bedrooms: listings.bedrooms,
-      areaM2: listings.areaM2,
+      builtM2: listings.builtM2,
     })
     .from(listings)
     .where(
@@ -139,7 +133,7 @@ export async function listingsInBounds(
     )
     // Cheapest first is arbitrary but stable, so a capped response is at least
     // deterministic rather than whatever order the storage engine returns.
-    .orderBy(listings.priceUsd)
+    .orderBy(listings.priceEur)
     .limit(MAX_PINS);
 
   return rows.map((r) => ({
@@ -148,12 +142,9 @@ export async function listingsInBounds(
     title: r.title,
     lat: round(Number(r.lat)),
     lng: round(Number(r.lng)),
-    priceUsd: Number(r.priceUsd),
-    priceAmount: Number(r.priceAmount),
-    priceCurrency: r.priceCurrency,
-    cuotaGs: r.cuotaGs != null ? Number(r.cuotaGs) : null,
+    priceEur: Number(r.priceEur),
     bedrooms: r.bedrooms,
-    areaM2: r.areaM2 != null ? Number(r.areaM2) : null,
+    builtM2: r.builtM2 != null ? Number(r.builtM2) : null,
     approximate: r.ownLat == null,
   }));
 }

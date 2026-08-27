@@ -47,15 +47,15 @@ export function listingJsonLd(origin: string, detail: ListingDetail): object {
     datePosted: listing.publishedAt?.toISOString(),
     offers: {
       "@type": "Offer",
-      price: Number(listing.priceUsd),
-      priceCurrency: "USD",
+      price: Number(listing.priceEur),
+      priceCurrency: "EUR",
       availability: "https://schema.org/InStock",
     },
     address: {
       "@type": "PostalAddress",
       addressLocality: chain.find((c) => c.level === "municipio")?.name,
       addressRegion: chain.find((c) => c.level === "comunidad")?.name,
-      addressCountry: "PY",
+      addressCountry: "ES",
     },
     ...(listing.lat && listing.lng
       ? {
@@ -70,8 +70,8 @@ export function listingJsonLd(origin: string, detail: ListingDetail): object {
       ? {
           about: {
             "@type": "LandParcel",
-            ...(listing.landM2
-              ? { area: { "@type": "QuantitativeValue", value: Number(listing.landM2), unitCode: "MTK" } }
+            ...(listing.plotM2
+              ? { area: { "@type": "QuantitativeValue", value: Number(listing.plotM2), unitCode: "MTK" } }
               : {}),
           },
         }
@@ -81,8 +81,8 @@ export function listingJsonLd(origin: string, detail: ListingDetail): object {
             ...(listing.bedrooms != null
               ? { numberOfRooms: listing.bedrooms }
               : {}),
-            ...(listing.areaM2
-              ? { floorSize: { "@type": "QuantitativeValue", value: Number(listing.areaM2), unitCode: "MTK" } }
+            ...(listing.builtM2
+              ? { floorSize: { "@type": "QuantitativeValue", value: Number(listing.builtM2), unitCode: "MTK" } }
               : {}),
           },
         }),

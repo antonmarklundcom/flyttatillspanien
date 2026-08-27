@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPrice, formatCuota, imageThumbUrl } from "@/lib/format";
+import { formatEur, imageThumbUrl } from "@/lib/format";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
@@ -25,8 +25,7 @@ export async function ListingCard({ card }: { card: Card }) {
   const cover = isPlaceholderPhoto(card.coverKey)
     ? null
     : imageThumbUrl(card.coverKey);
-  const cuota = formatCuota(card.cuotaGs);
-  const area = card.areaM2 ?? card.landM2;
+  const area = card.builtM2 ?? card.plotM2;
   // new Date() re-wrap: cards that crossed an unstable_cache boundary carry
   // featuredUntil as an ISO string, and string > Date is silently false.
   const isFeatured =
@@ -72,8 +71,8 @@ export async function ListingCard({ card }: { card: Card }) {
             resolving it here would add a query per grid. The title already
             names the barrio in practice. */}
         <div className="listing-card__title">{card.title}</div>
-        <div className="ds-photo-card__price">{formatPrice(card)}</div>
-        {(specs.length > 0 || cuota) && (
+        <div className="ds-photo-card__price">{formatEur(card.priceEur)}</div>
+        {specs.length > 0 && (
           <div className="listing-card__specs">
             {specs.map((s) => (
               <span className="listing-card__spec" key={s}>
@@ -81,11 +80,6 @@ export async function ListingCard({ card }: { card: Card }) {
                 {s}
               </span>
             ))}
-            {cuota && (
-              <span className="listing-card__spec listing-card__spec--cuota">
-                {cuota}
-              </span>
-            )}
           </div>
         )}
       </div>
