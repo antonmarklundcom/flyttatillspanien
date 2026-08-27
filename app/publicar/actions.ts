@@ -19,7 +19,7 @@ import {
   type Operation,
   type PropertyType,
 } from "@/lib/import/types";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
@@ -175,8 +175,8 @@ async function alertReviewSubmitted(
     .limit(1);
   await alertOperator({
     kind: "review_submitted",
-    title: esPanel.alertReviewTitle,
-    detail: esPanel.alertReviewDetail(row?.title ?? String(draftId), verified),
+    title: svPanel.alertReviewTitle,
+    detail: svPanel.alertReviewDetail(row?.title ?? String(draftId), verified),
     url: `${await siteOrigin()}/admin`,
   });
 }

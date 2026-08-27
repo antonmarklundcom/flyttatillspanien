@@ -4,7 +4,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import type { EditScope } from "@/lib/listing-edit";
 import { getPanelLeads } from "@/lib/panel-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { agencyTabs } from "../tabs";
@@ -53,10 +53,10 @@ export default async function AgencyLeadsPage() {
         tabs={agencyTabs("leads", canManageTeam(ctx))}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esPanel.agencyLeadsTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.agencyLeadsTitle}</h2>
 
         {agencyId == null && user.role === "agency_admin" ? (
-          <p className="panel-empty">{esPanel.agencyNoLink}</p>
+          <p className="panel-empty">{svPanel.agencyNoLink}</p>
         ) : (
           <AgencyLeads scope={scope} />
         )}
@@ -68,7 +68,7 @@ export default async function AgencyLeadsPage() {
 async function AgencyLeads({ scope }: { scope: EditScope }) {
   const leads = await getPanelLeads(scope);
   if (leads.length === 0) {
-    return <p className="panel-empty">{esPanel.agencyLeadsEmpty}</p>;
+    return <p className="panel-empty">{svPanel.agencyLeadsEmpty}</p>;
   }
 
   return (
@@ -101,7 +101,7 @@ async function AgencyLeads({ scope }: { scope: EditScope }) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              {esPanel.contactLead}
+              {svPanel.contactLead}
             </a>
           </div>
 

@@ -1,4 +1,4 @@
-import { esPanel, listingStatusLabel } from "@/i18n/es";
+import { svPanel, listingStatusLabel } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PublishLocation } from "@/lib/publish-queries";
 import type { EditableListing, ListingStatusValue } from "@/lib/listing-edit";
@@ -38,7 +38,7 @@ export function ListingForm({
         <input type="hidden" name="listingId" value={listing.id} />
 
         <label className="panel-form__field" style={{ flexBasis: "100%" }}>
-          <span className="auth-field__label">{esPanel.listingTitleLabel}</span>
+          <span className="auth-field__label">{svPanel.listingTitleLabel}</span>
           <input
             className="auth-field__input"
             name="title"
@@ -50,7 +50,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field" style={{ flexBasis: "100%" }}>
-          <span className="auth-field__label">{esPanel.listingDescriptionLabel}</span>
+          <span className="auth-field__label">{svPanel.listingDescriptionLabel}</span>
           <textarea
             className="panel-reject__textarea"
             name="descriptionEs"
@@ -60,7 +60,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingOperationLabel}</span>
+          <span className="auth-field__label">{svPanel.listingOperationLabel}</span>
           <select
             className="panel-select"
             name="operation"
@@ -75,7 +75,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingTypeLabel}</span>
+          <span className="auth-field__label">{svPanel.listingTypeLabel}</span>
           <select
             className="panel-select"
             name="propertyType"
@@ -90,7 +90,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingPriceLabel}</span>
+          <span className="auth-field__label">{svPanel.listingPriceLabel}</span>
           <input
             className="auth-field__input"
             name="priceAmount"
@@ -103,7 +103,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingCurrencyLabel}</span>
+          <span className="auth-field__label">{svPanel.listingCurrencyLabel}</span>
           <select
             className="panel-select"
             name="priceCurrency"
@@ -115,7 +115,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingBedroomsLabel}</span>
+          <span className="auth-field__label">{svPanel.listingBedroomsLabel}</span>
           <input
             className="auth-field__input"
             name="bedrooms"
@@ -126,7 +126,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingBathroomsLabel}</span>
+          <span className="auth-field__label">{svPanel.listingBathroomsLabel}</span>
           <input
             className="auth-field__input"
             name="bathrooms"
@@ -137,7 +137,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingParkingLabel}</span>
+          <span className="auth-field__label">{svPanel.listingParkingLabel}</span>
           <input
             className="auth-field__input"
             name="parking"
@@ -148,7 +148,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingAreaLabel}</span>
+          <span className="auth-field__label">{svPanel.listingAreaLabel}</span>
           <input
             className="auth-field__input"
             name="areaM2"
@@ -160,7 +160,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.listingLandLabel}</span>
+          <span className="auth-field__label">{svPanel.listingLandLabel}</span>
           <input
             className="auth-field__input"
             name="landM2"
@@ -172,7 +172,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field" style={{ flexBasis: "260px" }}>
-          <span className="auth-field__label">{esPanel.listingLocationLabel}</span>
+          <span className="auth-field__label">{svPanel.listingLocationLabel}</span>
           <select
             className="panel-select"
             name="locationId"
@@ -188,7 +188,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field" style={{ flexBasis: "260px" }}>
-          <span className="auth-field__label">{esPanel.listingVideoLabel}</span>
+          <span className="auth-field__label">{svPanel.listingVideoLabel}</span>
           <input
             className="auth-field__input"
             name="videoUrl"
@@ -199,7 +199,7 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{esPanel.statusLabel}</span>
+          <span className="auth-field__label">{svPanel.statusLabel}</span>
           <select
             className="panel-select"
             name="status"
@@ -222,12 +222,12 @@ export function ListingForm({
             value="1"
             defaultChecked={listing.foreignExposure}
           />
-          <span>{esPanel.listingForeignLabel}</span>
+          <span>{svPanel.listingForeignLabel}</span>
         </label>
 
         <div className="panel-form__field panel-form__field--action">
           <button className="panel-btn panel-btn--primary" type="submit">
-            {esPanel.saveListing}
+            {svPanel.saveListing}
           </button>
         </div>
       </form>
@@ -236,14 +236,14 @@ export function ListingForm({
         <div className="panel-actions">
           <details>
             <summary className="panel-btn panel-btn--danger">
-              {esPanel.deleteListing}
+              {svPanel.deleteListing}
             </summary>
             <form action={deleteAction} className="panel-reject">
               <input type="hidden" name="listingId" value={listing.id} />
-              <p className="panel-card__meta">{esPanel.deleteListingWarning}</p>
+              <p className="panel-card__meta">{svPanel.deleteListingWarning}</p>
               <div>
                 <button className="panel-btn panel-btn--danger" type="submit">
-                  {esPanel.deleteListing}
+                  {svPanel.deleteListing}
                 </button>
               </div>
             </form>

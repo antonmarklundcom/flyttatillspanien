@@ -1,4 +1,4 @@
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import type { DailyPoint } from "@/lib/stats-queries";
 
 /**
@@ -26,29 +26,29 @@ export function ListingStats({
   return (
     <section className="panel-card" style={{ marginTop: "1.5rem" }}>
       <h2 style={{ fontSize: 18, margin: "0 0 .25rem" }}>
-        {esPanel.statsViews} · {esPanel.statsLeads}
+        {svPanel.statsViews} · {svPanel.statsLeads}
       </h2>
       <p style={{ color: "#55655F", fontSize: 13, margin: "0 0 1rem" }}>
-        {esPanel.statsWindow} — {esPanel.statsViewsHint}
+        {svPanel.statsWindow} — {svPanel.statsViewsHint}
       </p>
 
       <div className="panel-stats">
         <div className="panel-stats__figure">
           <span className="panel-stats__value">{views}</span>
-          <span className="panel-stats__label">{esPanel.statsViews}</span>
+          <span className="panel-stats__label">{svPanel.statsViews}</span>
         </div>
         <div className="panel-stats__figure">
           <span className="panel-stats__value">{leads}</span>
-          <span className="panel-stats__label">{esPanel.statsLeads}</span>
+          <span className="panel-stats__label">{svPanel.statsLeads}</span>
         </div>
       </div>
 
       {peak === 0 ? (
         <p style={{ color: "#55655F", fontSize: 13, marginTop: "1rem" }}>
-          {esPanel.statsNoData}
+          {svPanel.statsNoData}
         </p>
       ) : (
-        <ul className="panel-spark" aria-label={esPanel.statsViews}>
+        <ul className="panel-spark" aria-label={svPanel.statsViews}>
           {points.map((p) => (
             <li key={p.day} className="panel-spark__col" title={`${p.day}: ${p.views}`}>
               <span

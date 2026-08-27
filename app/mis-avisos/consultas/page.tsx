@@ -3,7 +3,7 @@ import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireOwnerContext } from "@/lib/auth/guards";
 import { getPanelLeads } from "@/lib/panel-queries";
-import { esOwner } from "@/i18n/es";
+import { svOwner } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { ownerTabs } from "../tabs";
@@ -47,19 +47,19 @@ export default async function OwnerLeadsPage() {
   return (
     <>
       <PanelBar
-        title={esOwner.panelTitle}
+        title={svOwner.panelTitle}
         role={user.role}
         userName={user.name}
         tabs={ownerTabs("leads")}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esOwner.leadsTitle}</h2>
+        <h2 className="panel-section__title">{svOwner.leadsTitle}</h2>
 
         {leads.length === 0 ? (
-          <p className="panel-empty">{esOwner.leadsEmpty}</p>
+          <p className="panel-empty">{svOwner.leadsEmpty}</p>
         ) : (
           <>
-            <p className="panel-note">{esOwner.leadsNote}</p>
+            <p className="panel-note">{svOwner.leadsNote}</p>
             {leads.map((lead) => (
               <article className="panel-card" key={lead.id}>
                 <div className="panel-card__head">
@@ -94,7 +94,7 @@ export default async function OwnerLeadsPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {esOwner.contactLead}
+                    {svOwner.contactLead}
                   </a>
                 </div>
 

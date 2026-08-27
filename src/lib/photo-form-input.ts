@@ -16,7 +16,7 @@ import {
 } from "@/lib/listing-images";
 import type { EditScope } from "@/lib/listing-edit";
 
-/** Flash keys the panel pages map to esPanel strings via their FLASH table. */
+/** Flash keys the panel pages map to svPanel strings via their FLASH table. */
 export type PhotoFlash =
   | "photos_uploaded"
   | "photos_rejected"

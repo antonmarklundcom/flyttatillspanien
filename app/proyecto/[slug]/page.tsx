@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getProjectBySlug } from "@/lib/queries";
 import { listingUrl, categoryUrl } from "@/lib/urls";
 import { formatUsd, formatPrice } from "@/lib/format";
-import { inquiryPrefillFor } from "@/i18n/es";
+import { inquiryPrefillFor } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { ContactForm } from "@/components/ContactForm";
 import { ProjectCard } from "@/components/ProjectCard";

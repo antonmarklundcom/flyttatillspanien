@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
+import { sv } from "@/i18n/sv";
 
 /**
  * "Avisame si baja" price alert. There's no alerting engine yet, so this is
@@ -55,7 +55,7 @@ export function PriceAlert({
   if (!open) {
     return (
       <button className="price-alert" onClick={() => setOpen(true)}>
-        🔔 {es.priceAlert}
+        🔔 {sv.priceAlert}
       </button>
     );
   }

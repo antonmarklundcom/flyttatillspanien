@@ -5,7 +5,7 @@ import { requireOwnerContext } from "@/lib/auth/guards";
 import { AGENCY_LOCKED_STATUSES, agencyStatusOptions } from "@/lib/listing-edit";
 import { getPanelListings } from "@/lib/panel-queries";
 import { getPanelListingStats } from "@/lib/stats-queries";
-import { esOwner, esPanel, listingStatusLabel } from "@/i18n/es";
+import { svOwner, svPanel, listingStatusLabel } from "@/i18n/sv";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
@@ -30,24 +30,24 @@ export default async function OwnerListingsPage() {
   return (
     <>
       <PanelBar
-        title={esOwner.panelTitle}
+        title={svOwner.panelTitle}
         role={user.role}
         userName={user.name}
         tabs={ownerTabs("listings")}
       />
       <main className="panel site-main">
         <div className="panel-section__header">
-          <h2 className="panel-section__title">{esOwner.listingsTitle}</h2>
+          <h2 className="panel-section__title">{svOwner.listingsTitle}</h2>
           <Link className="panel-btn panel-btn--primary" href="/publicar">
-            {esOwner.addListingCta}
+            {svOwner.addListingCta}
           </Link>
         </div>
 
         {rows.length === 0 ? (
-          <p className="panel-empty">{esOwner.listingsEmpty}</p>
+          <p className="panel-empty">{svOwner.listingsEmpty}</p>
         ) : (
           <>
-            <p className="panel-note">{esOwner.statusReviewNote}</p>
+            <p className="panel-note">{svOwner.statusReviewNote}</p>
 
             <div className="panel-table__wrap">
               <table className="panel-table">
@@ -56,9 +56,9 @@ export default async function OwnerListingsPage() {
                     <th>Propiedad</th>
                     <th>Tipo</th>
                     <th>Precio</th>
-                    <th>{esOwner.statusLabel}</th>
-                    <th title={esPanel.statsViewsHint}>{esPanel.statsViews}</th>
-                    <th>{esPanel.statsLeads}</th>
+                    <th>{svOwner.statusLabel}</th>
+                    <th title={svPanel.statsViewsHint}>{svPanel.statsViews}</th>
+                    <th>{svPanel.statsLeads}</th>
                     <th>Cambiar estado</th>
                   </tr>
                 </thead>
@@ -117,18 +117,18 @@ export default async function OwnerListingsPage() {
                                 ))}
                               </select>
                               <button className="panel-btn" type="submit">
-                                {esOwner.saveStatus}
+                                {svOwner.saveStatus}
                               </button>
                             </form>
                           ) : (
                             <p className="panel-status-note">
                               {row.status === "pending_review"
-                                ? esPanel.statusPendingNote
-                                : esPanel.statusRejectedNote}
+                                ? svPanel.statusPendingNote
+                                : svPanel.statusRejectedNote}
                               {row.status === "removed" && row.reviewNotes && (
                                 <>
                                   {" "}
-                                  {esPanel.statusRejectedReason}: {row.reviewNotes}
+                                  {svPanel.statusRejectedReason}: {row.reviewNotes}
                                 </>
                               )}
                             </p>
@@ -137,7 +137,7 @@ export default async function OwnerListingsPage() {
                             className="panel-btn"
                             href={`/mis-avisos/aviso/${row.id}`}
                           >
-                            {esOwner.editListing}
+                            {svOwner.editListing}
                           </Link>
                         </div>
                       </td>

@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { UNDER_CONSTRUCTION, isInternalPath } from "@/config/site-status";
-import { esSiteNotice } from "@/i18n/es";
+import { svSiteNotice } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 
 /**
@@ -23,8 +23,8 @@ export async function SiteNotice() {
   return (
     <div className="site-notice" role="status">
       <p className="site-notice__inner">
-        <strong className="site-notice__label">{esSiteNotice.label}</strong>
-        <span>{esSiteNotice.body(brand)}</span>
+        <strong className="site-notice__label">{svSiteNotice.label}</strong>
+        <span>{svSiteNotice.body(brand)}</span>
       </p>
     </div>
   );

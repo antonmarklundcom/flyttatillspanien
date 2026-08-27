@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { formatPrice } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
@@ -37,10 +37,10 @@ export default async function AdminReviewPage() {
         tabs={adminTabs("review", queue.length, undefined, recentLeads)}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esPanel.adminReviewTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminReviewTitle}</h2>
 
         {queue.length === 0 ? (
-          <p className="panel-empty">{esPanel.adminReviewEmpty}</p>
+          <p className="panel-empty">{svPanel.adminReviewEmpty}</p>
         ) : (
           queue.map((row) => (
             <article className="panel-card" key={row.id}>
@@ -68,13 +68,13 @@ export default async function AdminReviewPage() {
                   <form action={approveAction}>
                     <input type="hidden" name="listingId" value={row.id} />
                     <button className="panel-btn panel-btn--primary" type="submit">
-                      {esPanel.approve}
+                      {svPanel.approve}
                     </button>
                   </form>
 
                   <details>
                     <summary className="panel-btn panel-btn--danger">
-                      {esPanel.reject}
+                      {svPanel.reject}
                     </summary>
                     <form action={rejectAction} className="panel-reject">
                       <input type="hidden" name="listingId" value={row.id} />
@@ -82,13 +82,13 @@ export default async function AdminReviewPage() {
                         className="auth-field__label"
                         htmlFor={`reason-${row.id}`}
                       >
-                        {esPanel.rejectReasonLabel}
+                        {svPanel.rejectReasonLabel}
                       </label>
                       <textarea
                         id={`reason-${row.id}`}
                         name="reason"
                         className="panel-reject__textarea"
-                        placeholder={esPanel.rejectReasonPlaceholder}
+                        placeholder={svPanel.rejectReasonPlaceholder}
                         required
                       />
                       <div>
@@ -96,7 +96,7 @@ export default async function AdminReviewPage() {
                           className="panel-btn panel-btn--danger"
                           type="submit"
                         >
-                          {esPanel.reject}
+                          {svPanel.reject}
                         </button>
                       </div>
                     </form>

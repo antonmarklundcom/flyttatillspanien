@@ -8,7 +8,7 @@ import { listImportJobs } from "@/lib/import/jobs";
 import { recentPriceChanges } from "@/lib/import/resync";
 import { UPLOAD_SOURCES } from "@/lib/import/intake";
 import { formatUsd } from "@/lib/format";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../tabs";
 import { commitImportAction, dryRunImportAction } from "./actions";
 
@@ -52,9 +52,9 @@ export default async function AdminImportPage() {
         tabs={adminTabs("import", reviewCount)}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esPanel.adminImportTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminImportTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 14, marginTop: 0 }}>
-          {esPanel.adminImportSubtitle}
+          {svPanel.adminImportSubtitle}
         </p>
 
         <article className="panel-card">
@@ -67,10 +67,10 @@ export default async function AdminImportPage() {
         </article>
 
         <h2 className="panel-section__title" style={{ marginTop: 32 }}>
-          {esPanel.importJobsTitle}
+          {svPanel.importJobsTitle}
         </h2>
         {jobs.length === 0 ? (
-          <p className="panel-card__meta">{esPanel.importJobsEmpty}</p>
+          <p className="panel-card__meta">{svPanel.importJobsEmpty}</p>
         ) : (
           <div className="panel-table__wrap">
             <table className="panel-table">
@@ -101,7 +101,7 @@ export default async function AdminImportPage() {
                     <td>
                       {j.permissionGranted
                         ? (j.permissionGrantedBy ?? "sí")
-                        : esPanel.importPermissionMissing}
+                        : svPanel.importPermissionMissing}
                     </td>
                     <td>{STATUS_LABELS[j.status] ?? j.status}</td>
                   </tr>

@@ -9,7 +9,7 @@ import {
   listAllLeads,
   type AdminLeadRow,
 } from "@/lib/panel-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
@@ -32,7 +32,7 @@ const LEAD_TYPES = [
 ] as const;
 
 const LEAD_TYPE_LABEL: Record<string, string> = {
-  all: esPanel.filterAll,
+  all: svPanel.filterAll,
   buyer: "Compra",
   renter: "Alquiler",
   seller: "Venta",
@@ -63,7 +63,7 @@ function forwardHref(lead: AdminLeadRow) {
   if (!lead.ownerWhatsapp) return null;
   const href = waLink(
     lead.ownerWhatsapp,
-    esPanel.forwardLeadMessage({
+    svPanel.forwardLeadMessage({
       listingTitle: lead.listingTitle,
       name: lead.name,
       whatsapp: lead.whatsapp,
@@ -78,7 +78,7 @@ function forwardHref(lead: AdminLeadRow) {
       target="_blank"
       rel="noopener noreferrer"
     >
-      {esPanel.forwardLead}
+      {svPanel.forwardLead}
     </a>
   );
 }
@@ -122,14 +122,14 @@ export default async function AdminLeadsPage({
         tabs={adminTabs("leads", reviewCount, undefined, recentLeads)}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminLeadsTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
-          {esPanel.adminLeadsHint}
+          {svPanel.adminLeadsHint}
         </p>
         {/* Says what the tab badge is counting — a bare number next to
             "Consultas" would read as the all-time total. */}
         {recentLeads > 0 ? (
-          <p className="panel-note">{esPanel.adminLeadsRecent(recentLeads)}</p>
+          <p className="panel-note">{svPanel.adminLeadsRecent(recentLeads)}</p>
         ) : null}
 
         <nav className="panel-chips">
@@ -159,7 +159,7 @@ export default async function AdminLeadsPage({
           ) : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
-              {esPanel.adminLeadsSearchLabel}
+              {svPanel.adminLeadsSearchLabel}
             </span>
             <input
               className="auth-field__input"
@@ -170,13 +170,13 @@ export default async function AdminLeadsPage({
           </label>
           <div className="panel-form__field panel-form__field--action">
             <button className="panel-btn" type="submit">
-              {esPanel.searchSubmit}
+              {svPanel.searchSubmit}
             </button>
           </div>
         </form>
 
         {rows.length === 0 ? (
-          <p className="panel-empty">{esPanel.adminLeadsEmpty}</p>
+          <p className="panel-empty">{svPanel.adminLeadsEmpty}</p>
         ) : (
           rows.map((lead) => (
             <article className="panel-card" key={lead.id}>
@@ -197,7 +197,7 @@ export default async function AdminLeadsPage({
                     <span>
                       {lead.agencyName ??
                         (lead.ownerWhatsapp
-                          ? `${esPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
+                          ? `${svPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
                           : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
@@ -224,7 +224,7 @@ export default async function AdminLeadsPage({
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {esPanel.contactLead}
+                    {svPanel.contactLead}
                   </a>
                   {/* A particular seller has no inbox of their own (PLAN.md
                       D8), so the lead only reaches them if it is forwarded. */}

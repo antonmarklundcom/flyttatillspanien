@@ -157,7 +157,7 @@ function publishWaHref(brand: string, t: Dictionary["home"]): string | null {
  * Both discover cards used to point at the same outbound WhatsApp link,
  * because neither destination existed yet. The valuation card now has a real
  * one. The card list, like the three-step explainer, now lives in the
- * dictionary (`esHome.discoverCards` / `esHome.howSteps`) — hrefs and icons
+ * dictionary (`svHome.discoverCards` / `svHome.howSteps`) — hrefs and icons
  * travel with the copy because a translated card without its link is not a
  * card.
  *

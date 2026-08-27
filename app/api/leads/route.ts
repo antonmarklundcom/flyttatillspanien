@@ -11,7 +11,7 @@ import { leads, listings } from "@/db/schema";
 import { alertOperator, getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import { rawHostFrom } from "@/lib/host";
@@ -173,8 +173,8 @@ export async function POST(req: NextRequest) {
   after(() =>
     alertOperator({
       kind: "new_lead",
-      title: esPanel.alertNewLeadTitle,
-      detail: esPanel.alertNewLeadDetail({
+      title: svPanel.alertNewLeadTitle,
+      detail: svPanel.alertNewLeadDetail({
         leadType: parsed.leadType,
         name: parsed.name ?? null,
         whatsapp: parsed.whatsapp,

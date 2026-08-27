@@ -6,7 +6,7 @@ import {
   getOwnAgentProfile,
 } from "@/lib/profile-queries";
 import { BRAND_NAME } from "@/lib/brand";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { agencyTabs } from "../tabs";
 import {
   updateAccountAction,
@@ -22,14 +22,14 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  saved: { text: esPanel.profileSaved },
-  agency_saved: { text: esPanel.profileAgencySaved },
-  account_saved: { text: esPanel.profileAccountSaved },
-  password: { text: esPanel.profilePasswordChanged },
-  taken: { text: esPanel.profileEmailTaken, error: true },
-  invalid: { text: esPanel.profileInvalid, error: true },
-  bad_password: { text: esPanel.profileBadPassword, error: true },
-  forbidden: { text: esPanel.profileForbidden, error: true },
+  saved: { text: svPanel.profileSaved },
+  agency_saved: { text: svPanel.profileAgencySaved },
+  account_saved: { text: svPanel.profileAccountSaved },
+  password: { text: svPanel.profilePasswordChanged },
+  taken: { text: svPanel.profileEmailTaken, error: true },
+  invalid: { text: svPanel.profileInvalid, error: true },
+  bad_password: { text: svPanel.profileBadPassword, error: true },
+  forbidden: { text: svPanel.profileForbidden, error: true },
 };
 
 function VerifiedBadge({ verified }: { verified: boolean }) {
@@ -37,7 +37,7 @@ function VerifiedBadge({ verified }: { verified: boolean }) {
     <span
       className={`panel-profile__badge${verified ? "" : " panel-profile__badge--pending"}`}
     >
-      {verified ? esPanel.profileVerifiedNote(BRAND_NAME) : esPanel.profilePendingNote}
+      {verified ? svPanel.profileVerifiedNote(BRAND_NAME) : svPanel.profilePendingNote}
     </span>
   );
 }
@@ -79,12 +79,12 @@ export default async function AgencyProfilePage({
           {/* The company record — agency-admin only. */}
           <article className="panel-card">
             <h2 style={{ fontSize: 18, margin: "0 0 .5rem" }}>
-              {esPanel.profileAgencyTitle}
+              {svPanel.profileAgencyTitle}
             </h2>
 
             {agency == null ? (
               <p style={{ color: "#55655F", margin: 0 }}>
-                {esPanel.profileNoAgency}
+                {svPanel.profileNoAgency}
               </p>
             ) : (
               <>
@@ -94,7 +94,7 @@ export default async function AgencyProfilePage({
 
                 {!canEditAgency && (
                   <p style={{ color: "#55655F", fontSize: 13 }}>
-                    {esPanel.profileAgencyReadOnly}
+                    {svPanel.profileAgencyReadOnly}
                   </p>
                 )}
 
@@ -104,7 +104,7 @@ export default async function AgencyProfilePage({
                     style={{ flexBasis: "100%" }}
                   >
                     <span className="auth-field__label">
-                      {esPanel.nameLabel}
+                      {svPanel.nameLabel}
                     </span>
                     <input
                       className="auth-field__input"
@@ -119,7 +119,7 @@ export default async function AgencyProfilePage({
 
                   <label className="panel-form__field">
                     <span className="auth-field__label">
-                      {esPanel.profileWhatsappLabel}
+                      {svPanel.profileWhatsappLabel}
                     </span>
                     <input
                       className="auth-field__input"
@@ -134,7 +134,7 @@ export default async function AgencyProfilePage({
 
                   <label className="panel-form__field">
                     <span className="auth-field__label">
-                      {esPanel.profileEmailLabel}
+                      {svPanel.profileEmailLabel}
                     </span>
                     <input
                       className="auth-field__input"
@@ -151,7 +151,7 @@ export default async function AgencyProfilePage({
                     style={{ flexBasis: "100%" }}
                   >
                     <span className="auth-field__label">
-                      {esPanel.profileLogoLabel}
+                      {svPanel.profileLogoLabel}
                     </span>
                     <input
                       className="auth-field__input"
@@ -169,7 +169,7 @@ export default async function AgencyProfilePage({
                       className="panel-btn panel-btn--primary"
                       type="submit"
                     >
-                      {esPanel.profileSave}
+                      {svPanel.profileSave}
                     </button>
                   )}
                 </form>
@@ -181,7 +181,7 @@ export default async function AgencyProfilePage({
           {agent && (
             <article className="panel-card">
               <h2 style={{ fontSize: 18, margin: "0 0 .5rem" }}>
-                {esPanel.profileAgentTitle}
+                {svPanel.profileAgentTitle}
               </h2>
               <p style={{ margin: "0 0 1rem" }}>
                 <VerifiedBadge verified={agent.isVerified} />
@@ -192,7 +192,7 @@ export default async function AgencyProfilePage({
                   className="panel-form__field"
                   style={{ flexBasis: "100%" }}
                 >
-                  <span className="auth-field__label">{esPanel.nameLabel}</span>
+                  <span className="auth-field__label">{svPanel.nameLabel}</span>
                   <input
                     className="auth-field__input"
                     name="name"
@@ -205,7 +205,7 @@ export default async function AgencyProfilePage({
 
                 <label className="panel-form__field">
                   <span className="auth-field__label">
-                    {esPanel.profileWhatsappLabel}
+                    {svPanel.profileWhatsappLabel}
                   </span>
                   <input
                     className="auth-field__input"
@@ -222,7 +222,7 @@ export default async function AgencyProfilePage({
                   style={{ flexBasis: "100%" }}
                 >
                   <span className="auth-field__label">
-                    {esPanel.profilePhotoLabel}
+                    {svPanel.profilePhotoLabel}
                   </span>
                   <input
                     className="auth-field__input"
@@ -235,7 +235,7 @@ export default async function AgencyProfilePage({
                 </label>
 
                 <button className="panel-btn panel-btn--primary" type="submit">
-                  {esPanel.profileSave}
+                  {svPanel.profileSave}
                 </button>
               </form>
             </article>
@@ -244,12 +244,12 @@ export default async function AgencyProfilePage({
           {/* The login itself. */}
           <article className="panel-card">
             <h2 style={{ fontSize: 18, margin: "0 0 1rem" }}>
-              {esPanel.profileAccountTitle}
+              {svPanel.profileAccountTitle}
             </h2>
 
             <form action={updateAccountAction} className="panel-form">
               <label className="panel-form__field">
-                <span className="auth-field__label">{esPanel.nameLabel}</span>
+                <span className="auth-field__label">{svPanel.nameLabel}</span>
                 <input
                   className="auth-field__input"
                   name="name"
@@ -261,7 +261,7 @@ export default async function AgencyProfilePage({
               </label>
 
               <label className="panel-form__field">
-                <span className="auth-field__label">{esPanel.emailLabel}</span>
+                <span className="auth-field__label">{svPanel.emailLabel}</span>
                 <input
                   className="auth-field__input"
                   name="email"
@@ -274,7 +274,7 @@ export default async function AgencyProfilePage({
 
               <label className="panel-form__field">
                 <span className="auth-field__label">
-                  {esPanel.newPasswordLabel}
+                  {svPanel.newPasswordLabel}
                 </span>
                 <input
                   className="auth-field__input"
@@ -284,7 +284,7 @@ export default async function AgencyProfilePage({
                   autoComplete="new-password"
                 />
                 <span className="auth-field__hint">
-                  {esPanel.newPasswordHint}
+                  {svPanel.newPasswordHint}
                 </span>
               </label>
 
@@ -293,7 +293,7 @@ export default async function AgencyProfilePage({
                   was needed — the form is not the gate. */}
               <label className="panel-form__field">
                 <span className="auth-field__label">
-                  {esPanel.currentPasswordLabel}
+                  {svPanel.currentPasswordLabel}
                 </span>
                 <input
                   className="auth-field__input"
@@ -302,12 +302,12 @@ export default async function AgencyProfilePage({
                   autoComplete="current-password"
                 />
                 <span className="auth-field__hint">
-                  {esPanel.currentPasswordHint}
+                  {svPanel.currentPasswordHint}
                 </span>
               </label>
 
               <button className="panel-btn panel-btn--primary" type="submit">
-                {esPanel.profileSave}
+                {svPanel.profileSave}
               </button>
             </form>
           </article>

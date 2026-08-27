@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
+import { sv } from "@/i18n/sv";
 import { waLink } from "@/lib/wa";
 
 /**
@@ -131,7 +131,7 @@ export function ContactForm({
       </label>
 
       <div className="contact-form__chips">
-        {es.quickQuestions.map((q) => (
+        {sv.quickQuestions.map((q) => (
           <button
             key={q}
             type="button"

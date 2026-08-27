@@ -1,18 +1,13 @@
 /**
- * Verify the dictionaries stay the same shape — pure, no database.
+ * Verify the (single) dictionary is internally sound — pure, no database.
  *
- * `Dictionary` (src/i18n/index.ts) catches most drift at compile time: a
- * missing key, a stray key, a string where a number belongs. It cannot catch
- * one thing, because TypeScript deliberately allows it — **a function that
- * takes fewer arguments is assignable to one that takes more**. So a
- * translator who writes `titlePaged: (title) => title` satisfies the type and
- * silently drops the page number from every paginated title.
- *
- * This walks both dictionaries side by side and checks what the type system
- * will not: same keys at every level, same kind of value, same arity, same
- * array lengths, and no empty string anywhere. It is the cheapest possible
- * stand-in for looking at an English page, which nobody can do until a host
- * declares `locale: "en"`.
+ * There is one served locale, `sv` (docs/SPAIN-PORTAL-DESIGN.md, i18n
+ * handoff): the two-dictionary side-by-side comparison this script used to
+ * run (es vs en, on propia.node) has nothing to compare against until a
+ * second locale is reintroduced. It keeps its shape and its exit code so a
+ * future `en.ts` addition only has to add the comparison back, not rebuild
+ * the harness: walk the tree, no empty strings, no leftover placeholder text
+ * from the portal this codebase started as.
  *
  * Run: npm run verify:i18n   (also part of npm run verify:local)
  */
@@ -25,75 +20,48 @@ function fail(path: string, detail: string) {
   console.log(`  FAIL  ${path} — ${detail}`);
 }
 
-function kind(v: unknown): string {
-  if (Array.isArray(v)) return "array";
-  if (v === null) return "null";
-  return typeof v;
-}
+/** Leftover Paraguay/propia.node vocabulary that must not survive into sv.ts. */
+const STALE_PATTERNS: RegExp[] = [
+  /\bpropia\b/i,
+  /\bparaguay\b/i,
+  /\basunción\b/i,
+  /\bguaran[íi]/i,
+  /\bcuota\b/i,
+  /\bUS\$/,
+];
 
-/**
- * `es` is the reference: it is the dictionary the site actually serves, and
- * every key exists because a page reads it.
- */
-function compare(ref: unknown, other: unknown, path: string): void {
-  if (kind(ref) !== kind(other)) {
-    fail(path, `es is ${kind(ref)}, en is ${kind(other)}`);
-    return;
-  }
-
-  if (typeof ref === "function") {
-    const a = ref as (...args: unknown[]) => unknown;
-    const b = other as (...args: unknown[]) => unknown;
-    if (a.length !== b.length) {
-      fail(path, `takes ${a.length} argument(s) in es, ${b.length} in en`);
-    }
-    return;
-  }
-
-  if (Array.isArray(ref)) {
-    const b = other as unknown[];
-    if (ref.length !== b.length) {
-      fail(path, `${ref.length} item(s) in es, ${b.length} in en`);
+function walk(value: unknown, path: string): void {
+  if (typeof value === "string") {
+    if (value.trim() === "") {
+      fail(path, "empty string");
       return;
     }
-    ref.forEach((item, i) => compare(item, b[i], `${path}[${i}]`));
-    return;
-  }
-
-  if (typeof ref === "object" && ref !== null) {
-    const a = ref as Record<string, unknown>;
-    const b = other as Record<string, unknown>;
-    for (const key of Object.keys(a)) {
-      if (!(key in b)) {
-        fail(`${path}.${key}`, "present in es, missing in en");
-        continue;
+    for (const pattern of STALE_PATTERNS) {
+      if (pattern.test(value)) {
+        fail(path, `matches stale pattern ${pattern} — "${value}"`);
       }
-      compare(a[key], b[key], `${path}.${key}`);
-    }
-    for (const key of Object.keys(b)) {
-      if (!(key in a)) fail(`${path}.${key}`, "present in en, missing in es");
     }
     return;
   }
-
-  if (typeof ref === "string" && (other as string).trim() === "") {
-    fail(path, "empty string in en");
+  if (typeof value === "function") return; // arity has nothing to compare against with one locale
+  if (Array.isArray(value)) {
+    value.forEach((item, i) => walk(item, `${path}[${i}]`));
+    return;
+  }
+  if (value !== null && typeof value === "object") {
+    for (const key of Object.keys(value as Record<string, unknown>)) {
+      walk((value as Record<string, unknown>)[key], `${path}.${key}`);
+    }
   }
 }
 
-console.log("\ni18n: es and en are the same shape");
+console.log("\ni18n: sv dictionary is internally sound");
 
-const es = getDictionary("es");
-const en = getDictionary("en");
-
-if (es === en) {
-  fail("dictionaries", "getDictionary('en') returns the Spanish dictionary");
-} else {
-  compare(es, en, "dict");
-}
+const sv = getDictionary("sv");
+walk(sv, "dict");
 
 if (failures === 0) {
-  console.log("  ok    every key, arity and array length matches");
+  console.log("  ok    no empty strings, no stale Paraguay/propia.node copy");
 }
 
 console.log(

@@ -14,7 +14,7 @@ import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
 import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
-import { esAgentProfile, agentInquiryPrefillFor } from "@/i18n/es";
+import { svAgentProfile, agentInquiryPrefillFor } from "@/i18n/sv";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
 import { ContactForm } from "@/components/ContactForm";
@@ -37,13 +37,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
-  if (!r) return { title: esAgentProfile.notFoundTitle };
+  if (!r) return { title: svAgentProfile.notFoundTitle };
   const { agent, listingCount } = r;
   const ix = getIndexability({ listingCount });
   const canonical = `${await siteOrigin()}${agentUrl(agent.slug)}`;
   return {
-    title: esAgentProfile.metaTitle(agent.name),
-    description: esAgentProfile.metaDescription(brand, agent.name, listingCount),
+    title: svAgentProfile.metaTitle(agent.name),
+    description: svAgentProfile.metaDescription(brand, agent.name, listingCount),
     alternates: { canonical },
     robots: { index: ix.state === "index", follow: true },
   };
@@ -122,27 +122,27 @@ export default async function AgentProfilePage({ params }: Params) {
           <h1 className="agent-profile__name">
             {agent.name}
             {agent.isVerified && (
-              <span className="agent-profile__verified" title={esAgentProfile.verified}>
+              <span className="agent-profile__verified" title={svAgentProfile.verified}>
                 ✓
               </span>
             )}
           </h1>
           <p className="agent-profile__meta">
-            {esAgentProfile.kind} ·{" "}
+            {svAgentProfile.kind} ·{" "}
             {listingCount > 0
-              ? esAgentProfile.listingCount(listingCount)
-              : esAgentProfile.noListings}
+              ? svAgentProfile.listingCount(listingCount)
+              : svAgentProfile.noListings}
           </p>
           {agency && (
             <p className="agent-profile__agency">
-              {esAgentProfile.agencyPrefix}{" "}
+              {svAgentProfile.agencyPrefix}{" "}
               <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
             </p>
           )}
           {agent.whatsapp && (
             <div className="agent-profile__contact">
               <a className="contact-form__altlink" href="#contacto">
-                {esAgentProfile.whatsappLink}
+                {svAgentProfile.whatsappLink}
               </a>
             </div>
           )}
@@ -151,7 +151,7 @@ export default async function AgentProfilePage({ params }: Params) {
 
       {listings.length > 0 ? (
         <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-          <h2 className="similar-listings__title">{esAgentProfile.listingsTitle}</h2>
+          <h2 className="similar-listings__title">{svAgentProfile.listingsTitle}</h2>
           <div className="similar-listings__grid">
             {listings.map((card) => (
               <ListingCard key={card.id} card={card} />
@@ -159,13 +159,13 @@ export default async function AgentProfilePage({ params }: Params) {
           </div>
         </section>
       ) : (
-        <p className="agent-profile__empty">{esAgentProfile.empty}</p>
+        <p className="agent-profile__empty">{svAgentProfile.empty}</p>
       )}
 
       {agent.whatsapp && (
         <section className="contact-panel" id="contacto">
-          <h2 className="contact-panel__title">{esAgentProfile.contactTitle}</h2>
-          <p className="contact-panel__subtitle">{esAgentProfile.contactSubtitle}</p>
+          <h2 className="contact-panel__title">{svAgentProfile.contactTitle}</h2>
+          <p className="contact-panel__subtitle">{svAgentProfile.contactSubtitle}</p>
           <ContactForm
             contactWhatsapp={agent.whatsapp}
             leadType="buyer"
