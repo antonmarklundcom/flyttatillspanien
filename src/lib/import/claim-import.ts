@@ -15,10 +15,9 @@ import "server-only";
 import { and, eq, like, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { listings, listingSources, locations } from "@/db/schema";
-import { makePublicId, contentHash, dedupKey, toPriceUsd } from "./normalize";
+import { makePublicId, contentHash, dedupKey } from "./normalize";
 import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
-import { USD_TO_PYG } from "@/lib/publish-queries";
 import type { ParsedListing } from "./from-url";
 import type { Operation, PropertyType, RawListing } from "./types";
 
@@ -30,9 +29,9 @@ export function sourceForHost(sourceUrl: string): (typeof listingSources.$inferI
   } catch {
     return "import_agency_site";
   }
-  if (host.includes("infocasas")) return "import_infocasas";
-  if (host.includes("clasipar")) return "import_clasipar";
-  if (host.includes("tulugar")) return "import_tulugar";
+  if (host.includes("idealista")) return "import_idealista";
+  if (host.includes("fotocasa")) return "import_fotocasa";
+  if (host.includes("kyero")) return "import_kyero";
   return "import_agency_site";
 }
 
@@ -58,7 +57,7 @@ export async function suggestLocation(
   const normalized = slugify(haystack);
   // Prefer the deepest match: a barrio is more useful than its city, and a
   // page naming both should land on the barrio.
-  const byDepth = { barrio: 3, ciudad: 2, departamento: 1, pais: 0 } as const;
+  const byDepth = { zona: 4, municipio: 3, provincia: 2, comunidad: 1, pais: 0 } as const;
   let best: { id: number; depth: number; length: number } | null = null;
 
   for (const row of rows) {
@@ -81,13 +80,12 @@ export interface ClaimInput {
   propertyType: PropertyType;
   title: string;
   descriptionEs: string | null;
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
+  priceEur: number;
   bedrooms: number | null;
   bathrooms: number | null;
   parking: number | null;
-  areaM2: number | null;
-  landM2: number | null;
+  builtM2: number | null;
+  plotM2: number | null;
   locationId: number;
   /** Who is claiming it. */
   userId: number;
@@ -101,7 +99,7 @@ export interface ClaimInput {
  * function has no parameter that could make it anything else.
  */
 export async function createClaimedDraft(input: ClaimInput): Promise<number> {
-  const priceUsd = toPriceUsd(input.priceAmount, input.priceCurrency, USD_TO_PYG);
+  const priceEur = input.priceEur;
   const publicId = makePublicId();
 
   await db.insert(listings).values({
@@ -112,14 +110,12 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
     propertyType: input.propertyType,
     title: input.title.slice(0, 180),
     descriptionEs: input.descriptionEs,
-    priceAmount: String(input.priceAmount),
-    priceCurrency: input.priceCurrency,
-    priceUsd: String(priceUsd),
+    priceEur: String(priceEur),
     bedrooms: input.bedrooms,
     bathrooms: input.bathrooms,
     parking: input.parking,
-    areaM2: input.areaM2 != null ? String(input.areaM2) : null,
-    landM2: input.landM2 != null ? String(input.landM2) : null,
+    builtM2: input.builtM2 != null ? String(input.builtM2) : null,
+    plotM2: input.plotM2 != null ? String(input.plotM2) : null,
     locationId: input.locationId,
     agencyId: input.agencyId,
     ownerUserId: input.userId,
@@ -147,13 +143,12 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
     descriptionEs: input.descriptionEs ?? undefined,
     operation: input.operation,
     propertyType: input.propertyType,
-    priceAmount: input.priceAmount,
-    priceCurrency: input.priceCurrency,
+    priceEur: input.priceEur,
     bedrooms: input.bedrooms ?? undefined,
     bathrooms: input.bathrooms ?? undefined,
     parking: input.parking ?? undefined,
-    areaM2: input.areaM2 ?? undefined,
-    landM2: input.landM2 ?? undefined,
+    builtM2: input.builtM2 ?? undefined,
+    plotM2: input.plotM2 ?? undefined,
     locationName: input.parsed.locationText ?? undefined,
     imageUrls: input.parsed.imageUrls,
   };
@@ -166,12 +161,12 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
     source: sourceForHost(input.parsed.sourceUrl),
     scopeAgencyId,
     sourceUrl: input.parsed.sourceUrl.slice(0, 600),
-    contentHash: contentHash(raw, priceUsd),
+    contentHash: contentHash(raw, priceEur),
     // NULL when the claimed page carried no phone — the claim flow never sets
     // one, so this is the normal case. A claim is already identified by its
     // source URL (findExistingClaim), which is a far stronger signal than the
     // fuzzy key, so nothing is lost by not having one.
-    dedupKey: dedupKey(raw, priceUsd, input.locationId, scopeAgencyId),
+    dedupKey: dedupKey(raw, priceEur, input.locationId, scopeAgencyId),
     firstSeenAt: now,
     lastSeenAt: now,
   });

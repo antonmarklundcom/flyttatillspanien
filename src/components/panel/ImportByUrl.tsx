@@ -198,28 +198,16 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{svPanel.listingPriceLabel}</span>
+              <span className="auth-field__label">{svPanel.listingPriceLabel} (€)</span>
               <input
                 className="auth-field__input"
-                name="priceAmount"
+                name="priceEur"
                 type="number"
                 min={1}
                 step={1}
-                defaultValue={parsed.priceAmount ?? ""}
+                defaultValue={parsed.priceEur ?? ""}
                 required
               />
-            </label>
-
-            <label className="panel-form__field">
-              <span className="auth-field__label">{svPanel.listingCurrencyLabel}</span>
-              <select
-                className="panel-select"
-                name="priceCurrency"
-                defaultValue={parsed.priceCurrency ?? "USD"}
-              >
-                <option value="USD">USD</option>
-                <option value="PYG">Gs</option>
-              </select>
             </label>
 
             <label className="panel-form__field" style={{ flexBasis: "100%" }}>
@@ -276,11 +264,11 @@ export function ImportByUrl({
               <span className="auth-field__label">{svPanel.listingAreaLabel}</span>
               <input
                 className="auth-field__input"
-                name="areaM2"
+                name="builtM2"
                 type="number"
                 min={0}
                 step="0.01"
-                defaultValue={parsed.areaM2 ?? ""}
+                defaultValue={parsed.builtM2 ?? ""}
               />
             </label>
 
@@ -288,11 +276,11 @@ export function ImportByUrl({
               <span className="auth-field__label">{svPanel.listingLandLabel}</span>
               <input
                 className="auth-field__input"
-                name="landM2"
+                name="plotM2"
                 type="number"
                 min={0}
                 step="0.01"
-                defaultValue={parsed.landM2 ?? ""}
+                defaultValue={parsed.plotM2 ?? ""}
               />
             </label>
           </div>

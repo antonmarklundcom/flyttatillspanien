@@ -15,12 +15,14 @@ import { and, desc, eq, like, or, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import { agencies, listings, locations } from "@/db/schema";
 import { syncDisplayCoords } from "@/lib/geo";
-import { toPriceUsd } from "@/lib/import/normalize";
-import { USD_TO_PYG } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
 import { containsPattern } from "@/lib/sql-like";
 
 export type ListingStatusValue = (typeof listings.$inferSelect)["status"];
+type EnergyRating = (typeof listings.$inferSelect)["energyRating"];
+type LegalStatus = (typeof listings.$inferSelect)["legalStatus"];
+type ChargesStatus = (typeof listings.$inferSelect)["chargesStatus"];
+type LandClassification = (typeof listings.$inferSelect)["landClassification"];
 
 /**
  * Who is editing, and therefore which rows they may touch.
@@ -148,8 +150,7 @@ export interface AdminListingRow {
   status: ListingStatusValue;
   operation: Operation;
   propertyType: PropertyType;
-  priceAmount: string;
-  priceCurrency: "USD" | "PYG";
+  priceEur: string;
   updatedAt: Date;
   agencyName: string | null;
   locationName: string | null;
@@ -187,8 +188,7 @@ export async function listAllListings(params: {
       status: listings.status,
       operation: listings.operation,
       propertyType: listings.propertyType,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
+      priceEur: listings.priceEur,
       updatedAt: listings.updatedAt,
       agencyName: agencies.name,
       locationName: locations.name,
@@ -233,18 +233,26 @@ export interface EditableListing {
   propertyType: PropertyType;
   title: string;
   descriptionEs: string | null;
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
+  priceEur: number;
   bedrooms: number | null;
   bathrooms: number | null;
   parking: number | null;
-  areaM2: number | null;
-  landM2: number | null;
+  builtM2: number | null;
+  plotM2: number | null;
   locationId: number;
   videoUrl: string | null;
-  foreignExposure: boolean;
   isVerified: boolean;
   reviewNotes: string | null;
+  // Spain legal block (docs/SPAIN-PORTAL-DESIGN.md §3.2)
+  referenciaCatastral: string | null;
+  energyRating: EnergyRating;
+  legalStatus: LegalStatus;
+  chargesStatus: ChargesStatus;
+  ibiAnnualEur: number | null;
+  communityMonthlyEur: number | null;
+  isVpo: boolean;
+  landClassification: LandClassification;
+  buildableM2: number | null;
 }
 
 /** Load one listing inside the caller's scope, or null when out of reach. */
@@ -263,18 +271,25 @@ export async function getEditableListing(
       propertyType: listings.propertyType,
       title: listings.title,
       descriptionEs: listings.descriptionEs,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
+      priceEur: listings.priceEur,
       bedrooms: listings.bedrooms,
       bathrooms: listings.bathrooms,
       parking: listings.parking,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
+      builtM2: listings.builtM2,
+      plotM2: listings.plotM2,
       locationId: listings.locationId,
       videoUrl: listings.videoUrl,
-      foreignExposure: listings.foreignExposure,
       isVerified: listings.isVerified,
       reviewNotes: listings.reviewNotes,
+      referenciaCatastral: listings.referenciaCatastral,
+      energyRating: listings.energyRating,
+      legalStatus: listings.legalStatus,
+      chargesStatus: listings.chargesStatus,
+      ibiAnnualEur: listings.ibiAnnualEur,
+      communityMonthlyEur: listings.communityMonthlyEur,
+      isVpo: listings.isVpo,
+      landClassification: listings.landClassification,
+      buildableM2: listings.buildableM2,
     })
     .from(listings)
     .where(guard ? and(eq(listings.id, id), guard) : eq(listings.id, id))
@@ -283,9 +298,13 @@ export async function getEditableListing(
   if (!row) return null;
   return {
     ...row,
-    priceAmount: Number(row.priceAmount),
-    areaM2: row.areaM2 != null ? Number(row.areaM2) : null,
-    landM2: row.landM2 != null ? Number(row.landM2) : null,
+    priceEur: Number(row.priceEur),
+    builtM2: row.builtM2 != null ? Number(row.builtM2) : null,
+    plotM2: row.plotM2 != null ? Number(row.plotM2) : null,
+    ibiAnnualEur: row.ibiAnnualEur != null ? Number(row.ibiAnnualEur) : null,
+    communityMonthlyEur:
+      row.communityMonthlyEur != null ? Number(row.communityMonthlyEur) : null,
+    buildableM2: row.buildableM2 != null ? Number(row.buildableM2) : null,
   };
 }
 
@@ -294,27 +313,33 @@ export interface ListingEditInput {
   descriptionEs: string | null;
   operation: Operation;
   propertyType: PropertyType;
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
+  priceEur: number;
   bedrooms: number | null;
   bathrooms: number | null;
   parking: number | null;
-  areaM2: number | null;
-  landM2: number | null;
+  builtM2: number | null;
+  plotM2: number | null;
   locationId: number;
   videoUrl: string | null;
-  foreignExposure: boolean;
   status: ListingStatusValue;
+  referenciaCatastral?: string | null;
+  energyRating?: EnergyRating;
+  legalStatus?: LegalStatus;
+  chargesStatus?: ChargesStatus;
+  ibiAnnualEur?: number | null;
+  communityMonthlyEur?: number | null;
+  isVpo?: boolean;
+  landClassification?: LandClassification;
+  buildableM2?: number | null;
 }
 
 /**
- * Save an edit inside the caller's scope. `price_usd` is re-normalised here
- * because ALL filtering reads that column — leaving it stale would silently
- * drop the listing out of price facets. `cuota_gs` is left to the nightly cron.
+ * Save an edit inside the caller's scope.
  *
- * Returns rows affected: 0 means the id was outside the scope (or the status
- * was one this scope may not set), which the caller surfaces as "not found"
- * rather than leaking whether the row exists.
+ * Returns rows affected: 0 means the id was outside the scope, the status was
+ * one this scope may not set, or the publish gate refused the transition —
+ * which the caller surfaces as "not found" / "cannot publish" rather than
+ * leaking whether the row exists.
  */
 export async function updateListing(params: {
   id: number;
@@ -323,16 +348,8 @@ export async function updateListing(params: {
 }): Promise<number> {
   const { id, scope, input } = params;
 
-  // The cached cuota was computed from the old operation and price. Leaving it
-  // when either changes renders wrong money on the card until the nightly cron
-  // (a listing flipped venta→alquiler kept a purchase cuota forever). Cleared
-  // here, recomputed by cron:cuotas. The row's current status comes back in the
-  // same read, because the permission check below needs it.
   const [current] = await db
     .select({
-      operation: listings.operation,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
       publishedAt: listings.publishedAt,
       status: listings.status,
     })
@@ -342,36 +359,41 @@ export async function updateListing(params: {
 
   if (!maySetStatus(scope, current?.status, input.status)) return 0;
 
-  const moneyChanged =
-    !current ||
-    current.operation !== input.operation ||
-    Number(current.priceAmount) !== input.priceAmount ||
-    current.priceCurrency !== input.priceCurrency;
+  // Publish gate (docs/SPAIN-PORTAL-DESIGN.md §3.2): Spain's RD 390/2021
+  // requires the energy rating in the advertisement itself, so a listing may
+  // not reach "published" with energy_rating NULL — enforced here (the
+  // server action), not just in the form, so the importer's direct writes
+  // are covered too (see src/lib/import/upsert.ts).
+  if (input.status === "published" && !input.energyRating) return 0;
 
   const patch: Partial<typeof listings.$inferInsert> = {
     title: input.title.slice(0, 180),
     descriptionEs: input.descriptionEs,
     operation: input.operation,
     propertyType: input.propertyType,
-    priceAmount: input.priceAmount.toFixed(2),
-    priceCurrency: input.priceCurrency,
-    priceUsd: toPriceUsd(
-      input.priceAmount,
-      input.priceCurrency,
-      USD_TO_PYG,
-    ).toFixed(2),
+    priceEur: input.priceEur.toFixed(2),
     bedrooms: input.bedrooms,
     bathrooms: input.bathrooms,
     parking: input.parking,
-    areaM2: input.areaM2 != null ? input.areaM2.toString() : null,
-    landM2: input.landM2 != null ? input.landM2.toString() : null,
+    builtM2: input.builtM2 != null ? input.builtM2.toString() : null,
+    plotM2: input.plotM2 != null ? input.plotM2.toString() : null,
     locationId: input.locationId,
     videoUrl: input.videoUrl,
-    foreignExposure: input.foreignExposure,
     status: input.status,
+    referenciaCatastral: input.referenciaCatastral ?? null,
+    energyRating: input.energyRating ?? null,
+    legalStatus: input.legalStatus ?? "desconocido",
+    chargesStatus: input.chargesStatus ?? "desconocido",
+    ibiAnnualEur:
+      input.ibiAnnualEur != null ? input.ibiAnnualEur.toString() : null,
+    communityMonthlyEur:
+      input.communityMonthlyEur != null
+        ? input.communityMonthlyEur.toString()
+        : null,
+    isVpo: input.isVpo ?? false,
+    landClassification: input.landClassification ?? null,
+    buildableM2: input.buildableM2 != null ? input.buildableM2.toString() : null,
   };
-
-  if (moneyChanged) patch.cuotaGs = null;
 
   // FIRST publish stamps publishedAt so category ordering (idx_fresh) is sane —
   // and only the first. Re-stamping on every edit made a typo fix look like a

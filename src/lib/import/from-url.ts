@@ -29,15 +29,14 @@ export interface ParsedListing {
   sourceUrl: string;
   title: string | null;
   description: string | null;
-  priceAmount: number | null;
-  priceCurrency: "USD" | "PYG" | null;
+  priceEur: number | null;
   operation: Operation | null;
   propertyType: PropertyType | null;
   bedrooms: number | null;
   bathrooms: number | null;
   parking: number | null;
-  areaM2: number | null;
-  landM2: number | null;
+  builtM2: number | null;
+  plotM2: number | null;
   /** Free-text location as printed on the page; matched to a location later. */
   locationText: string | null;
   imageUrls: string[];
@@ -145,59 +144,20 @@ function firstNumber(...values: unknown[]): number | null {
 // Moved to normalize.ts so the CSV adapter shares it; re-exported for callers.
 export { parseAmount } from "./normalize";
 
-function detectCurrency(text: string): "USD" | "PYG" | null {
-  if (/\b(usd|u\$s|us\$|dólares|dolares)\b/i.test(text)) return "USD";
-  if (/\b(pyg|gs\.?|guaran[ií]es)\b/i.test(text)) return "PYG";
-  if (/\$/.test(text)) return "USD"; // bare $ in this market means dollars
-  return null;
-}
-
 /**
- * Currency marker within ~40 chars of where this exact amount is printed.
- * Scanning the whole page instead attached USD to a Gs price because "US$"
- * appeared *somewhere* — turning Gs 850.000.000 into price_usd 850,000,000
- * (audit F44). No nearby marker → null, and the form asks the agent.
+ * Whether a printed amount near this match actually reads as EUR. This
+ * portal is EUR-only (docs/SPAIN-PORTAL-DESIGN.md §2), so unlike the
+ * inherited USD/PYG detector this returns a boolean rather than a currency:
+ * a non-EUR marker (£, $, kr) next to the number means the page is not
+ * denominated the way this portal expects, and the caller should leave the
+ * price blank rather than import a foreign-currency figure as EUR.
  */
-function currencyNearAmount(text: string, amount: number): "USD" | "PYG" | null {
-  const re = /\d[\d.,]{2,}/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text))) {
-    const parsed = parseAmount(m[0]);
-    if (parsed == null || Math.abs(parsed - amount) > 0.5) continue;
-    const ctx = text.slice(
-      Math.max(0, m.index - 40),
-      m.index + m[0].length + 40,
-    );
-    const c = detectCurrency(ctx);
-    if (c) return c;
-  }
-  return null;
+function looksLikeEur(text: string): boolean {
+  if (/[£$]|kr\b|usd|gbp|sek/i.test(text)) return false;
+  return /€|eur\b/i.test(text) || true; // no marker at all is the common case on Spanish sites
 }
 
-/** es-PY vocabulary → our enums. Order matters: "alquiler temporal" first. */
-function detectOperation(text: string): Operation | null {
-  const t = text.toLowerCase();
-  if (/alquiler\s+temporal|temporada|por\s+d[ií]a/.test(t)) return "alquiler_temporal";
-  if (/\balquil|\barrend|\brenta\b|for\s+rent/.test(t)) return "alquiler";
-  if (/\bventa\b|\bvende\b|en\s+venta|for\s+sale/.test(t)) return "venta";
-  return null;
-}
-
-function detectPropertyType(text: string): PropertyType | null {
-  const t = text.toLowerCase();
-  // Most specific first — "casa quinta" is a quinta, not a casa.
-  if (/\bquinta/.test(t)) return "quinta";
-  if (/\bd[úu]plex/.test(t)) return "duplex";
-  if (/\bdepto\b|\bdepartamento|\bapartamento|\bapart\b|\bpiso\b/.test(t)) return "departamento";
-  if (/\bterreno|\blote\b|\blotes\b|\bfracci[óo]n/.test(t)) return "terreno";
-  if (/\bdep[óo]sito|\bgalp[óo]n/.test(t)) return "deposito";
-  if (/\boficina/.test(t)) return "oficina";
-  if (/\blocal\b|\bcomercial|\bsal[óo]n\b/.test(t)) return "comercial";
-  if (/\bcasa\b|\bvivienda\b|\bchalet\b/.test(t)) return "casa";
-  return null;
-}
-
-/** "3 dormitorios", "3 dorm.", "3 hab" → 3 */
+/** "3 dormitorios", "3 hab", "3 sovrum" → 3 */
 function countNear(text: string, words: string[]): number | null {
   for (const word of words) {
     const m = text.match(new RegExp(`(\\d{1,2})\\s*(?:${word})`, "i"));
@@ -227,6 +187,35 @@ function absoluteUrl(candidate: string, base: string): string | null {
   } catch {
     return null;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Spanish vocabulary → our enums                                      */
+/* ------------------------------------------------------------------ */
+
+/** Order matters: "alquiler vacacional" first (more specific than "alquiler"). */
+function detectOperation(text: string): Operation | null {
+  const t = text.toLowerCase();
+  if (/alquiler\s+vacacional|temporada|por\s+d[ií]a|vacation\s+rental/.test(t))
+    return "alquiler_vacacional";
+  if (/\balquil|\barrend|\brenta\b|for\s+rent|\bto\s+let\b/.test(t)) return "alquiler";
+  if (/\bventa\b|\bvende\b|en\s+venta|for\s+sale/.test(t)) return "venta";
+  return null;
+}
+
+function detectPropertyType(text: string): PropertyType | null {
+  const t = text.toLowerCase();
+  // Most specific first — "casa de campo" reads as finca, an ático is a
+  // distinct tier from a plain apartamento.
+  if (/\b[áa]tico/.test(t)) return "atico";
+  if (/\bd[úu]plex/.test(t)) return "duplex";
+  if (/\badosad|\btownhouse/.test(t)) return "adosado";
+  if (/\bfinca|\bcortijo|\bmasía|\bcasa\s+de\s+campo|\bcountry\s+house/.test(t)) return "finca";
+  if (/\bapartamento|\bpiso\b|\bflat\b|\bapartment\b/.test(t)) return "apartamento";
+  if (/\bterreno|\bsolar\b|\bparcela\b|\bplot\b|\bland\b/.test(t)) return "terreno";
+  if (/\blocal\b|\bcomercial|\bcommercial\b/.test(t)) return "local";
+  if (/\bvilla\b|\bchalet\b|\bcasa\b|\bhouse\b/.test(t)) return "villa";
+  return null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -266,7 +255,7 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
     metaContent(html, "og:description", "description", "twitter:description"),
   );
 
-  const priceAmount = firstNumber(
+  const priceRaw = firstNumber(
     offer?.price,
     (offer?.priceSpecification as Record<string, unknown> | undefined)?.price,
     productish?.price,
@@ -278,25 +267,16 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
     (offer?.priceSpecification as Record<string, unknown> | undefined)?.priceCurrency,
     metaContent(html, "product:price:currency", "og:price:currency"),
   );
-  const priceCurrency: "USD" | "PYG" | null =
-    currencyRaw && /usd|dollar/i.test(currencyRaw)
-      ? "USD"
-      : currencyRaw && /pyg|guaran/i.test(currencyRaw)
-        ? "PYG"
-        : null;
+  // Structured-data currency, when present, must say EUR — anything else means
+  // this page is not priced the way this EUR-only portal expects.
+  const structuredIsEur = currencyRaw == null || /eur\b/i.test(currencyRaw);
 
-  // Price from visible text as a fallback: the first amount next to a currency
-  // marker, which on a listing page is the headline price.
+  // Price from visible text as a fallback: the first amount next to a €
+  // marker, which on a Spanish listing page is the headline price.
   let fallbackPrice: number | null = null;
-  let fallbackCurrency: "USD" | "PYG" | null = null;
-  if (priceAmount == null) {
-    const m = text.match(
-      /(?:US\$|U\$S|USD|Gs\.?|₲|\$)\s*([\d][\d.,]{2,})|([\d][\d.,]{5,})\s*(?:Gs\.?|guaran[ií]es|USD)/i,
-    );
-    if (m) {
-      fallbackPrice = parseAmount(m[1] ?? m[2] ?? "");
-      fallbackCurrency = detectCurrency(m[0]);
-    }
+  if (priceRaw == null) {
+    const m = text.match(/€\s*([\d][\d.,]{2,})|([\d][\d.,]{5,})\s*€/);
+    if (m) fallbackPrice = parseAmount(m[1] ?? m[2] ?? "");
     if (fallbackPrice == null) notes.push("No pudimos leer el precio — completalo a mano.");
   }
 
@@ -329,10 +309,10 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
   const propertyType = detectPropertyType(headline) ?? detectPropertyType(signal);
   if (!propertyType) notes.push("No pudimos deducir el tipo de propiedad — elegilo vos.");
 
-  const areaM2 =
-    areaFrom(text, ["superficie cubierta", "cubierta", "construidos?", "sup\\.? cub"]) ??
+  const builtM2 =
+    areaFrom(text, ["superficie construida", "construidos?", "sup\\.? construida"]) ??
     areaFrom(text);
-  const landM2 = areaFrom(text, ["terreno", "lote", "superficie total", "sup\\.? total"]);
+  const plotM2 = areaFrom(text, ["parcela", "solar", "superficie total", "sup\\.? total"]);
 
   const locationText = firstString(
     (productish?.address as Record<string, unknown> | undefined)?.addressLocality,
@@ -340,30 +320,25 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
     metaContent(html, "og:locality", "geo.placename"),
   );
 
-  const finalAmount = priceAmount ?? fallbackPrice;
-  // Never from the page at large: only structured data, the marker the price
-  // was matched against, or a marker printed next to the amount count (F44).
-  const finalCurrency =
-    priceCurrency ??
-    fallbackCurrency ??
-    (finalAmount != null ? currencyNearAmount(text, finalAmount) : null);
-  if (finalAmount != null && finalCurrency == null) {
-    notes.push("No pudimos determinar la moneda del precio — confirmala.");
+  const finalAmount = priceRaw ?? fallbackPrice;
+  const finalIsEur = priceRaw != null ? structuredIsEur : looksLikeEur(text);
+  const priceEur = finalAmount != null && finalIsEur ? finalAmount : null;
+  if (finalAmount != null && priceEur == null) {
+    notes.push("El precio no parece estar en euros — confirmalo a mano.");
   }
 
   return {
     sourceUrl,
     title,
     description,
-    priceAmount: finalAmount,
-    priceCurrency: finalCurrency,
+    priceEur,
     operation,
     propertyType,
-    bedrooms: countNear(text, ["dormitorios?", "dorm\\.?", "habitaciones?", "hab\\.?", "cuartos?"]),
-    bathrooms: countNear(text, ["ba[ñn]os?", "sanitarios?"]),
-    parking: countNear(text, ["cocheras?", "garages?", "garajes?", "estacionamientos?"]),
-    areaM2,
-    landM2,
+    bedrooms: countNear(text, ["dormitorios?", "sovrum", "habitaciones?", "hab\\.?", "bedrooms?"]),
+    bathrooms: countNear(text, ["ba[ñn]os?", "bathrooms?"]),
+    parking: countNear(text, ["plazas? de garaje", "parking", "garajes?"]),
+    builtM2,
+    plotM2,
     locationText,
     imageUrls: images.slice(0, 20),
     notes,
