@@ -3,9 +3,9 @@ services:
   mysql:
     image: mysql:8.4
     environment:
-      MYSQL_DATABASE: propia
-      MYSQL_USER: propia
-      MYSQL_PASSWORD: propia
+      MYSQL_DATABASE: ftse
+      MYSQL_USER: ftse
+      MYSQL_PASSWORD: ftse
       MYSQL_ROOT_PASSWORD: root
     ports:
       - "3306:3306"

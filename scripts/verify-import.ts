@@ -16,7 +16,7 @@
  *     Pure checks only — hashing and parsing. No database needed.
  *
  *   docker compose up -d && npm run db:migrate
- *   DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia" npm run verify:import
+ *   DATABASE_URL="mysql://ftse:ftse@127.0.0.1:3306/ftse" npm run verify:import
  *     Also exercises plan → commit → re-run → rollback against real SQL.
  *
  * Refuses a non-local DATABASE_URL: it creates and deletes listings.

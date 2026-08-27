@@ -26,7 +26,7 @@ export interface RecentEntry {
   viewedAt: number;
 }
 
-const KEY = "propia:recently-viewed";
+const KEY = "ftse:recently-viewed";
 const MAX = 8;
 
 export function readRecent(): RecentEntry[] {

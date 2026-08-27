@@ -11,7 +11,7 @@
  *
  *   docker compose up -d
  *   npm run db:migrate
- *   DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia" npm run verify:scopes
+ *   DATABASE_URL="mysql://ftse:ftse@127.0.0.1:3306/ftse" npm run verify:scopes
  *
  * Cleans up the rows it created, so it is safe to re-run.
  */
