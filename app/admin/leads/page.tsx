@@ -50,8 +50,12 @@ const ROUTED_LABEL: Record<string, string> = {
   developer: "Desarrolladora",
 };
 
-function waReplyHref(whatsapp: string): string {
-  return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
+function waReplyHref(phone: string | null): string | null {
+  return phone ? waLink(phone) ?? `https://wa.me/${phone.replace(/\D/g, "")}` : null;
+}
+
+function mailReplyHref(email: string): string {
+  return `mailto:${email}`;
 }
 
 /**
@@ -60,13 +64,13 @@ function waReplyHref(whatsapp: string): string {
  * founder's to answer directly.
  */
 function forwardHref(lead: AdminLeadRow) {
-  if (!lead.ownerWhatsapp) return null;
+  if (!lead.ownerPhone) return null;
   const href = waLink(
-    lead.ownerWhatsapp,
+    lead.ownerPhone,
     svPanel.forwardLeadMessage({
       listingTitle: lead.listingTitle,
       name: lead.name,
-      whatsapp: lead.whatsapp,
+      whatsapp: lead.phone ?? lead.email,
       message: lead.message,
     }),
   );
@@ -190,14 +194,14 @@ export default async function AdminLeadsPage({
                       {LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}
                     </span>
                     <span>{formatWhen(lead.createdAt)}</span>
-                    <span>{lead.whatsapp}</span>
-                    {lead.email ? <span>{lead.email}</span> : null}
+                    <span>{lead.email}</span>
+                    {lead.phone ? <span>{lead.phone}</span> : null}
                     {/* Who owns the follow-up: an agency, a particular
                         seller who has no panel yet, or you. */}
                     <span>
                       {lead.agencyName ??
-                        (lead.ownerWhatsapp
-                          ? `${svPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
+                        (lead.ownerPhone
+                          ? `${svPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerPhone}`
                           : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
@@ -220,12 +224,22 @@ export default async function AdminLeadsPage({
                 <div className="panel-card__actions">
                   <a
                     className="panel-btn panel-btn--whatsapp"
-                    href={waReplyHref(lead.whatsapp)}
+                    href={mailReplyHref(lead.email)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     {svPanel.contactLead}
                   </a>
+                  {waReplyHref(lead.phone) && (
+                    <a
+                      className="panel-btn"
+                      href={waReplyHref(lead.phone)!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      WhatsApp
+                    </a>
+                  )}
                   {/* A particular seller has no inbox of their own (PLAN.md
                       D8), so the lead only reaches them if it is forwarded. */}
                   {forwardHref(lead)}

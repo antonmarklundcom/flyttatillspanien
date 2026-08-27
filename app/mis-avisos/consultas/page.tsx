@@ -25,8 +25,8 @@ const LEAD_TYPE_LABEL: Record<string, string> = {
 };
 
 /** wa.me deep link to reply to the lead's own WhatsApp number. */
-function waReplyHref(whatsapp: string): string {
-  return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
+function mailReplyHref(email: string): string {
+  return `mailto:${email}`;
 }
 
 function formatWhen(d: Date): string {
@@ -90,7 +90,7 @@ export default async function OwnerLeadsPage() {
                   </div>
                   <a
                     className="panel-btn panel-btn--whatsapp"
-                    href={waReplyHref(lead.whatsapp)}
+                    href={mailReplyHref(lead.email)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

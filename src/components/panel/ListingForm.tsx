@@ -3,12 +3,22 @@ import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PublishLocation } from "@/lib/publish-queries";
 import type { EditableListing, ListingStatusValue } from "@/lib/listing-edit";
 
-/** Operation labels — nouns, never verb forms (ARCHITECTURE.md §4). */
+/** Operation labels — nouns, never verb forms. */
 const OPERATION_OPTIONS = [
-  { value: "venta", label: "Venta" },
-  { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_temporal", label: "Alquiler temporal" },
+  { value: "venta", label: "Köp" },
+  { value: "alquiler", label: "Uthyrning" },
+  { value: "alquiler_vacacional", label: "Korttidshyra" },
 ] as const;
+
+const ENERGY_RATING_OPTIONS = ["A", "B", "C", "D", "E", "F", "G", "en_tramite", "exento"] as const;
+const LEGAL_STATUS_OPTIONS = [
+  "escritura_registrada",
+  "obra_nueva_lpo",
+  "sin_lpo",
+  "en_regularizacion",
+  "desconocido",
+] as const;
+const CHARGES_STATUS_OPTIONS = ["libre_de_cargas", "con_hipoteca", "con_cargas", "desconocido"] as const;
 
 /**
  * The listing edit form, shared verbatim by /admin/propiedades/[id] and
@@ -90,28 +100,16 @@ export function ListingForm({
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">{svPanel.listingPriceLabel}</span>
+          <span className="auth-field__label">{svPanel.listingPriceLabel} (€)</span>
           <input
             className="auth-field__input"
-            name="priceAmount"
+            name="priceEur"
             type="number"
             min="1"
             step="any"
-            defaultValue={listing.priceAmount}
+            defaultValue={listing.priceEur}
             required
           />
-        </label>
-
-        <label className="panel-form__field">
-          <span className="auth-field__label">{svPanel.listingCurrencyLabel}</span>
-          <select
-            className="panel-select"
-            name="priceCurrency"
-            defaultValue={listing.priceCurrency}
-          >
-            <option value="USD">USD</option>
-            <option value="PYG">Gs</option>
-          </select>
         </label>
 
         <label className="panel-form__field">
@@ -151,11 +149,11 @@ export function ListingForm({
           <span className="auth-field__label">{svPanel.listingAreaLabel}</span>
           <input
             className="auth-field__input"
-            name="areaM2"
+            name="builtM2"
             type="number"
             min="0"
             step="any"
-            defaultValue={listing.areaM2 ?? ""}
+            defaultValue={listing.builtM2 ?? ""}
           />
         </label>
 
@@ -163,11 +161,92 @@ export function ListingForm({
           <span className="auth-field__label">{svPanel.listingLandLabel}</span>
           <input
             className="auth-field__input"
-            name="landM2"
+            name="plotM2"
             type="number"
             min="0"
             step="any"
-            defaultValue={listing.landM2 ?? ""}
+            defaultValue={listing.plotM2 ?? ""}
+          />
+        </label>
+
+        <label className="panel-form__field" style={{ flexBasis: "260px" }}>
+          <span className="auth-field__label">Referencia catastral</span>
+          <input
+            className="auth-field__input"
+            name="referenciaCatastral"
+            type="text"
+            maxLength={20}
+            defaultValue={listing.referenciaCatastral ?? ""}
+          />
+        </label>
+
+        <label className="panel-form__field">
+          <span className="auth-field__label">Energiklass</span>
+          <select
+            className="panel-select"
+            name="energyRating"
+            defaultValue={listing.energyRating ?? ""}
+          >
+            <option value="">—</option>
+            {ENERGY_RATING_OPTIONS.map((r) => (
+              <option key={r} value={r}>
+                {r === "en_tramite" ? "Ansökt" : r === "exento" ? "Undantagen" : r}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="panel-form__field">
+          <span className="auth-field__label">Lagfartsstatus</span>
+          <select
+            className="panel-select"
+            name="legalStatus"
+            defaultValue={listing.legalStatus}
+          >
+            {LEGAL_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="panel-form__field">
+          <span className="auth-field__label">Belastningar</span>
+          <select
+            className="panel-select"
+            name="chargesStatus"
+            defaultValue={listing.chargesStatus}
+          >
+            {CHARGES_STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="panel-form__field">
+          <span className="auth-field__label">IBI (€/år)</span>
+          <input
+            className="auth-field__input"
+            name="ibiAnnualEur"
+            type="number"
+            min="0"
+            step="any"
+            defaultValue={listing.ibiAnnualEur ?? ""}
+          />
+        </label>
+
+        <label className="panel-form__field">
+          <span className="auth-field__label">Samfällighetsavgift (€/mån)</span>
+          <input
+            className="auth-field__input"
+            name="communityMonthlyEur"
+            type="number"
+            min="0"
+            step="any"
+            defaultValue={listing.communityMonthlyEur ?? ""}
           />
         </label>
 
@@ -213,16 +292,6 @@ export function ListingForm({
               </option>
             ))}
           </select>
-        </label>
-
-        <label className="panel-form__field panel-form__check">
-          <input
-            type="checkbox"
-            name="foreignExposure"
-            value="1"
-            defaultChecked={listing.foreignExposure}
-          />
-          <span>{svPanel.listingForeignLabel}</span>
         </label>
 
         <div className="panel-form__field panel-form__field--action">

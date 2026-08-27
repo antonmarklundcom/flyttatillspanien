@@ -4,7 +4,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { svPrecios } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
-import { formatUsd } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { getCityPrices, MIN_RELIABLE_SAMPLE } from "@/lib/precios-queries";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { categoryUrl } from "@/lib/urls";
@@ -16,9 +16,9 @@ import type { Operation } from "@/lib/import/types";
 export const dynamic = "force-dynamic";
 
 const OPERATION_LABEL: Record<Operation, string> = {
-  venta: "Venta",
-  alquiler: "Alquiler",
-  alquiler_temporal: "Alquiler temporal",
+  venta: "Köp",
+  alquiler: "Uthyrning",
+  alquiler_vacacional: "Korttidshyra",
 };
 
 type Params = { params: Promise<{ ciudad: string }> };
@@ -105,13 +105,13 @@ export default async function CityPricesPage({ params }: Params) {
                   <td>{PROPERTY_TYPE_LABELS[cell.propertyType]}</td>
                   <td>{OPERATION_LABEL[cell.operation]}</td>
                   <td className="panel-table__num">
-                    {cell.medianPriceUsd != null
-                      ? formatUsd(cell.medianPriceUsd)
+                    {cell.medianPriceEur != null
+                      ? formatEur(cell.medianPriceEur)
                       : "—"}
                   </td>
                   <td className="panel-table__num">
-                    {cell.medianPriceM2Usd != null
-                      ? formatUsd(cell.medianPriceM2Usd)
+                    {cell.medianPriceM2Eur != null
+                      ? formatEur(cell.medianPriceM2Eur)
                       : "—"}
                   </td>
                   <td className="panel-table__num">
