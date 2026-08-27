@@ -17,14 +17,14 @@ import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Proyectos y obra nueva";
+const TITLE = "Nyproduktion";
 const DESCRIPTION =
-  "Edificios, condominios, barrios cerrados y loteamientos en desarrollo en España: en pozo, en construcción y con entrega inmediata.";
+  "Nybyggda lägenheter, villaområden och tomtprojekt under uppförande i Spanien: i projektstadiet, under byggnation eller klara för inflyttning.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} en España`,
+    title: `${TITLE} i Spanien`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/proyectos` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
@@ -34,23 +34,23 @@ export async function generateMetadata(): Promise<Metadata> {
 const WHY = [
   {
     icon: "💸",
-    title: "Precio de preventa",
-    text: "Comprar en pozo suele costar bastante menos que la unidad terminada, y la diferencia se capitaliza a medida que avanza la obra.",
+    title: "Förhandsköpspris",
+    text: "Att köpa i projektstadiet kostar oftast betydligt mindre än den färdiga enheten, och mellanskillnaden byggs in i värdet allt eftersom bygget fortskrider.",
   },
   {
     icon: "🗓",
-    title: "Plan de pagos de la desarrolladora",
-    text: "Muchos proyectos financian la etapa de construcción en cuotas, sin banco de por medio hasta la entrega.",
+    title: "Byggherrens betalningsplan",
+    text: "Många projekt finansierar byggskedet i delbetalningar, utan bank inblandad fram till tillträdet.",
   },
   {
     icon: "🎨",
-    title: "Elegís la unidad",
-    text: "Cuanto antes entrás, más opciones de piso, orientación y terminaciones quedan disponibles.",
+    title: "Du väljer enheten",
+    text: "Ju tidigare du går in, desto fler val av våningsplan, läge och materialval finns kvar.",
   },
   {
     icon: "🔍",
-    title: "Qué verificar",
-    text: "Trayectoria de la desarrolladora, permiso de construcción, fecha de entrega contractual y qué pasa si se atrasa. Pedí siempre el contrato antes de reservar.",
+    title: "Vad du bör kontrollera",
+    text: "Byggherrens meritlista, bygglov, avtalat tillträdesdatum och vad som gäller vid förseningar. Be alltid om avtalet innan du reserverar.",
   },
 ];
 
@@ -66,7 +66,7 @@ export default async function ProyectosPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/proyectos" },
           ]),
           ...(projects.length > 0
@@ -84,17 +84,17 @@ export default async function ProyectosPage() {
       />
 
       <PageHero
-        kicker="Obra nueva"
-        title="Proyectos en desarrollo en España"
-        subtitle="Departamentos en pozo, condominios, barrios cerrados y loteamientos — con la etapa de obra, la fecha de entrega y el precio desde el que arrancan las unidades."
+        kicker="Nyproduktion"
+        title="Projekt under uppförande i Spanien"
+        subtitle="Lägenheter i projektstadiet, villaområden och tomtprojekt — med byggskede, tillträdesdatum och priset enheterna börjar på."
       />
 
       <Section>
         {projects.length === 0 ? (
           <div className="mk-empty">
-            <p>Todavía no hay proyectos publicados en el portal.</p>
+            <p>Det finns inga publicerade projekt på portalen ännu.</p>
             <Link className="mk-btn mk-btn--accent" href="/contacto">
-              Publicar mi proyecto
+              Publicera mitt projekt
             </Link>
           </div>
         ) : (
@@ -109,8 +109,8 @@ export default async function ProyectosPage() {
       {developers.length > 0 && (
         <Section
           tone="muted"
-          title="Desarrolladoras"
-          subtitle="Quiénes están construyendo los proyectos publicados."
+          title="Byggherrar"
+          subtitle="Vilka som bygger de publicerade projekten."
         >
           <div className="mk-devs">
             {developers.map((d) => (
@@ -133,7 +133,7 @@ export default async function ProyectosPage() {
                 <div className="mk-dev__name">{d.name}</div>
                 <div className="mk-dev__count">
                   {d.projectCount}{" "}
-                  {d.projectCount === 1 ? "proyecto" : "proyectos"}
+                  {d.projectCount === 1 ? "projekt" : "projekt"}
                 </div>
               </div>
             ))}
@@ -141,15 +141,15 @@ export default async function ProyectosPage() {
         </Section>
       )}
 
-      <Section title="Comprar en pozo: lo que conviene saber">
+      <Section title="Att köpa i projektstadiet: bra att veta">
         <FeatureGrid items={WHY} columns={4} />
       </Section>
 
       <CtaBand
-        title="¿Desarrollás proyectos?"
-        text="Publicá tu emprendimiento con todas sus unidades, plan de pagos y avance de obra."
-        primary={{ label: "Publicar mi proyecto", href: "/contacto" }}
-        secondary={{ label: "Ver planes", href: "/planes" }}
+        title="Bygger du projekt?"
+        text="Publicera ditt projekt med alla enheter, betalningsplan och byggframsteg."
+        primary={{ label: "Publicera mitt projekt", href: "/contacto" }}
+        secondary={{ label: "Se planer", href: "/planes" }}
       />
     </main>
   );

@@ -40,11 +40,11 @@ export default async function NotFound() {
         🏡
       </div>
       <h1 style={{ fontSize: 26, margin: "16px 0 8px", color: tokens.color.primary }}>
-        No encontramos propiedades para esa búsqueda
+        Vi hittade inga bostäder för den sökningen
       </h1>
       <p style={{ fontSize: 16, color: tokens.color.inkSecondary, lineHeight: 1.6 }}>
-        Puede que no haya publicaciones disponibles en esa zona o combinación
-        todavía. Probá con otra ciudad o tipo de propiedad.
+        Det kan vara så att det inte finns några objekt i det området eller
+        med den kombinationen ännu. Prova en annan stad eller bostadstyp.
       </p>
 
       <div style={{ textAlign: "left" }}>
@@ -60,7 +60,7 @@ export default async function NotFound() {
           color: tokens.color.inkSecondary,
         }}
       >
-        BÚSQUEDAS POPULARES
+        POPULÄRA SÖKNINGAR
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
         {POPULAR_SEARCHES.map((s) => (
@@ -93,7 +93,7 @@ export default async function NotFound() {
           color: tokens.color.primary,
         }}
       >
-        Volver al inicio
+        Tillbaka till startsidan
       </Link>
     </main>
   );

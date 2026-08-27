@@ -13,8 +13,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Cómo funciona";
-const DESCRIPTION = (brand: string) => `Cómo comprar, alquilar y publicar una propiedad en ${brand}: buscar por zona, comparar precios de referencia, ver la cuota estimada y contactar directo por WhatsApp.`;
+const TITLE = "Så fungerar det";
+const DESCRIPTION = (brand: string) => `Så köper, hyr och publicerar du en bostad på ${brand}: sök per område, jämför referenspriser, se en uppskattad total köpkostnad och kontakta säljaren direkt via WhatsApp.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
@@ -28,61 +28,61 @@ export async function generateMetadata(): Promise<Metadata> {
 
 const BUY_STEPS = [
   {
-    title: "Buscá por zona, tipo y presupuesto",
-    text: "Elegí ciudad o barrio y filtrá por tipo de propiedad, dormitorios, superficie y rango de precio. Los resultados se pueden ver también sobre el mapa.",
+    title: "Sök på område, typ och budget",
+    text: "Välj stad eller kommun och filtrera på bostadstyp, antal sovrum, boarea och prisintervall. Resultaten går även att se på kartan.",
   },
   {
-    title: "Compará con el precio de la zona",
-    text: "Antes de decidir, mirá la mediana de precio por m² de esa ciudad en la sección de precios. Sirve para saber si el aviso está caro, barato o en línea con el mercado.",
+    title: "Jämför med områdets prisnivå",
+    text: "Innan du bestämmer dig, kolla medianpriset per kvadratmeter för orten under Priser. Det visar om objektet är dyrt, billigt eller i linje med marknaden.",
   },
   {
-    title: "Mirá la cuota estimada",
-    text: "En cada propiedad en venta mostramos la cuota mensual aproximada según las condiciones de financiamiento vigentes, para que sepas de entrada si el número te cierra.",
+    title: "Se den uppskattade köpkostnaden",
+    text: "På varje bostad till salu visar vi en uppskattning av vad som tillkommer utöver utropspriset — skatt (ITP eller IVA/AJD), notarie, lagfart och juridisk hjälp — så att du vet ungefär vad totalen landar på.",
   },
   {
-    title: "Contactá directo por WhatsApp",
-    text: "Escribile a quien publicó desde la misma ficha. El mensaje va con el enlace de la propiedad incluido, así no hay confusión sobre cuál es.",
+    title: "Kontakta säljaren direkt via WhatsApp",
+    text: "Skriv till den som publicerat objektet från samma sida. Meddelandet innehåller redan länken till bostaden, så det aldrig är oklart vilken det gäller.",
   },
   {
-    title: "Verificá la documentación antes de pagar",
-    text: "Pedí título, certificado de condominio si corresponde y estado de deudas municipales, y hacé la verificación con un escribano antes de cualquier seña.",
+    title: "Kontrollera dokumentationen innan du betalar",
+    text: "Be om lagfart (nota simple), eventuellt intyg om samfällighetsavgifter och att det inte finns obetalda kommunala skulder, och låt en notarie eller jurist granska allt innan du lämnar någon handpenning.",
   },
 ];
 
 const SELL_STEPS = [
   {
-    title: "Estimá el precio",
-    text: "Usá la tasación online gratuita para tener un rango de partida basado en los avisos publicados de tu zona y tipo de propiedad.",
+    title: "Uppskatta priset",
+    text: "Använd den kostnadsfria värderingen online för att få ett startintervall baserat på publicerade objekt i ditt område och av din bostadstyp.",
   },
   {
-    title: "Creá tu cuenta y cargá el aviso",
-    text: "Registro con tu WhatsApp y carga guiada: fotos, ubicación en el mapa, superficie, ambientes y precio. Toma unos minutos.",
+    title: "Skapa ditt konto och lägg upp annonsen",
+    text: "Registrera dig med din e-postadress och fyll i uppgifterna steg för steg: bilder, plats på kartan, boarea, antal rum och pris. Tar bara några minuter.",
   },
   {
-    title: "Publicá gratis",
-    text: "El aviso queda visible en las búsquedas del portal y, con el tiempo, en Google. Sin costo de publicación y sin comisión sobre la operación.",
+    title: "Publicera gratis",
+    text: "Annonsen blir synlig i portalens sökningar och, med tiden, på Google. Ingen publiceringsavgift och ingen provision på affären.",
   },
   {
-    title: "Recibí y respondé consultas",
-    text: "Las consultas llegan a tu WhatsApp y quedan registradas en tu panel, junto con las visitas que tuvo cada aviso.",
+    title: "Ta emot och besvara förfrågningar",
+    text: "Förfrågningarna når dig direkt, och de sparas i din panel tillsammans med hur många som besökt annonsen.",
   },
 ];
 
 const RENT_TIPS = [
   {
     icon: "📄",
-    title: "Qué suelen pedir",
-    text: "En España lo habitual es un depósito de garantía, uno o dos meses adelantados y un garante propietario o seguro de caución. Confirmalo con el propietario antes de reservar.",
+    title: "Vad som brukar krävas",
+    text: "I Spanien är det vanligt med en deposition, en eller två månadshyror i förskott och en garant eller borgensförsäkring. Bekräfta alltid detta med hyresvärden innan du bokar.",
   },
   {
     icon: "🧾",
-    title: "Qué mirar en el contrato",
-    text: "Plazo, ajuste anual, quién paga expensas y servicios, y en qué estado se entrega y se devuelve el inmueble. Pedí inventario con fotos al recibir.",
+    title: "Vad du ska titta på i kontraktet",
+    text: "Hyrestid, årlig uppräkning, vem som betalar samfällighetsavgift och drift, samt i vilket skick bostaden lämnas över och ska återlämnas. Be om en bildinventering vid tillträdet.",
   },
   {
     icon: "🏢",
-    title: "Costos que se olvidan",
-    text: "Expensas del edificio, IVA si el propietario factura, y en departamentos la cochera y el baulera pueden cobrarse aparte.",
+    title: "Kostnader som glöms bort",
+    text: "Samfällighetsavgift, moms om hyresvärden fakturerar som näringsidkare, och i lägenheter kan garage och förråd tillkomma separat.",
   },
 ];
 
@@ -94,22 +94,22 @@ export default async function ComoFuncionaPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/como-funciona" },
           ]),
         ]}
       />
 
       <PageHero
-        kicker="Guía"
-        title="Cómo funciona el portal"
-        subtitle="Tres caminos según lo que vengas a hacer: comprar, alquilar o publicar. Todo el proceso es gratuito y el contacto siempre es directo entre las partes."
+        kicker="Guide"
+        title="Så fungerar portalen"
+        subtitle="Tre vägar beroende på vad du ska göra: köpa, hyra eller publicera. Hela processen är kostnadsfri och kontakten sker alltid direkt mellan parterna."
       />
 
       <Section
         id="comprar"
-        title="Si venís a comprar"
-        subtitle="De la búsqueda a la firma, con los pasos donde conviene frenar y verificar."
+        title="Ska du köpa"
+        subtitle="Från sökning till signering, med stegen där det lönar sig att stanna upp och kontrollera."
       >
         <StepList steps={BUY_STEPS} />
       </Section>
@@ -117,25 +117,25 @@ export default async function ComoFuncionaPage() {
       <Section
         id="alquilar"
         tone="muted"
-        title="Si venís a alquilar"
-        subtitle="La búsqueda funciona igual que en venta. Lo que cambia es lo que conviene tener listo antes de reservar."
+        title="Ska du hyra"
+        subtitle="Sökningen fungerar likadant som för köp. Det som skiljer är vad som är bra att ha klart innan du bokar."
       >
         <FeatureGrid items={RENT_TIPS} />
       </Section>
 
       <Section
         id="publicar"
-        title="Si venís a publicar"
-        subtitle="Para propietarios particulares. Si sos inmobiliaria o agente, tenés cuenta profesional con carga masiva y perfil público."
+        title="Ska du publicera"
+        subtitle="För privatpersoner. Är du mäklarbyrå eller agent finns ett eget professionellt konto med massimport och offentlig profil."
       >
         <StepList steps={SELL_STEPS} />
       </Section>
 
       <CtaBand
-        title="Empezá por donde te sirva"
-        text="Buscar, tasar o publicar — las tres cosas son gratis."
-        primary={{ label: "Ver propiedades", href: "/kopa/marbella" }}
-        secondary={{ label: "Publicar la mía", href: "/publicar" }}
+        title="Börja där det passar dig"
+        text="Att söka, värdera eller publicera — alla tre är gratis."
+        primary={{ label: "Se bostäder", href: "/kopa/marbella" }}
+        secondary={{ label: "Publicera min bostad", href: "/publicar" }}
       />
     </main>
   );

@@ -11,13 +11,13 @@ import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Directorio de inmobiliarias";
-const DESCRIPTION = (brand: string) => `Inmobiliarias y agentes que publican su cartera en ${brand}. Mirá sus propiedades activas y contactalos directo por WhatsApp.`;
+const TITLE = "Katalog över mäklarbyråer";
+const DESCRIPTION = (brand: string) => `Mäklarbyråer och agenter som publicerar sitt utbud på ${brand}. Se deras aktiva objekt och kontakta dem direkt via WhatsApp.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} de España`,
+    title: `${TITLE} i Spanien`,
     description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/inmobiliarias` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
@@ -35,7 +35,7 @@ export default async function InmobiliariasPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/inmobiliarias" },
           ]),
           ...(agencies.length > 0
@@ -53,20 +53,20 @@ export default async function InmobiliariasPage() {
       />
 
       <PageHero
-        kicker="Directorio"
-        title="Inmobiliarias y agentes en España"
-        subtitle="Cada perfil muestra la cartera activa de la inmobiliaria y su contacto directo. El sello verificado indica que confirmamos los datos de la oficina."
+        kicker="Katalog"
+        title="Mäklarbyråer och agenter i Spanien"
+        subtitle="Varje profil visar mäklarbyråns aktiva utbud och en direkt kontaktväg. Den verifierade-markeringen betyder att vi har bekräftat kontorets uppgifter."
       />
 
       <Section>
         {agencies.length === 0 ? (
           <div className="mk-empty">
             <p>
-              Todavía no hay inmobiliarias con cartera publicada en el
-              directorio.
+              Det finns inga mäklarbyråer med publicerat utbud i katalogen
+              ännu.
             </p>
             <Link className="mk-btn mk-btn--accent" href="/para-inmobiliarias">
-              Sumar mi inmobiliaria
+              Lägg till min mäklarbyrå
             </Link>
           </div>
         ) : (
@@ -100,7 +100,7 @@ export default async function InmobiliariasPage() {
                     <div className="mk-agency__name">
                       {a.name}
                       {a.isVerified && (
-                        <span className="mk-agency__verified" title="Verificada">
+                        <span className="mk-agency__verified" title="Verifierad">
                           ✓
                         </span>
                       )}
@@ -115,17 +115,17 @@ export default async function InmobiliariasPage() {
 
                 <div className="mk-agency__meta">
                   <span>
-                    {a.listingCount.toLocaleString("es-PY")}{" "}
-                    {a.listingCount === 1 ? "propiedad" : "propiedades"}
+                    {a.listingCount.toLocaleString("sv-SE")}{" "}
+                    {a.listingCount === 1 ? "bostad" : "bostäder"}
                   </span>
                   {a.agentCount > 0 && (
                     <span>
-                      {a.agentCount} {a.agentCount === 1 ? "agente" : "agentes"}
+                      {a.agentCount} {a.agentCount === 1 ? "agent" : "agenter"}
                     </span>
                   )}
                 </div>
 
-                <span className="mk-agency__cta">Ver cartera →</span>
+                <span className="mk-agency__cta">Se utbud →</span>
               </Link>
             ))}
           </div>
@@ -133,10 +133,10 @@ export default async function InmobiliariasPage() {
       </Section>
 
       <CtaBand
-        title="¿Tenés una inmobiliaria?"
-        text="Publicá tu cartera completa, obtené tu perfil verificado y recibí las consultas directo en tu WhatsApp."
-        primary={{ label: "Sumar mi inmobiliaria", href: "/para-inmobiliarias" }}
-        secondary={{ label: "Ver planes", href: "/planes" }}
+        title="Har du en mäklarbyrå?"
+        text="Publicera hela ditt utbud, få en verifierad profil och ta emot förfrågningarna direkt till din WhatsApp."
+        primary={{ label: "Lägg till min mäklarbyrå", href: "/para-inmobiliarias" }}
+        secondary={{ label: "Se planer", href: "/planes" }}
       />
     </main>
   );
