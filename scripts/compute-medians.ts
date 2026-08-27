@@ -45,9 +45,9 @@ async function main() {
       locationId: listings.locationId,
       propertyType: listings.propertyType,
       operation: listings.operation,
-      priceUsd: listings.priceUsd,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
+      priceUsd: listings.priceEur,
+      areaM2: listings.builtM2,
+      landM2: listings.plotM2,
     })
     .from(listings)
     .where(eq(listings.status, "published"));
@@ -75,16 +75,16 @@ async function main() {
 
   let written = 0;
   for (const b of buckets.values()) {
-    const medianPriceUsd = median(b.prices);
-    const medianPriceM2Usd = median(b.pricesM2);
+    const medianPriceEur = median(b.prices);
+    const medianPriceM2Eur = median(b.pricesM2);
     const values = {
       period,
       locationId: b.locationId,
       propertyType: b.propertyType,
       operation: b.operation,
-      medianPriceUsd: medianPriceUsd != null ? medianPriceUsd.toFixed(2) : null,
-      medianPriceM2Usd:
-        medianPriceM2Usd != null ? medianPriceM2Usd.toFixed(2) : null,
+      medianPriceEur: medianPriceEur != null ? medianPriceEur.toFixed(2) : null,
+      medianPriceM2Eur:
+        medianPriceM2Eur != null ? medianPriceM2Eur.toFixed(2) : null,
       sampleSize: b.prices.length,
       // The m² median's own sample — only listings that had an area. Reusing
       // the price count claimed 40 data points behind a number from 2 (F16).
@@ -96,8 +96,8 @@ async function main() {
       .values(values)
       .onDuplicateKeyUpdate({
         set: {
-          medianPriceUsd: values.medianPriceUsd,
-          medianPriceM2Usd: values.medianPriceM2Usd,
+          medianPriceEur: values.medianPriceEur,
+          medianPriceM2Eur: values.medianPriceM2Eur,
           sampleSize: values.sampleSize,
           sampleSizeM2: values.sampleSizeM2,
           source: values.source,

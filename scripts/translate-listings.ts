@@ -1,6 +1,6 @@
 /**
- * Fill `listings.title_en` / `description_en` from the Spanish source
- * (PLAN.md D6, Batch 3 layer 3).
+ * Fill `listings.title_sv` / `description_sv` from the Spanish source
+ * (docs/SPAIN-PORTAL-DESIGN.md §3.1).
  *
  *   DATABASE_URL="mysql://..." ANTHROPIC_API_KEY="sk-..." npm run cron:translate
  *   ... npm run cron:translate -- --dry            # what would run, no API calls
@@ -8,15 +8,15 @@
  *   ... npm run cron:translate -- --id 1234        # one listing, ignores the hash
  *   ... npm run cron:translate -- --force          # re-translate everything
  *
- * **What needs translating** is decided by `translation_hash`: the sha256 of
- * the title and Spanish description the stored English was made from. A row
+ * **What needs translating** is decided by `translation_hash_sv`: the sha256 of
+ * the title and Spanish description the stored Swedish was made from. A row
  * needs work when the hash is missing (never translated) or no longer matches
- * (the seller rewrote something). That is why the job can run on a schedule
+ * (the agency rewrote something). That is why the job can run on a schedule
  * and cost nothing on a quiet day, and why an edit is picked up without any
  * hook in the publish path — see src/lib/translate.ts for why there is no hook.
  *
  * Only `published` rows are translated: a draft is still being written, and a
- * removed listing is not on the English door either.
+ * removed listing does not need to render anywhere either.
  *
  * **Failure is per row and never fatal.** A row that throws keeps its old hash,
  * so the next run tries it again; the run reports every failure and exits
@@ -49,7 +49,7 @@ interface Candidate {
   id: number;
   title: string;
   descriptionEs: string | null;
-  translationHash: string | null;
+  translationHashSv: string | null;
 }
 
 /**
@@ -68,7 +68,7 @@ async function* candidates(): AsyncGenerator<Candidate> {
         id: listings.id,
         title: listings.title,
         descriptionEs: listings.descriptionEs,
-        translationHash: listings.translationHash,
+        translationHashSv: listings.translationHashSv,
       })
       .from(listings)
       .where(
@@ -86,7 +86,7 @@ async function* candidates(): AsyncGenerator<Candidate> {
 
     for (const row of rows) {
       const wanted = translationSourceHash(row);
-      if (force || onlyId || row.translationHash !== wanted) yield row;
+      if (force || onlyId || row.translationHashSv !== wanted) yield row;
     }
     if (rows.length < PAGE) return;
   }
@@ -96,8 +96,8 @@ async function main() {
   if (!isTranslationConfigured() && !dry) {
     console.error(
       "ANTHROPIC_API_KEY is not set — nothing was translated.\n" +
-        "This is a disabled feature, not a failure: the English door reads\n" +
-        "title_en/description_en straight from the row and simply shows the\n" +
+        "This is a disabled feature, not a failure: the site reads\n" +
+        "title_sv/description_sv straight from the row and simply shows the\n" +
         "Spanish text until they are filled. Re-run with the key set, or with\n" +
         "--dry to see what a run would do.",
     );
@@ -130,13 +130,13 @@ async function main() {
       await db
         .update(listings)
         .set({
-          titleEn: t.titleEn,
-          descriptionEn: t.descriptionEn,
-          translationHash: translationSourceHash(row),
+          titleSv: t.titleSv,
+          descriptionSv: t.descriptionSv,
+          translationHashSv: translationSourceHash(row),
         })
         .where(eq(listings.id, row.id));
       done++;
-      console.log(`  #${row.id}  ${t.titleEn.slice(0, 60)}`);
+      console.log(`  #${row.id}  ${t.titleSv.slice(0, 60)}`);
     } catch (err) {
       failed++;
       console.error(`  #${row.id} FAILED: ${(err as Error).message}`);
@@ -157,7 +157,7 @@ async function main() {
   const [cov] = await db
     .select({
       total: sql<number>`count(*)`,
-      translated: sql<number>`sum(case when ${listings.titleEn} is not null then 1 else 0 end)`,
+      translated: sql<number>`sum(case when ${listings.titleSv} is not null then 1 else 0 end)`,
     })
     .from(listings)
     .where(eq(listings.status, "published"));
@@ -166,7 +166,7 @@ async function main() {
   const translated = Number(cov?.translated ?? 0);
   const pct = total === 0 ? 0 : Math.round((translated / total) * 100);
   console.log(
-    `coverage: ${translated}/${total} published listings have English copy (${pct}%).`,
+    `coverage: ${translated}/${total} published listings have Swedish copy (${pct}%).`,
   );
 
   if (failed > 0) process.exit(1);
