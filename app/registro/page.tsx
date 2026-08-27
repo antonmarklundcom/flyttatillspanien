@@ -174,16 +174,16 @@ export default async function RegisterPage({
             </div>
 
             <div className="auth-field">
-              <label className="auth-field__label" htmlFor="whatsapp">
+              <label className="auth-field__label" htmlFor="phone">
                 {svPanel.registerWhatsappLabel}
               </label>
               <input
                 className="auth-field__input"
-                id="whatsapp"
-                name="whatsapp"
+                id="phone"
+                name="phone"
                 type="tel"
                 inputMode="tel"
-                placeholder="0981 123 456"
+                placeholder="070 123 45 67"
                 maxLength={30}
                 autoComplete="tel"
               />

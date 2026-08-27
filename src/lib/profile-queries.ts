@@ -24,7 +24,7 @@ export interface AgencyProfile {
   name: string;
   slug: string;
   logoUrl: string | null;
-  whatsapp: string | null;
+  phone: string | null;
   email: string | null;
   isVerified: boolean;
 }
@@ -34,7 +34,7 @@ export interface AgentProfile {
   name: string;
   slug: string;
   photoUrl: string | null;
-  whatsapp: string | null;
+  phone: string | null;
   isVerified: boolean;
   agencyId: number | null;
 }
@@ -48,7 +48,7 @@ export async function getAgencyProfile(
       name: agencies.name,
       slug: agencies.slug,
       logoUrl: agencies.logoUrl,
-      whatsapp: agencies.whatsapp,
+      phone: agencies.phone,
       email: agencies.email,
       isVerified: agencies.isVerified,
     })
@@ -68,7 +68,7 @@ export async function getOwnAgentProfile(
       name: agents.name,
       slug: agents.slug,
       photoUrl: agents.photoUrl,
-      whatsapp: agents.whatsapp,
+      phone: agents.phone,
       isVerified: agents.isVerified,
       agencyId: agents.agencyId,
     })
@@ -100,7 +100,7 @@ function imageOrNull(value: string): string | null | false {
 export interface AgencyProfileInput {
   name: string;
   logoUrl: string;
-  whatsapp: string;
+  phone: string;
   email: string;
 }
 
@@ -125,7 +125,7 @@ export async function updateAgencyProfile(
     .set({
       name,
       logoUrl,
-      whatsapp: orNull(input.whatsapp, 30),
+      phone: orNull(input.phone, 30),
       email: orNull(input.email, 190),
     })
     .where(eq(agencies.id, agencyId));
@@ -135,7 +135,7 @@ export async function updateAgencyProfile(
 export interface AgentProfileInput {
   name: string;
   photoUrl: string;
-  whatsapp: string;
+  phone: string;
 }
 
 /** Update the caller's own agent row, scoped by user id in the WHERE clause. */
@@ -154,7 +154,7 @@ export async function updateOwnAgentProfile(
     .set({
       name,
       photoUrl,
-      whatsapp: orNull(input.whatsapp, 30),
+      phone: orNull(input.phone, 30),
     })
     .where(eq(agents.userId, userId));
   return true;
