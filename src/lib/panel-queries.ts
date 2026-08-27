@@ -35,9 +35,7 @@ export interface ReviewRow {
   title: string;
   operation: (typeof listings.$inferSelect)["operation"];
   propertyType: (typeof listings.$inferSelect)["propertyType"];
-  priceAmount: string;
-  priceCurrency: "USD" | "PYG";
-  priceUsd: string;
+  priceEur: string;
   createdAt: Date;
   agencyName: string | null;
   locationName: string | null;
@@ -53,9 +51,7 @@ export async function getReviewQueue(): Promise<ReviewRow[]> {
       title: listings.title,
       operation: listings.operation,
       propertyType: listings.propertyType,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      priceUsd: listings.priceUsd,
+      priceEur: listings.priceEur,
       createdAt: listings.createdAt,
       agencyName: agencies.name,
       locationName: locations.name,
@@ -132,7 +128,7 @@ export interface AgencyRow {
   id: number;
   name: string;
   slug: string;
-  whatsapp: string | null;
+  phone: string | null;
   email: string | null;
   isVerified: boolean;
   plan: (typeof agencies.$inferSelect)["plan"];
@@ -144,7 +140,7 @@ export async function listAgencies(): Promise<AgencyRow[]> {
       id: agencies.id,
       name: agencies.name,
       slug: agencies.slug,
-      whatsapp: agencies.whatsapp,
+      phone: agencies.phone,
       email: agencies.email,
       isVerified: agencies.isVerified,
       plan: agencies.plan,
@@ -157,7 +153,7 @@ export interface AgentRow {
   id: number;
   name: string;
   slug: string;
-  whatsapp: string | null;
+  phone: string | null;
   isVerified: boolean;
   agencyName: string | null;
 }
@@ -168,7 +164,7 @@ export async function listAgents(): Promise<AgentRow[]> {
       id: agents.id,
       name: agents.name,
       slug: agents.slug,
-      whatsapp: agents.whatsapp,
+      phone: agents.phone,
       isVerified: agents.isVerified,
       agencyName: agencies.name,
     })
@@ -180,7 +176,7 @@ export async function listAgents(): Promise<AgentRow[]> {
 export interface CreateAgencyInput {
   name: string;
   email: string | null;
-  whatsapp: string | null;
+  phone: string | null;
   plan: AgencyRow["plan"];
 }
 
@@ -204,7 +200,7 @@ export async function createPanelAgency(
     name: input.name,
     slug,
     email: input.email,
-    whatsapp: input.whatsapp,
+    phone: input.phone,
     plan: input.plan,
     isVerified: false,
   });
@@ -237,10 +233,10 @@ export type UserRoleValue = (typeof users.$inferSelect)["role"];
 export interface PanelUserRow {
   id: number;
   name: string | null;
-  email: string | null;
+  email: string;
   role: UserRoleValue;
-  locale: "es" | "en";
-  whatsapp: string | null;
+  locale: "sv" | "en" | "es";
+  phone: string | null;
   hasPassword: boolean;
   createdAt: Date;
   /** Agency the user belongs to via agents.user_id — NULL when unlinked. */
@@ -257,7 +253,7 @@ export async function listUsers(): Promise<PanelUserRow[]> {
       email: users.email,
       role: users.role,
       locale: users.locale,
-      whatsapp: users.whatsapp,
+      phone: users.phone,
       passwordHash: users.passwordHash,
       createdAt: users.createdAt,
       agencyId: agents.agencyId,
@@ -287,7 +283,7 @@ export interface UpsertUserInput {
   name: string | null;
   email: string;
   role: UserRoleValue;
-  locale: "es" | "en";
+  locale: "sv" | "en" | "es";
   /** Omitted/empty on edit = keep the existing password. */
   password?: string;
 }
@@ -414,8 +410,6 @@ export interface AgencyListingRow {
   status: ListingStatus;
   operation: (typeof listings.$inferSelect)["operation"];
   propertyType: (typeof listings.$inferSelect)["propertyType"];
-  priceAmount: string;
-  priceCurrency: "USD" | "PYG";
   updatedAt: Date;
   /** Rejection reason set by admin review (status "removed"), else null. */
   reviewNotes: string | null;
@@ -440,8 +434,6 @@ export async function getPanelListings(
       status: listings.status,
       operation: listings.operation,
       propertyType: listings.propertyType,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
       updatedAt: listings.updatedAt,
       reviewNotes: listings.reviewNotes,
     })
@@ -493,8 +485,8 @@ export interface LeadRow {
   id: number;
   leadType: (typeof leads.$inferSelect)["leadType"];
   name: string | null;
-  whatsapp: string;
-  email: string | null;
+  phone: string | null;
+  email: string;
   message: string | null;
   createdAt: Date;
   listingId: number | null;
@@ -523,7 +515,7 @@ export interface AdminLeadRow extends LeadRow {
    * the lead is for and gives a one-tap way to forward it (audit F4).
    */
   ownerName: string | null;
-  ownerWhatsapp: string | null;
+  ownerPhone: string | null;
 }
 
 /**
@@ -548,7 +540,7 @@ export async function listAllLeads(params: {
     const term = containsPattern(q);
     const match = or(
       like(leads.name, term),
-      like(leads.whatsapp, term),
+      like(leads.phone, term),
       like(leads.email, term),
     );
     if (match) filters.push(match);
@@ -559,7 +551,7 @@ export async function listAllLeads(params: {
       id: leads.id,
       leadType: leads.leadType,
       name: leads.name,
-      whatsapp: leads.whatsapp,
+      phone: leads.phone,
       email: leads.email,
       message: leads.message,
       createdAt: leads.createdAt,
@@ -571,7 +563,7 @@ export async function listAllLeads(params: {
       routedTo: leads.routedTo,
       agencyName: agencies.name,
       ownerName: users.name,
-      ownerWhatsapp: users.whatsapp,
+      ownerPhone: users.phone,
     })
     .from(leads)
     .leftJoin(listings, eq(leads.listingId, listings.id))
@@ -627,7 +619,7 @@ export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
       id: leads.id,
       leadType: leads.leadType,
       name: leads.name,
-      whatsapp: leads.whatsapp,
+      phone: leads.phone,
       email: leads.email,
       message: leads.message,
       createdAt: leads.createdAt,

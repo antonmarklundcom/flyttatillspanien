@@ -1,22 +1,25 @@
 /**
- * Publish-wizard data access (ARCHITECTURE.md §3, M5). A draft is a `listings`
- * row with status='draft' owned by the publisher — no separate drafts table
- * (the schema STOP gate is closed; status='draft' is the intended shape). Every
- * write is scoped to ownerUserId in the WHERE clause, so a publisher can only
- * ever touch their own draft, whatever the client submits. Reference data
- * (locations, nearby projects, financing programs) feeds the wizard's selects.
+ * Publish-wizard data access. A draft is a `listings` row with status='draft'
+ * owned by the publisher — no separate drafts table (status='draft' is the
+ * intended shape). Every write is scoped to ownerUserId in the WHERE clause,
+ * so a publisher can only ever touch their own draft, whatever the client
+ * submits. Reference data (locations, nearby projects) feeds the wizard's
+ * selects.
+ *
+ * The energy-rating publish gate (docs/SPAIN-PORTAL-DESIGN.md §3.2 — a
+ * listing cannot reach status "published" with energy_rating NULL) lives in
+ * the server action that approves a pending_review row into published
+ * (app/admin/propiedades/actions.ts), not here: this module only ever moves
+ * draft → pending_review.
  */
 import "server-only";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { financingPrograms, listings, locations, projects } from "@/db/schema";
-import type { FinancingProgram } from "@/lib/cuota";
-import { makePublicId, toPriceUsd } from "@/lib/import/normalize";
+import { listings, locations, projects } from "@/db/schema";
+import { makePublicId } from "@/lib/import/normalize";
 import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
 import type { Operation, PropertyType } from "@/lib/import/types";
-
-export const USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 7300);
 
 /* ------------------------------------------------------------------ */
 /* Reference data for the wizard selects                               */
@@ -24,12 +27,13 @@ export const USD_TO_PYG = Number(process.env.USD_TO_PYG ?? 7300);
 
 export interface PublishLocation {
   id: number;
-  label: string; // "Recoleta, Asunción" (barrio) or "Asunción" (ciudad)
+  label: string; // "Nueva Andalucía, Marbella" (zona) or "Marbella" (municipio)
 }
 
 /**
- * Ciudad + barrio options for the location step, each labelled with its parent
- * city so duplicate barrio names stay distinguishable. Ordered city-first.
+ * Municipio + zona options for the location step, each labelled with its
+ * parent municipio so duplicate zona names stay distinguishable.
+ * Municipio-first.
  */
 export async function listPublishLocations(): Promise<PublishLocation[]> {
   const rows = await db
@@ -52,7 +56,7 @@ export async function listPublishLocations(): Promise<PublishLocation[]> {
           ? `${r.name}, ${nameById.get(r.parentId) ?? ""}`.replace(/, $/, "")
           : r.name,
     }))
-    .sort((a, b) => a.label.localeCompare(b.label, "es"));
+    .sort((a, b) => a.label.localeCompare(b.label, "sv"));
 }
 
 export interface NearbyProject {
@@ -73,23 +77,6 @@ export async function listNearbyProjects(): Promise<NearbyProject[]> {
     .orderBy(asc(projects.name));
 }
 
-/** Active financing programs as plain numbers for the client-side cuota preview. */
-export async function listActiveFinancingPrograms(): Promise<FinancingProgram[]> {
-  const rows = await db
-    .select()
-    .from(financingPrograms)
-    .where(eq(financingPrograms.active, true));
-  return rows.map((p) => ({
-    code: p.code,
-    name: p.name,
-    annualRate: Number(p.annualRate),
-    maxTermMonths: p.maxTermMonths,
-    maxAmountGs: p.maxAmountGs != null ? Number(p.maxAmountGs) : null,
-    minDownPct: Number(p.minDownPct),
-    active: p.active,
-  }));
-}
-
 /* ------------------------------------------------------------------ */
 /* Draft CRUD — every operation scoped to the owning user              */
 /* ------------------------------------------------------------------ */
@@ -100,17 +87,26 @@ export interface DraftInput {
   propertyType: PropertyType;
   title: string;
   descriptionEs?: string | null;
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
+  priceEur: number;
   bedrooms?: number | null;
   bathrooms?: number | null;
   parking?: number | null;
-  areaM2?: number | null;
-  landM2?: number | null;
+  builtM2?: number | null;
+  plotM2?: number | null;
   locationId: number;
   projectId?: number | null;
   videoUrl?: string | null;
-  foreignExposure: boolean;
+  // Spain legal block (docs/SPAIN-PORTAL-DESIGN.md §3.2) — optional in the
+  // wizard, mandatory (energyRating) at the publish gate.
+  referenciaCatastral?: string | null;
+  energyRating?: (typeof listings.$inferSelect)["energyRating"];
+  legalStatus?: (typeof listings.$inferSelect)["legalStatus"];
+  chargesStatus?: (typeof listings.$inferSelect)["chargesStatus"];
+  ibiAnnualEur?: number | null;
+  communityMonthlyEur?: number | null;
+  isVpo?: boolean;
+  landClassification?: (typeof listings.$inferSelect)["landClassification"];
+  buildableM2?: number | null;
 }
 
 export interface DraftRow extends DraftInput {
@@ -140,17 +136,25 @@ export async function getUserDraft(
     propertyType: row.propertyType,
     title: row.title,
     descriptionEs: row.descriptionEs,
-    priceAmount: Number(row.priceAmount),
-    priceCurrency: row.priceCurrency,
+    priceEur: Number(row.priceEur),
     bedrooms: row.bedrooms,
     bathrooms: row.bathrooms,
     parking: row.parking,
-    areaM2: row.areaM2 != null ? Number(row.areaM2) : null,
-    landM2: row.landM2 != null ? Number(row.landM2) : null,
+    builtM2: row.builtM2 != null ? Number(row.builtM2) : null,
+    plotM2: row.plotM2 != null ? Number(row.plotM2) : null,
     locationId: row.locationId,
     projectId: row.projectId,
     videoUrl: row.videoUrl,
-    foreignExposure: row.foreignExposure,
+    referenciaCatastral: row.referenciaCatastral,
+    energyRating: row.energyRating,
+    legalStatus: row.legalStatus,
+    chargesStatus: row.chargesStatus,
+    ibiAnnualEur: row.ibiAnnualEur != null ? Number(row.ibiAnnualEur) : null,
+    communityMonthlyEur:
+      row.communityMonthlyEur != null ? Number(row.communityMonthlyEur) : null,
+    isVpo: row.isVpo,
+    landClassification: row.landClassification,
+    buildableM2: row.buildableM2 != null ? Number(row.buildableM2) : null,
   };
 }
 
@@ -161,23 +165,26 @@ function draftFields(input: DraftInput, agencyId: number | null) {
     propertyType: input.propertyType,
     title: input.title.slice(0, 180),
     descriptionEs: input.descriptionEs ?? null,
-    priceAmount: input.priceAmount.toFixed(2),
-    priceCurrency: input.priceCurrency,
-    priceUsd: toPriceUsd(
-      input.priceAmount,
-      input.priceCurrency,
-      USD_TO_PYG,
-    ).toFixed(2),
+    priceEur: input.priceEur.toFixed(2),
     bedrooms: input.bedrooms ?? null,
     bathrooms: input.bathrooms ?? null,
     parking: input.parking ?? null,
-    areaM2: input.areaM2 != null ? input.areaM2.toString() : null,
-    landM2: input.landM2 != null ? input.landM2.toString() : null,
+    builtM2: input.builtM2 != null ? input.builtM2.toString() : null,
+    plotM2: input.plotM2 != null ? input.plotM2.toString() : null,
     locationId: input.locationId,
     projectId: input.projectId ?? null,
     agencyId,
     videoUrl: input.videoUrl ?? null,
-    foreignExposure: input.foreignExposure,
+    referenciaCatastral: input.referenciaCatastral ?? null,
+    energyRating: input.energyRating ?? null,
+    legalStatus: input.legalStatus ?? "desconocido",
+    chargesStatus: input.chargesStatus ?? "desconocido",
+    ibiAnnualEur: input.ibiAnnualEur != null ? input.ibiAnnualEur.toString() : null,
+    communityMonthlyEur:
+      input.communityMonthlyEur != null ? input.communityMonthlyEur.toString() : null,
+    isVpo: input.isVpo ?? false,
+    landClassification: input.landClassification ?? null,
+    buildableM2: input.buildableM2 != null ? input.buildableM2.toString() : null,
   };
 }
 
@@ -219,7 +226,7 @@ export async function saveDraft(params: {
 
   const [res] = await db.insert(listings).values({
     publicId: makePublicId(),
-    slug: slugify(input.title) || "propiedad",
+    slug: slugify(input.title) || "bostad",
     status: "draft",
     ownerUserId: userId,
     ...fields,
@@ -232,7 +239,7 @@ export async function saveDraft(params: {
 /**
  * Submit a draft for review after OTP (draft → pending_review). Scoped to the
  * owner and status='draft' so it's idempotent and can't jump a published row
- * back into the queue. `isVerified` reflects the WhatsApp-verified publisher
+ * back into the queue. `isVerified` reflects the email-verified publisher
  * (the ✓ badge basis). Returns rows affected.
  */
 export async function submitDraftForReview(params: {

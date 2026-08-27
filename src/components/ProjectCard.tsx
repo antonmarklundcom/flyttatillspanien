@@ -1,20 +1,20 @@
 import Link from "next/link";
-import { formatUsd } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import type { ProjectCard as Card } from "@/lib/queries";
 
 const STAGE_LABEL: Record<string, string> = {
-  en_pozo: "En pozo",
-  en_construccion: "En construcción",
-  entrega_inmediata: "Entrega inmediata",
+  sobre_plano: "På ritning",
+  en_construccion: "Under uppförande",
+  obra_nueva: "Nybyggd",
 };
 
-/** "Ent. Jul 2029" — compact delivery chip like the stage badge's sibling. */
+/** "Sep 2029" — compact delivery chip like the stage badge's sibling. */
 function deliveryLabel(d: string | Date | null): string | null {
   if (!d) return null;
   const date = new Date(d);
   if (Number.isNaN(date.getTime())) return null;
-  const month = date.toLocaleDateString("es-PY", { month: "short" });
-  return `Ent. ${month.charAt(0).toUpperCase() + month.slice(1)} ${date.getFullYear()}`;
+  const month = date.toLocaleDateString("sv-SE", { month: "short" });
+  return `${month.charAt(0).toUpperCase() + month.slice(1)} ${date.getFullYear()}`;
 }
 
 /** Homepage carousel / project-row card. Whole card links to /proyecto/{slug}. */
@@ -41,15 +41,15 @@ export function ProjectCard({ card }: { card: Card }) {
       </div>
       <div className="project-card__body">
         <div className="project-card__kicker">
-          Proyecto{card.developerName ? ` · ${card.developerName}` : ""}
+          Projekt{card.developerName ? ` · ${card.developerName}` : ""}
         </div>
         <div className="project-card__name">{card.name}</div>
-        {card.minPriceUsd != null && (
-          <div className="project-card__price">Desde {formatUsd(card.minPriceUsd)}</div>
+        {card.minPriceEur != null && (
+          <div className="project-card__price">Från {formatEur(card.minPriceEur)}</div>
         )}
         <div className="project-card__meta">
           {card.availableUnits > 0 && (
-            <span>{card.availableUnits} disponibles</span>
+            <span>{card.availableUnits} tillgängliga</span>
           )}
           {card.cityName && <span>{card.cityName}</span>}
         </div>

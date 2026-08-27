@@ -36,7 +36,7 @@ export interface LeadPayload {
     publicId: string;
     title: string;
     url: string;
-    priceUsd: number;
+    priceEur: number;
     operation: string;
   };
   project?: { slug: string; name: string };
@@ -74,7 +74,7 @@ export interface CrmResult {
 
 export interface CrmProvider {
   pushLead(lead: LeadPayload): Promise<CrmResult>;
-  sendOtp(whatsapp: string, code: string): Promise<CrmResult>;
+  sendOtp(destination: string, code: string): Promise<CrmResult>;
   notifyOperator(alert: OperatorAlert): Promise<CrmResult>;
 }
 
@@ -89,8 +89,8 @@ class WebhookProvider implements CrmProvider {
     return this.post({ event: "lead", ...lead });
   }
 
-  async sendOtp(whatsapp: string, code: string): Promise<CrmResult> {
-    return this.post({ event: "otp", whatsapp, code });
+  async sendOtp(destination: string, code: string): Promise<CrmResult> {
+    return this.post({ event: "otp", destination, code });
   }
 
   async notifyOperator(alert: OperatorAlert): Promise<CrmResult> {
@@ -132,10 +132,10 @@ class NoProvider implements CrmProvider {
     }
     return { ok: true };
   }
-  async sendOtp(whatsapp: string, code: string): Promise<CrmResult> {
+  async sendOtp(destination: string, code: string): Promise<CrmResult> {
     if (process.env.NODE_ENV !== "production") {
       // Local dev only: lets the OTP flow be exercised without a provider.
-      console.info(`[messaging:dev] OTP ${code} → ${whatsapp}`);
+      console.info(`[messaging:dev] OTP ${code} → ${destination}`);
       return { ok: true };
     }
     return { ok: false, error: "no messaging provider configured" };

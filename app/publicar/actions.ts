@@ -1,10 +1,10 @@
 "use server";
 
 /**
- * Publish-wizard server actions (ARCHITECTURE.md §3, M5). These run in the Node
- * runtime and are the trust boundary: the client supplies field values, but
- * every action re-resolves the caller from the session (requireUser), re-derives
- * the agency scope server-side, and validates the payload here. The client is
+ * Publish-wizard server actions. These run in the Node runtime and are the
+ * trust boundary: the client supplies field values, but every action
+ * re-resolves the caller from the session (requireUser), re-derives the
+ * agency scope server-side, and validates the payload here. The client is
  * never trusted for identity, ownership, or the verified flag.
  */
 import { eq } from "drizzle-orm";
@@ -12,7 +12,6 @@ import { db } from "@/db";
 import { agents, listings, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
 import { alertOperator, getCrm, isMessagingConfigured } from "@/lib/crm";
-import { canonPhone } from "@/lib/import/normalize";
 import {
   OPERATIONS,
   PROPERTY_TYPES,
@@ -41,22 +40,34 @@ export interface DraftPayload {
   propertyType?: string;
   title?: string;
   descriptionEs?: string;
-  priceAmount?: number;
-  priceCurrency?: string;
+  priceEur?: number;
   bedrooms?: number | null;
   bathrooms?: number | null;
   parking?: number | null;
-  areaM2?: number | null;
-  landM2?: number | null;
+  builtM2?: number | null;
+  plotM2?: number | null;
   locationId?: number;
   projectId?: number | null;
   videoUrl?: string;
-  foreignExposure?: boolean;
+  referenciaCatastral?: string | null;
+  energyRating?: string | null;
+  legalStatus?: string | null;
+  chargesStatus?: string | null;
+  ibiAnnualEur?: number | null;
+  communityMonthlyEur?: number | null;
+  isVpo?: boolean;
+  landClassification?: string | null;
+  buildableM2?: number | null;
 }
 
 function posIntOrNull(v: unknown): number | null {
   const n = Number(v);
   return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+function posNumOrNull(v: unknown): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export type SaveDraftResult =
@@ -76,15 +87,14 @@ export async function saveDraftAction(
   const operation = payload.operation as Operation;
   const propertyType = payload.propertyType as PropertyType;
   const title = String(payload.title ?? "").trim();
-  const priceAmount = Number(payload.priceAmount);
-  const priceCurrency = payload.priceCurrency === "PYG" ? "PYG" : "USD";
+  const priceEur = Number(payload.priceEur);
   const locationId = Number(payload.locationId);
 
   if (!OPERATIONS.includes(operation)) return { ok: false, error: "operation" };
   if (!PROPERTY_TYPES.includes(propertyType))
     return { ok: false, error: "propertyType" };
   if (title.length < 8) return { ok: false, error: "title" };
-  if (!Number.isFinite(priceAmount) || priceAmount <= 0)
+  if (!Number.isFinite(priceEur) || priceEur <= 0)
     return { ok: false, error: "price" };
   if (!Number.isInteger(locationId) || locationId <= 0)
     return { ok: false, error: "location" };
@@ -99,23 +109,24 @@ export async function saveDraftAction(
       propertyType,
       title,
       descriptionEs: String(payload.descriptionEs ?? "").trim() || null,
-      priceAmount,
-      priceCurrency,
+      priceEur,
       bedrooms: posIntOrNull(payload.bedrooms),
       bathrooms: posIntOrNull(payload.bathrooms),
       parking: posIntOrNull(payload.parking),
-      areaM2:
-        payload.areaM2 != null && Number(payload.areaM2) > 0
-          ? Number(payload.areaM2)
-          : null,
-      landM2:
-        payload.landM2 != null && Number(payload.landM2) > 0
-          ? Number(payload.landM2)
-          : null,
+      builtM2: posNumOrNull(payload.builtM2),
+      plotM2: posNumOrNull(payload.plotM2),
       locationId,
       projectId: posIntOrNull(payload.projectId) || null,
       videoUrl: String(payload.videoUrl ?? "").trim().slice(0, 500) || null,
-      foreignExposure: payload.foreignExposure !== false,
+      referenciaCatastral: payload.referenciaCatastral?.trim() || null,
+      energyRating: payload.energyRating as never,
+      legalStatus: payload.legalStatus as never,
+      chargesStatus: payload.chargesStatus as never,
+      ibiAnnualEur: posNumOrNull(payload.ibiAnnualEur),
+      communityMonthlyEur: posNumOrNull(payload.communityMonthlyEur),
+      isVpo: Boolean(payload.isVpo),
+      landClassification: payload.landClassification as never,
+      buildableM2: posNumOrNull(payload.buildableM2),
     },
   });
 
@@ -132,25 +143,26 @@ export type RequestOtpResult =
     };
 
 /**
- * Issue and deliver a WhatsApp OTP for the publisher's number. Only reachable
+ * Issue and deliver an email OTP for the publisher's address. Only reachable
  * when a messaging provider exists — see publishDraftAction for the path that
- * runs when none does.
+ * runs when none does. Sweden is email-first (docs/SPAIN-PORTAL-DESIGN.md
+ * §3.7), unlike the inherited WhatsApp-first flow.
  */
 export async function requestOtpAction(
-  rawWhatsapp: string,
+  rawEmail: string,
 ): Promise<RequestOtpResult> {
   await requireUser("/publicar");
-  const whatsapp = canonPhone(rawWhatsapp);
-  if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
+  const email = rawEmail.trim().toLowerCase();
+  if (!email.includes("@")) return { ok: false, error: "invalid_number" };
 
   if (!isMessagingConfigured()) return { ok: false, error: "undeliverable" };
 
-  const created = await createOtp(whatsapp);
+  const created = await createOtp(email);
   if (!created.ok)
     return { ok: false, error: "cooldown", cooldownMs: created.cooldownMs };
 
   // A provider that fails to deliver must not look like a sent code.
-  const sent = await getCrm().sendOtp(whatsapp, created.code);
+  const sent = await getCrm().sendOtp(email, created.code);
   if (!sent.ok) return { ok: false, error: "undeliverable" };
   return { ok: true };
 }
@@ -190,7 +202,7 @@ export type PublishResult =
 
 /**
  * Verify the OTP and submit the draft for review (draft → pending_review). On
- * success the publisher's WhatsApp is recorded and stamped verified, and the
+ * success the publisher's email is recorded and stamped verified, and the
  * listing carries the verified-publisher flag (the ✓ badge basis).
  *
  * Requires a messaging provider by definition — a code cannot be verified if it
@@ -198,24 +210,24 @@ export type PublishResult =
  */
 export async function verifyAndPublishAction(params: {
   draftId: number;
-  whatsapp: string;
+  email: string;
   code: string;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
   if (!isMessagingConfigured()) return { ok: false, error: "otp_required" };
 
-  const whatsapp = canonPhone(params.whatsapp);
-  if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
+  const email = params.email.trim().toLowerCase();
+  if (!email.includes("@")) return { ok: false, error: "invalid_number" };
 
-  const verified = await verifyOtp(whatsapp, params.code);
+  const verified = await verifyOtp(email, params.code);
   if (!verified.ok) {
     return { ok: false, error: verified.reason === "too_many" ? "too_many" : "otp" };
   }
 
-  // Record the verified WhatsApp on the user (idempotent; unique in schema).
+  // Record the verified email on the user (idempotent; unique in schema).
   await db
     .update(users)
-    .set({ whatsapp, whatsappVerifiedAt: new Date() })
+    .set({ email, emailVerifiedAt: new Date() })
     .where(eq(users.id, user.id));
 
   const affected = await submitDraftForReview({
@@ -229,14 +241,14 @@ export async function verifyAndPublishAction(params: {
 }
 
 /**
- * Publish without phone verification, for the case where no messaging provider
- * is configured and an OTP could never arrive.
+ * Publish without email verification, for the case where no messaging
+ * provider is configured and an OTP could never arrive.
  *
  * This is not a weaker door than it looks. /publicar already requires a login,
  * and since /registro exists that login is a real account with a password; the
  * draft is scoped to `owner_user_id`, so a publisher can only submit their own.
  * The listing still lands in `pending_review` and a human approves it. What is
- * genuinely missing is proof the *phone number* is real, so the row is NOT
+ * genuinely missing is proof the *email address* is real, so the row is NOT
  * flagged verified — the ✓ badge stays something you grant deliberately.
  *
  * The guard is server-side: if messaging IS configured, this refuses and the
@@ -244,17 +256,9 @@ export async function verifyAndPublishAction(params: {
  */
 export async function publishDraftAction(params: {
   draftId: number;
-  whatsapp?: string;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
   if (isMessagingConfigured()) return { ok: false, error: "otp_required" };
-
-  // Keep the number if given — the agency still needs to be reachable — but
-  // record it as unverified.
-  const whatsapp = params.whatsapp ? canonPhone(params.whatsapp) : "";
-  if (whatsapp.length >= 9) {
-    await db.update(users).set({ whatsapp }).where(eq(users.id, user.id));
-  }
 
   const affected = await submitDraftForReview({
     userId: user.id,

@@ -41,7 +41,6 @@ import {
   contentHash as computeContentHash,
   dedupKey as computeDedupKey,
   makePublicId,
-  toPriceUsd,
   canon,
 } from "./normalize";
 import type { ImportReport, RawListing } from "./types";
@@ -55,9 +54,10 @@ import type { ImportReport, RawListing } from "./types";
 type DbConn = typeof Db | Parameters<Parameters<(typeof Db)["transaction"]>[0]>[0];
 
 const LEVEL_RANK: Record<string, number> = {
-  barrio: 4,
-  ciudad: 3,
-  departamento: 2,
+  zona: 5,
+  municipio: 4,
+  provincia: 3,
+  comunidad: 2,
   pais: 1,
 };
 
@@ -96,7 +96,6 @@ async function buildLocationResolver(db: typeof Db) {
 }
 
 export interface ImportOptions {
-  usdToPyg?: number;
   /** Publish new listings immediately instead of pending_review. Use for
    *  trusted white-glove batches / demo seeding; leave off for scraped sources. */
   publish?: boolean;
@@ -129,7 +128,7 @@ export interface PlannedRow {
   dedupeOfRow?: number;
   sourceRowId?: number; // listing_sources row matched in step (1)
   raw?: RawListing;
-  priceUsd?: number;
+  priceEur?: number;
   locationId?: number;
   contentHash?: string;
   dedupKey?: string | null;
@@ -172,7 +171,6 @@ export async function planImport(
   rows: RawListing[],
   opts: ImportOptions = {},
 ): Promise<ImportPlan> {
-  const usdToPyg = opts.usdToPyg ?? Number(process.env.USD_TO_PYG ?? 7300);
   const scopeAgencyId = opts.agencyId ?? 0;
   const resolveLocation = await buildLocationResolver(db);
   const report = emptyReport();
@@ -206,26 +204,29 @@ export async function planImport(
         continue;
       }
 
-      const priceUsd = toPriceUsd(raw.priceAmount, raw.priceCurrency, usdToPyg);
-      // Sanity floor: no property in this market sells for under US$1000, so a
-      // venta row below it is a mangled number (wrong thousands separator,
+      const priceEur = raw.priceEur;
+      // Sanity floor: no Spanish coastal property sells for under €10,000, so
+      // a venta row below it is a mangled number (wrong thousands separator,
       // truncated cell), and one bad price poisons the medians, /precios and
       // /tasacion. Rejecting loudly beats importing quietly.
-      if (raw.operation === "venta" && priceUsd < 1000) {
+      if (raw.operation === "venta" && priceEur < 10_000) {
         skip(
-          `precio de venta sospechosamente bajo (US$ ${priceUsd}) — revisá el separador de miles`,
+          `precio de venta sospechosamente bajo (€ ${priceEur}) — revisá el separador de miles`,
         );
         continue;
       }
-      const cHash = computeContentHash(raw, priceUsd);
-      const dKey = computeDedupKey(raw, priceUsd, locationId, scopeAgencyId);
+      const cHash = computeContentHash(raw, priceEur);
+      const dKey =
+        raw.referenciaCatastral?.trim()
+          ? null // exact-key dedup path (checked separately below) skips the fuzzy key entirely
+          : computeDedupKey(raw, priceEur, locationId, scopeAgencyId);
 
       const base: PlannedRow = {
         rowNumber,
         outcome: "created",
         title: raw.title,
         raw,
-        priceUsd,
+        priceEur,
         locationId,
         contentHash: cHash,
         dedupKey: dKey,
@@ -269,6 +270,29 @@ export async function planImport(
           });
           if (unchanged) report.unchanged++;
           else report.updated++;
+          continue;
+        }
+      }
+
+      // (1.5) Exact cadastral match (docs/SPAIN-PORTAL-DESIGN.md §3.2): when
+      //       the row carries a referencia_catastral, that IS the dedup key —
+      //       skip the fuzzy path in (2) entirely and match on the listing's
+      //       own column, since the reference identifies the physical
+      //       property regardless of which source described it.
+      const catastral = raw.referenciaCatastral?.trim();
+      if (catastral) {
+        const [existingByCatastral] = await db
+          .select({ id: listings.id })
+          .from(listings)
+          .where(eq(listings.referenciaCatastral, catastral))
+          .limit(1);
+        if (existingByCatastral) {
+          planned.push({
+            ...base,
+            outcome: "deduped",
+            listingId: existingByCatastral.id,
+          });
+          report.deduped++;
           continue;
         }
       }
@@ -326,14 +350,12 @@ const SNAPSHOT_COLUMNS = {
   propertyType: listings.propertyType,
   title: listings.title,
   descriptionEs: listings.descriptionEs,
-  priceAmount: listings.priceAmount,
-  priceCurrency: listings.priceCurrency,
-  priceUsd: listings.priceUsd,
+  priceEur: listings.priceEur,
   bedrooms: listings.bedrooms,
   bathrooms: listings.bathrooms,
   parking: listings.parking,
-  areaM2: listings.areaM2,
-  landM2: listings.landM2,
+  builtM2: listings.builtM2,
+  plotM2: listings.plotM2,
   propertyState: listings.propertyState,
   locationId: listings.locationId,
   addressText: listings.addressText,
@@ -433,12 +455,12 @@ export async function commitImport(
         const moneyChanged =
           previous &&
           (previous.operation !== raw.operation ||
-            Number(previous.priceUsd) !== row.priceUsd);
+            Number(previous.priceEur) !== row.priceEur);
         await db.transaction(async (tx) => {
           await tx
             .update(listings)
             .set({
-              ...listingFields(raw, row.priceUsd!, row.locationId!),
+              ...listingFields(raw, row.priceEur!, row.locationId!),
               ...(moneyChanged ? { cuotaGs: null } : {}),
             })
             .where(eq(listings.id, row.listingId!));
@@ -520,7 +542,7 @@ export async function commitImport(
         const id = await insertListing(
           tx,
           raw,
-          row.priceUsd!,
+          row.priceEur!,
           row.locationId!,
           opts,
         );
@@ -663,38 +685,59 @@ export async function importListings(
 /* ------------------------------------------------------------------ */
 
 /** Columns shared by insert and update (everything the source controls). */
-function listingFields(raw: RawListing, priceUsd: number, locationId: number) {
+function listingFields(raw: RawListing, priceEur: number, locationId: number) {
   return {
     operation: raw.operation,
     propertyType: raw.propertyType,
     title: raw.title,
     descriptionEs: raw.descriptionEs,
-    priceAmount: raw.priceAmount.toFixed(2),
-    priceCurrency: raw.priceCurrency,
-    priceUsd: priceUsd.toFixed(2),
+    priceEur: priceEur.toFixed(2),
     bedrooms: raw.bedrooms,
     bathrooms: raw.bathrooms,
     parking: raw.parking,
-    areaM2: raw.areaM2 != null ? raw.areaM2.toString() : undefined,
-    landM2: raw.landM2 != null ? raw.landM2.toString() : undefined,
+    builtM2: raw.builtM2 != null ? raw.builtM2.toString() : undefined,
+    plotM2: raw.plotM2 != null ? raw.plotM2.toString() : undefined,
+    usableM2: raw.usableM2 != null ? raw.usableM2.toString() : undefined,
+    yearBuilt: raw.yearBuilt,
     propertyState: raw.propertyState,
     locationId,
     addressText: raw.addressText,
     lat: raw.lat != null ? raw.lat.toString() : undefined,
     lng: raw.lng != null ? raw.lng.toString() : undefined,
+    // Spain legal block (docs/SPAIN-PORTAL-DESIGN.md §3.2) — optional on
+    // intake, most feeds omit some of it. legalStatus/chargesStatus default
+    // to "desconocido" in the schema when omitted here.
+    referenciaCatastral: raw.referenciaCatastral,
+    energyRating: raw.energyRating,
+    energyEmissions: raw.energyEmissions,
+    energyKwhM2: raw.energyKwhM2 != null ? raw.energyKwhM2.toString() : undefined,
+    energyCo2M2: raw.energyCo2M2 != null ? raw.energyCo2M2.toString() : undefined,
+    legalStatus: raw.legalStatus,
+    chargesStatus: raw.chargesStatus,
+    ibiAnnualEur: raw.ibiAnnualEur != null ? raw.ibiAnnualEur.toString() : undefined,
+    communityMonthlyEur:
+      raw.communityMonthlyEur != null ? raw.communityMonthlyEur.toString() : undefined,
+    isVpo: raw.isVpo,
+    landClassification: raw.landClassification,
+    buildableM2: raw.buildableM2 != null ? raw.buildableM2.toString() : undefined,
+    touristLicence: raw.touristLicence,
   };
 }
 
 async function insertListing(
   db: DbConn,
   raw: RawListing,
-  priceUsd: number,
+  priceEur: number,
   locationId: number,
   opts: ImportOptions,
 ): Promise<number> {
   const publicId = makePublicId();
   const slug = slugify(raw.title);
-  const publish = opts.publish ?? false;
+  // Publish gate (docs/SPAIN-PORTAL-DESIGN.md §3.2): a listing cannot reach
+  // "published" with no energy rating — RD 390/2021 requires it in the
+  // advertisement itself. Enforced here, not just in the publish wizard's
+  // form, because the importer is where most listings will come from.
+  const publish = (opts.publish ?? false) && Boolean(raw.energyRating);
   const [res] = await db.insert(listings).values({
     publicId,
     slug,
@@ -704,7 +747,7 @@ async function insertListing(
     agencyId: opts.agencyId ?? undefined,
     agentId: opts.agentId ?? undefined,
     ownerUserId: opts.ownerUserId ?? undefined,
-    ...listingFields(raw, priceUsd, locationId),
+    ...listingFields(raw, priceEur, locationId),
   });
   // mysql2 returns insertId on the ResultSetHeader.
   return Number((res as unknown as { insertId: number }).insertId);

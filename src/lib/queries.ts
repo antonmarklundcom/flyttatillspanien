@@ -1,8 +1,9 @@
 /**
- * Read queries for the public site (ARCHITECTURE.md §4). All filtering runs
- * on indexed scalar columns (idx_search, idx_location) and normalized
- * price_usd — no MySQL-only cleverness, so the Postgres escape hatch stays
- * open. JSON columns are display-only and never filtered here.
+ * Read queries for the public site. All filtering runs on indexed scalar
+ * columns (idx_search, idx_location) and price_eur — the only stored price
+ * column on this portal (docs/SPAIN-PORTAL-DESIGN.md §2) — no MySQL-only
+ * cleverness, so the Postgres escape hatch stays open. JSON columns are
+ * display-only and never filtered here.
  */
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
@@ -18,10 +19,11 @@ import {
 } from "drizzle-orm";
 import { db } from "../db";
 import {
+  acquisitionCosts,
   agencies,
   agents,
   developers,
-  financingPrograms,
+  fxRates,
   listingImages,
   listings,
   locations,
@@ -204,8 +206,8 @@ function filterConds(q: CategoryQuery, f: CategoryFilters) {
 }
 
 function sortOrder(sort: SortOption | undefined) {
-  if (sort === "precio_asc") return asc(listings.priceUsd);
-  if (sort === "precio_desc") return desc(listings.priceUsd);
+  if (sort === "pris_upp") return asc(listings.priceEur);
+  if (sort === "pris_ner") return desc(listings.priceEur);
   return desc(listings.publishedAt);
 }
 
@@ -217,14 +219,11 @@ export type ListingCard = Pick<
   | "title"
   | "operation"
   | "propertyType"
-  | "priceUsd"
-  | "priceAmount"
-  | "priceCurrency"
-  | "cuotaGs"
+  | "priceEur"
   | "bedrooms"
   | "bathrooms"
-  | "areaM2"
-  | "landM2"
+  | "builtM2"
+  | "plotM2"
   | "locationId"
   | "featuredUntil"
 > & { coverKey: string | null };
@@ -251,14 +250,11 @@ export async function getFilteredCategoryListings(
         title: listings.title,
         operation: listings.operation,
         propertyType: listings.propertyType,
-        priceUsd: listings.priceUsd,
-        priceAmount: listings.priceAmount,
-        priceCurrency: listings.priceCurrency,
-        cuotaGs: listings.cuotaGs,
+        priceEur: listings.priceEur,
         bedrooms: listings.bedrooms,
         bathrooms: listings.bathrooms,
-        areaM2: listings.areaM2,
-        landM2: listings.landM2,
+        builtM2: listings.builtM2,
+        plotM2: listings.plotM2,
         locationId: listings.locationId,
         featuredUntil: listings.featuredUntil,
       })
@@ -465,14 +461,11 @@ function cardColumns() {
     title: listings.title,
     operation: listings.operation,
     propertyType: listings.propertyType,
-    priceUsd: listings.priceUsd,
-    priceAmount: listings.priceAmount,
-    priceCurrency: listings.priceCurrency,
-    cuotaGs: listings.cuotaGs,
+    priceEur: listings.priceEur,
     bedrooms: listings.bedrooms,
     bathrooms: listings.bathrooms,
-    areaM2: listings.areaM2,
-    landM2: listings.landM2,
+    builtM2: listings.builtM2,
+    plotM2: listings.plotM2,
     locationId: listings.locationId,
     featuredUntil: listings.featuredUntil,
   };
@@ -504,8 +497,9 @@ export async function getRecentListings(
  */
 export interface ListingOwner {
   name: string | null;
-  whatsapp: string | null;
-  whatsappVerifiedAt: Date | null;
+  email: string;
+  phone: string | null;
+  emailVerifiedAt: Date | null;
 }
 
 export interface ListingDetail {
@@ -566,8 +560,9 @@ export async function getListingByPublicId(
       ? db
           .select({
             name: users.name,
-            whatsapp: users.whatsapp,
-            whatsappVerifiedAt: users.whatsappVerifiedAt,
+            email: users.email,
+            phone: users.phone,
+            emailVerifiedAt: users.emailVerifiedAt,
           })
           .from(users)
           .where(eq(users.id, listing.ownerUserId))
@@ -622,18 +617,18 @@ export interface ProjectCard {
   heroImageUrl: string | null;
   developerName: string | null;
   cityName: string | null;
-  minPriceUsd: number | null;
+  minPriceEur: number | null;
   availableUnits: number;
 }
 
 /** Aggregate unit facts (min price / count) for a set of project ids. */
 async function projectUnitStats(projectIds: number[]) {
   if (projectIds.length === 0)
-    return new Map<number, { minPriceUsd: number; units: number }>();
+    return new Map<number, { minPriceEur: number; units: number }>();
   const rows = await db
     .select({
       projectId: listings.projectId,
-      minPriceUsd: sql<string>`MIN(${listings.priceUsd})`,
+      minPriceEur: sql<string>`MIN(${listings.priceEur})`,
       units: sql<number>`COUNT(*)`,
     })
     .from(listings)
@@ -649,7 +644,7 @@ async function projectUnitStats(projectIds: number[]) {
       .filter((r) => r.projectId != null)
       .map((r) => [
         r.projectId as number,
-        { minPriceUsd: Number(r.minPriceUsd), units: Number(r.units) },
+        { minPriceEur: Number(r.minPriceEur), units: Number(r.units) },
       ]),
   );
 }
@@ -682,12 +677,12 @@ export async function getFeaturedProjects(limit = 6): Promise<ProjectCard[]> {
  * cards identical to the homepage carousel's.
  */
 export async function projectCardsFrom(
-  rows: Omit<ProjectCard, "minPriceUsd" | "availableUnits">[],
+  rows: Omit<ProjectCard, "minPriceEur" | "availableUnits">[],
 ): Promise<ProjectCard[]> {
   const stats = await projectUnitStats(rows.map((r) => r.id));
   return rows.map((r) => ({
     ...r,
-    minPriceUsd: stats.get(r.id)?.minPriceUsd ?? null,
+    minPriceEur: stats.get(r.id)?.minPriceEur ?? null,
     availableUnits: stats.get(r.id)?.units ?? 0,
   }));
 }
@@ -725,10 +720,8 @@ export interface ProjectUnit {
   title: string;
   bedrooms: number | null;
   bathrooms: number | null;
-  areaM2: string | null;
-  priceUsd: string;
-  priceAmount: string;
-  priceCurrency: "USD" | "PYG";
+  builtM2: string | null;
+  priceEur: string;
   propertyState: string | null;
 }
 
@@ -755,17 +748,15 @@ export async function getProjectBySlug(slug: string) {
       title: listings.title,
       bedrooms: listings.bedrooms,
       bathrooms: listings.bathrooms,
-      areaM2: listings.areaM2,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
+      builtM2: listings.builtM2,
+      priceEur: listings.priceEur,
       propertyState: listings.propertyState,
     })
     .from(listings)
     .where(
       and(eq(listings.status, "published"), eq(listings.projectId, row.project.id)),
     )
-    .orderBy(asc(listings.priceUsd));
+    .orderBy(asc(listings.priceEur));
 
   // Other projects by the same developer (for the "Otros proyectos" row).
   const siblings = row.project.developerId
@@ -795,20 +786,57 @@ export async function getProjectBySlug(slug: string) {
   const sibStats = await projectUnitStats(siblings.map((s) => s.id));
   const otherProjects: ProjectCard[] = siblings.map((s) => ({
     ...s,
-    minPriceUsd: sibStats.get(s.id)?.minPriceUsd ?? null,
+    minPriceEur: sibStats.get(s.id)?.minPriceEur ?? null,
     availableUnits: sibStats.get(s.id)?.units ?? 0,
   }));
 
   return { ...row, units, otherProjects };
 }
 
-/** Best active financing program (lowest rate) — listing cuota module. */
-export async function getBestFinancingProgram() {
-  const [row] = await db
-    .select()
-    .from(financingPrograms)
-    .where(eq(financingPrograms.active, true))
-    .orderBy(asc(financingPrograms.annualRate))
-    .limit(1);
-  return row ?? null;
+/**
+ * The active acquisition-cost row for a comunidad — feeds
+ * src/lib/acquisition-cost.ts on the listing detail page. Cached: it is a
+ * seven-row table, cron-owned (see src/lib/cache.ts's fx/acquisitionCosts
+ * note on why the TTL is the invalidation mechanism here).
+ */
+const cachedAcquisitionCost = unstable_cache(
+  async (region: string) => {
+    const [row] = await db
+      .select()
+      .from(acquisitionCosts)
+      .where(and(eq(acquisitionCosts.region, region), eq(acquisitionCosts.active, true)))
+      .limit(1);
+    return row ?? null;
+  },
+  ["queries:acquisitionCost"],
+  { revalidate: CACHE_TTL.acquisitionCosts, tags: [CACHE_TAGS.acquisitionCosts] },
+);
+
+export async function getAcquisitionCostForRegion(region: string | null) {
+  if (!region) return null;
+  return cachedAcquisitionCost(region);
+}
+
+/**
+ * The current EUR/SEK reference rate — feeds formatSek() on cards and the
+ * detail page. Cached under CACHE_TAGS.fx; see src/lib/cache.ts for why the
+ * TTL, not revalidateFx(), is what actually refreshes this in normal
+ * operation (the writer is a cron running out-of-process).
+ */
+const cachedFxRate = unstable_cache(
+  async () => {
+    const [row] = await db
+      .select()
+      .from(fxRates)
+      .where(and(eq(fxRates.base, "EUR"), eq(fxRates.quote, "SEK")))
+      .limit(1);
+    return row ?? null;
+  },
+  ["queries:fxRate"],
+  { revalidate: CACHE_TTL.fx, tags: [CACHE_TAGS.fx] },
+);
+
+export async function getEurSekRate(): Promise<{ rate: string; observedOn: string } | null> {
+  const row = await cachedFxRate();
+  return row ? { rate: row.rate, observedOn: row.observedOn } : null;
 }

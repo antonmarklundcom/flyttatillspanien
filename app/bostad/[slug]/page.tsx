@@ -8,7 +8,8 @@ import {
   getListingByPublicId,
   getSimilarListings,
   getAgencyListings,
-  getBestFinancingProgram,
+  getAcquisitionCostForRegion,
+  getEurSekRate,
   citySubtreeIds,
 } from "@/lib/queries";
 import {
@@ -17,7 +18,8 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatPrice, formatCuota, formatUsd, imageUrl, imageThumbUrl } from "@/lib/format";
+import { formatEur, formatSek, formatRateNote, imageUrl, imageThumbUrl } from "@/lib/format";
+import { estimateAcquisitionCost } from "@/lib/acquisition-cost";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -83,7 +85,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: t.metaTitle(listing.title, formatPrice(listing)),
+    title: t.metaTitle(listing.title, formatEur(listing.priceEur)),
     description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
     alternates: { canonical, languages },
     openGraph: {
@@ -124,9 +126,8 @@ export default async function ListingPage({ params }: Params) {
   if (!detail) notFound();
 
   const { listing, images, chain, agency, agent, ownerUser } = detail;
-  const [d, locale] = await Promise.all([dict(), currentLocale()]);
+  const [d] = await Promise.all([dict(), currentLocale()]);
   const t: Dictionary["listing"] = d.listing;
-  const numberLocale = locale === "en" ? "en-US" : "es-PY";
 
   /**
    * Count the view after the response is sent: the owner's stats must never
@@ -144,7 +145,6 @@ export default async function ListingPage({ params }: Params) {
       }
     });
   }
-  const cuota = formatCuota(listing.cuotaGs);
   /**
    * Contact chain, most specific first. `ownerUser` is the FSBO tail: a
    * listing published through /publicar belongs to a person, not an agency,
@@ -152,9 +152,9 @@ export default async function ListingPage({ params }: Params) {
    * rendered with no way to reach the seller (audit F4).
    */
   const contactWhatsapp =
-    agent?.whatsapp ?? agency?.whatsapp ?? ownerUser?.whatsapp ?? null;
+    agent?.phone ?? agency?.phone ?? ownerUser?.phone ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
-  const area = listing.areaM2 ?? listing.landM2;
+  const area = listing.builtM2 ?? listing.plotM2;
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
@@ -221,7 +221,7 @@ export default async function ListingPage({ params }: Params) {
   const similarLocationIds = city ? await subtreeIds(city.id) : null;
   const vertical = await currentVertical();
 
-  const [similar, fromAgency, financingProgram, cityPrices] = await Promise.all([
+  const [similar, fromAgency, acquisitionCostRow, eurSekRate, cityPrices] = await Promise.all([
     city && similarLocationIds
       ? getSimilarListings({
           excludeId: listing.id,
@@ -235,13 +235,24 @@ export default async function ListingPage({ params }: Params) {
     listing.agencyId
       ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4 })
       : Promise.resolve([]),
-    listing.operation === "venta" && cuota
-      ? getBestFinancingProgram()
+    listing.operation === "venta"
+      ? getAcquisitionCostForRegion(city?.acquisitionRegion ?? null)
       : Promise.resolve(null),
+    getEurSekRate(),
     // Market context for the internal link module below — independent of the
     // three above, so it belongs inside this block, not before it.
     city ? getCityPrices(city.slug) : Promise.resolve(null),
   ]);
+
+  const acquisitionCost =
+    listing.operation === "venta"
+      ? estimateAcquisitionCost(
+          Number(listing.priceEur),
+          acquisitionCostRow,
+          listing.propertyState === "obra_nueva" || listing.propertyState === "sobre_plano",
+        )
+      : null;
+  const sekPrice = formatSek(listing.priceEur, eurSekRate);
 
   const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
 
@@ -257,12 +268,12 @@ export default async function ListingPage({ params }: Params) {
   // /tasacion uses for its area question.
   const listingArea = Number(
     listing.propertyType === "terreno"
-      ? (listing.landM2 ?? listing.areaM2)
-      : (listing.areaM2 ?? listing.landM2),
+      ? (listing.plotM2 ?? listing.builtM2)
+      : (listing.builtM2 ?? listing.plotM2),
   );
   const listingPerM2 =
     contextCell && Number.isFinite(listingArea) && listingArea > 0
-      ? Number(listing.priceUsd) / listingArea
+      ? Number(listing.priceEur) / listingArea
       : null;
 
   const amenities = normalizeAmenities(listing.amenities);
@@ -281,10 +292,10 @@ export default async function ListingPage({ params }: Params) {
       label: t.detailState,
       value: t.stateLabel[listing.propertyState] ?? listing.propertyState,
     });
-  if (listing.areaM2)
-    details.push({ icon: "📐", label: t.detailArea, value: t.factArea(Math.round(Number(listing.areaM2))) });
-  if (listing.landM2)
-    details.push({ icon: "🌳", label: t.detailLand, value: t.factArea(Math.round(Number(listing.landM2))) });
+  if (listing.builtM2)
+    details.push({ icon: "📐", label: t.detailArea, value: t.factArea(Math.round(Number(listing.builtM2))) });
+  if (listing.plotM2)
+    details.push({ icon: "🌳", label: t.detailLand, value: t.factArea(Math.round(Number(listing.plotM2))) });
   if (listing.parking != null)
     details.push({ icon: "🚗", label: t.detailParking, value: String(listing.parking) });
 
@@ -311,7 +322,7 @@ export default async function ListingPage({ params }: Params) {
         entry={{
           href: listingUrl(listing),
           title: listing.title,
-          price: formatPrice(listing),
+          price: formatEur(listing.priceEur),
           operation: listing.operation,
           // realImages already excludes placeholder keys, so a listing with no
           // real photo stores no img and the card renders the fallback.
@@ -425,11 +436,17 @@ export default async function ListingPage({ params }: Params) {
             {listing.operation !== "venta" ? (
               <>
                 <span className="listing-price__label">{t.priceRentLabel}</span>{" "}
-                <span className="listing-price__amount">{formatPrice(listing)}</span>
+                <span className="listing-price__amount">{formatEur(listing.priceEur)}</span>
                 <span className="listing-price__period">{t.priceRentPeriod}</span>
               </>
             ) : (
-              <span className="listing-price__amount">{formatPrice(listing)}</span>
+              <span className="listing-price__amount">{formatEur(listing.priceEur)}</span>
+            )}
+            {sekPrice && <div className="listing-price__sek">{sekPrice}</div>}
+            {eurSekRate && (
+              <div className="listing-price__rate-note">
+                {formatRateNote(eurSekRate.rate, eurSekRate.observedOn)}
+              </div>
             )}
             <PriceAlert
               listingPublicId={listing.publicId}
@@ -438,34 +455,22 @@ export default async function ListingPage({ params }: Params) {
             />
           </div>
 
-          {/* Financing module — the cuota differentiator (ARCHITECTURE.md §3) */}
-          {cuota && financingProgram && (
+          {/* Acquisition-cost module — the deterministic money figure that
+              fills the slot the Paraguayan cuota module used to occupy (see
+              docs/SPAIN-PORTAL-DESIGN.md §4). */}
+          {acquisitionCost && (
             <div className="financing-box">
-              <div className="financing-box__head">
-                {t.financingHead(financingProgram.name)}
-                {financingProgram.code === "che_roga_pora" &&
-                  t.financingStateProgram}
-              </div>
+              <div className="financing-box__head">{t.acquisitionCostHead}</div>
               <div className="financing-box__grid">
                 <div>
-                  <div className="financing-box__label">{t.financingCuotaLabel}</div>
-                  <div className="financing-box__value">{cuota}</div>
-                </div>
-                <div>
-                  <div className="financing-box__label">{t.financingTermsLabel}</div>
-                  <div className="financing-box__value financing-box__value--muted">
-                    {t.financingTerms(
-                      Number(financingProgram.annualRate).toLocaleString(numberLocale),
-                      Math.round(financingProgram.maxTermMonths / 12),
-                    )}
+                  <div className="financing-box__label">{t.acquisitionCostLabel}</div>
+                  <div className="financing-box__value">
+                    {formatEur(acquisitionCost.totalEur)} (~{acquisitionCost.totalPct}%)
                   </div>
                 </div>
               </div>
-              <div className="financing-box__foot">{t.financingFoot}</div>
+              <div className="financing-box__foot">{t.acquisitionCostFoot}</div>
             </div>
-          )}
-          {cuota && !financingProgram && (
-            <div className="cuota-chip">💳 {cuota}</div>
           )}
 
           {details.length > 0 && (
@@ -588,19 +593,19 @@ export default async function ListingPage({ params }: Params) {
                     contextCell.operation,
                   city: city.name,
                   median:
-                    contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd)
+                    contextCell.medianPriceEur != null
+                      ? formatEur(contextCell.medianPriceEur)
                       : "—",
                   perM2:
-                    contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd)
+                    contextCell.medianPriceM2Eur != null
+                      ? formatEur(contextCell.medianPriceM2Eur)
                       : null,
                   sample: contextCell.sampleSize,
                 })}
                 {listingPerM2 != null && (
                   <>
                     {" — "}
-                    {svPrecios.contextThisListing(formatUsd(listingPerM2))}
+                    {svPrecios.contextThisListing(formatEur(listingPerM2))}
                   </>
                 )}
               </>
@@ -674,10 +679,9 @@ export default async function ListingPage({ params }: Params) {
       <div className="listing-cta-bar">
         <div className="listing-cta-bar__price">
           <span className="listing-cta-bar__amount">
-            {formatPrice(listing)}
+            {formatEur(listing.priceEur)}
             {listing.operation !== "venta" && t.priceRentPeriod}
           </span>
-          {cuota && <span className="listing-cta-bar__cuota">💳 {cuota}</span>}
         </div>
         <div className="listing-cta-bar__actions">
           {waHref && (
