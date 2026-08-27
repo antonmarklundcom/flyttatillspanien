@@ -1,9 +1,22 @@
 # PLAN.md — live build status
 
-Living tracker for the ARCHITECTURE.md §6 milestones. **Update this file in
-every session that finishes a step** — mark items done, add new blockers.
-`[C]` = Claude does it (code/session work). `[YOU]` = founder must do it
-(hosting, accounts, real-world data — things code cannot reach).
+> **PROJECT PIVOT (2026-08-27): this repo is no longer the Paraguay portal
+> described below.** It was converted into **flyttatillspanien.se** —
+> Spanish property, Swedish buyers. `docs/SPAIN-PORTAL-DESIGN.md` is the
+> decision record for the pivot; `CLAUDE.md` is the current state of the
+> world; `ARCHITECTURE.md` is the (now Spain-flavoured) design contract.
+> Everything below this note is **history** — the Paraguay-era decisions
+> (D1–D20 and the dated session logs) explain why some inherited machinery
+> looks the way it does, and are worth reading for that reason, but they
+> are **not current instructions**. Do not resume a Paraguay milestone from
+> this file, and do not treat an "open" item below as live unless
+> `CLAUDE.md`'s backlog section also lists it.
+
+Living tracker for the ARCHITECTURE.md §6 milestones (Paraguay-era numbering
+— see the pivot note above). **Update this file in every session that
+finishes a step** — mark items done, add new blockers. `[C]` = Claude does
+it (code/session work). `[YOU]` = founder must do it (hosting, accounts,
+real-world data — things code cannot reach).
 
 _Last updated: 2026-08-21 (second session: hreflang ahead of the flip, the
 vertical table's SEO invariants as a failing check, and /admin's tab row
