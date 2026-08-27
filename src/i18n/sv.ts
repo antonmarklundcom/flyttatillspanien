@@ -21,6 +21,23 @@ export const sv = {
   quickQuestions: ["Är den kvar?", "Kan jag boka visning?", "Vilka villkor gäller?"],
 } as const;
 
+export const svContactForm = {
+  nameLabel: "Namn",
+  namePlaceholder: "Fyll i ditt namn",
+  emailLabel: "E-post",
+  emailPlaceholder: "Fyll i din e-postadress",
+  phoneLabel: "Telefon (valfritt)",
+  messageLabel: "Meddelande",
+  submitIdle: "Skicka meddelande",
+  submitSending: "Skickar…",
+  submitSent: "Meddelandet är skickat!",
+  continueWhatsapp: "💬 Fortsätt i WhatsApp",
+  errorGeneric: "Vi kunde inte skicka din förfrågan. Försök igen om en liten stund.",
+  directNote: "✓ Din förfrågan går direkt till säljaren",
+  whatsappLink: "💬 WhatsApp",
+  showPhone: "📞 Visa telefonnummer",
+} as const;
+
 /**
  * Pre-launch notice (src/config/site-status.ts). Says the two things a
  * visitor needs: the listings are samples, and nothing here is an offer.

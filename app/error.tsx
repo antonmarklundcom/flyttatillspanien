@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 /**
  * Route error boundary (audit F53): without this file a thrown render error
- * shows Next's raw production error screen. Spanish copy to match the site;
+ * shows Next's raw production error screen. Swedish copy to match the site;
  * reset() re-renders the segment, which recovers transient DB hiccups.
  */
 export default function ErrorPage({
@@ -21,17 +21,17 @@ export default function ErrorPage({
 
   return (
     <main className="error-page">
-      <h1 className="error-page__title">Algo salió mal</h1>
+      <h1 className="error-page__title">Något gick fel</h1>
       <p className="error-page__text">
-        Tuvimos un problema al cargar esta página. Probá de nuevo en unos
-        segundos — si sigue fallando, volvé al inicio.
+        Vi hade ett problem med att ladda den här sidan. Försök igen om en
+        liten stund — om det fortsätter, gå tillbaka till startsidan.
       </p>
       <div className="error-page__actions">
         <button className="mk-btn mk-btn--accent" onClick={() => reset()}>
-          Reintentar
+          Försök igen
         </button>
         <a className="mk-btn mk-btn--outline" href="/">
-          Ir al inicio
+          Till startsidan
         </a>
       </div>
     </main>

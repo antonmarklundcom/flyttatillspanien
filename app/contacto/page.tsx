@@ -11,8 +11,8 @@ import { waLink } from "@/lib/wa";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Contacto";
-const DESCRIPTION = (brand: string) => `Escribinos por WhatsApp o dejanos tu consulta: publicación de propiedades, cuentas para inmobiliarias, proyectos y soporte de ${brand}.`;
+const TITLE = "Kontakt";
+const DESCRIPTION = (brand: string) => `Skriv till oss via WhatsApp eller lämna en fråga: publicera bostäder, konton för mäklarbyråer, projekt och support hos ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
@@ -41,7 +41,7 @@ export default async function ContactoPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/contacto" },
           ]),
           organizationJsonLd(origin, {
@@ -53,30 +53,30 @@ export default async function ContactoPage() {
       />
 
       <PageHero
-        kicker="Contacto"
-        title="Hablemos"
-        subtitle="Respondemos consultas sobre publicación, cuentas de inmobiliaria, proyectos y todo lo que tenga que ver con el portal."
+        kicker="Kontakt"
+        title="Hör av dig"
+        subtitle="Vi svarar på frågor om att publicera bostäder, mäklarkonton, projekt och allt annat som rör portalen."
       />
 
       <Section>
         <div className="mk-contact">
           <div className="mk-contact__form">
             <h2 className="mk-section__title mk-section__title--sub">
-              Dejanos tu consulta
+              Lämna din fråga
             </h2>
             <LeadForm
               leadType="seller"
               reasons={[
-                { value: "seller", label: "Quiero publicar una propiedad" },
+                { value: "seller", label: "Jag vill publicera en bostad" },
                 {
                   value: "agent_signup",
-                  label: "Soy inmobiliaria o agente",
+                  label: "Jag är mäklare eller agent",
                 },
                 {
                   value: "developer",
-                  label: "Soy desarrolladora / tengo un proyecto",
+                  label: "Jag är byggherre / har ett projekt",
                 },
-                { value: "buyer", label: "Otra consulta" },
+                { value: "buyer", label: "Annan fråga" },
               ]}
               companyField
             />
@@ -84,7 +84,7 @@ export default async function ContactoPage() {
 
           <aside className="mk-contact__aside">
             <div className="mk-card">
-              <h3 className="mk-card__title">Canales directos</h3>
+              <h3 className="mk-card__title">Direkta kanaler</h3>
               <ul className="mk-card__list">
                 {waHref && (
                   <li>
@@ -104,43 +104,43 @@ export default async function ContactoPage() {
                     <a href={`mailto:${CONTACT_EMAIL}`}>✉️ {CONTACT_EMAIL}</a>
                   </li>
                 )}
-                <li>📝 Formulario de contacto (respondemos por acá)</li>
-                <li>📍 Marbella, España</li>
-                <li>🕘 Lunes a viernes, 8:00 a 18:00</li>
+                <li>📝 Kontaktformulär (vi svarar här)</li>
+                <li>📍 Marbella, Spanien</li>
+                <li>🕘 Måndag–fredag, 8:00–18:00</li>
               </ul>
             </div>
 
             <div className="mk-card">
               <h3 className="mk-card__title">
-                ¿Consulta sobre una propiedad puntual?
+                Fråga om en specifik bostad?
               </h3>
               <p className="mk-card__text">
-                Las consultas sobre un aviso las responde quien lo publicó, no
-                nosotros. Entrá a la propiedad y usá el formulario o el botón de
-                WhatsApp que están en la ficha — así te contesta directamente el
-                vendedor o la inmobiliaria.
+                Frågor om en specifik annons besvaras av den som publicerat
+                den, inte av oss. Gå in på bostaden och använd formuläret eller
+                WhatsApp-knappen där — då svarar säljaren eller mäklarbyrån
+                dig direkt.
               </p>
               <Link className="mk-card__link" href="/kopa/marbella">
-                Ver propiedades →
+                Se bostäder →
               </Link>
             </div>
 
             <div className="mk-card">
-              <h3 className="mk-card__title">Atajos útiles</h3>
+              <h3 className="mk-card__title">Genvägar</h3>
               <ul className="mk-card__list">
                 <li>
-                  <Link href="/publicar">Publicar una propiedad</Link>
+                  <Link href="/publicar">Publicera en bostad</Link>
                 </li>
                 <li>
                   <Link href="/para-inmobiliarias">
-                    Cuenta para inmobiliarias
+                    Konto för mäklarbyråer
                   </Link>
                 </li>
                 <li>
-                  <Link href="/tasacion">Tasar mi propiedad gratis</Link>
+                  <Link href="/tasacion">Värdera min bostad gratis</Link>
                 </li>
                 <li>
-                  <Link href="/preguntas-frecuentes">Preguntas frecuentes</Link>
+                  <Link href="/preguntas-frecuentes">Vanliga frågor</Link>
                 </li>
               </ul>
             </div>

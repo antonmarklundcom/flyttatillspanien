@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { sv } from "@/i18n/sv";
+import { sv, svContactForm } from "@/i18n/sv";
 import { waLink } from "@/lib/wa";
 
 /**
@@ -57,7 +57,12 @@ export function ContactForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const whatsappTarget = phone.trim() || contactWhatsapp;
+    // /api/leads requires a valid email (leads.email is NOT NULL — Sweden is
+    // email-first) and takes the phone number, if any, as `phone`. Sending
+    // the old `whatsapp` key here would silently mismatch the API's schema.
+    // This is the BUYER's own callback number — a Swedish visitor inquiring
+    // about a Spanish listing — so the prefix is Sweden's, not Spain's.
+    const buyerPhone = phone.trim() ? `+46${phone.trim()}` : undefined;
     setState("sending");
     let captured = false;
     try {
@@ -68,8 +73,8 @@ export function ContactForm({
           leadType,
           listingPublicId,
           name: name || undefined,
-          email: email || undefined,
-          whatsapp: whatsappTarget || "unknown",
+          email,
+          phone: buyerPhone,
           message: fullMessage,
           utm: readUtm(),
         }),
@@ -86,23 +91,24 @@ export function ContactForm({
   const fieldsRow = (
     <div className={`contact-form__row${variant === "panel" ? " contact-form__row--split" : ""}`}>
       <label className="contact-form__field">
-        <span className="contact-form__label">Nombre</span>
+        <span className="contact-form__label">{svContactForm.nameLabel}</span>
         <input
           className="contact-form__input"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Ingresa tu nombre"
+          placeholder={svContactForm.namePlaceholder}
         />
       </label>
       <label className="contact-form__field">
-        <span className="contact-form__label">Email</span>
+        <span className="contact-form__label">{svContactForm.emailLabel}</span>
         <input
           className="contact-form__input"
           type="email"
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Ingresa tu email"
+          placeholder={svContactForm.emailPlaceholder}
         />
       </label>
     </div>
@@ -113,19 +119,18 @@ export function ContactForm({
       {fieldsRow}
 
       <label className="contact-form__field">
-        <span className="contact-form__label">Teléfono</span>
+        <span className="contact-form__label">{svContactForm.phoneLabel}</span>
         <div className="contact-form__phone">
           <span className="contact-form__phone-prefix" aria-hidden>
-            🇵🇾 +595
+            🇸🇪 +46
           </span>
           <input
             className="contact-form__input contact-form__input--phone"
             type="tel"
-            required
             minLength={6}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="981 234 567"
+            placeholder="70 123 45 67"
           />
         </div>
       </label>
@@ -144,7 +149,7 @@ export function ContactForm({
       </div>
 
       <label className="contact-form__field">
-        <span className="contact-form__label">Mensaje</span>
+        <span className="contact-form__label">{svContactForm.messageLabel}</span>
         <textarea
           className="contact-form__textarea"
           rows={variant === "panel" ? 3 : 4}
@@ -159,10 +164,10 @@ export function ContactForm({
         disabled={state === "sending"}
       >
         {state === "sent"
-          ? "¡Mensaje enviado!"
+          ? svContactForm.submitSent
           : state === "sending"
-            ? "Enviando…"
-            : "Enviar Mensaje"}
+            ? svContactForm.submitSending
+            : svContactForm.submitIdle}
       </button>
 
       {state === "sent" && waHref && (
@@ -172,12 +177,12 @@ export function ContactForm({
           target="_blank"
           rel="noopener noreferrer"
         >
-          💬 Continuar en WhatsApp
+          {svContactForm.continueWhatsapp}
         </a>
       )}
       {state === "error" && (
         <p className="contact-form__error" role="alert">
-          No pudimos enviar tu consulta. Probá de nuevo en unos segundos.
+          {svContactForm.errorGeneric}
         </p>
       )}
 
@@ -187,9 +192,7 @@ export function ContactForm({
             operator's inbox instead, and promising otherwise is a lie the
             buyer can't check (audit F4). */}
         {waHref && (
-          <span className="contact-form__note">
-            ✓ Tu consulta llega directamente al vendedor
-          </span>
+          <span className="contact-form__note">{svContactForm.directNote}</span>
         )}
         {waHref && (
           <div className="contact-form__altlinks">
@@ -199,10 +202,10 @@ export function ContactForm({
               target="_blank"
               rel="noopener noreferrer"
             >
-              💬 WhatsApp
+              {svContactForm.whatsappLink}
             </a>
             <a className="contact-form__altlink" href={`tel:${contactWhatsapp}`}>
-              📞 Ver teléfono
+              {svContactForm.showPhone}
             </a>
           </div>
         )}

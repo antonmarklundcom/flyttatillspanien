@@ -21,17 +21,17 @@ export interface LeadFormReason {
  * These leads have no listing and no counterparty: they come to us, so this
  * one just posts to /api/leads (MySQL first, then GHL) and confirms inline.
  *
- * WhatsApp is required by the API and is the field that actually gets a reply
- * in Paraguay; email is optional.
+ * Email is required by the API (leads.email is NOT NULL — Sweden is
+ * email-first); phone is optional.
  */
 export function LeadForm({
   leadType,
   reasons,
-  submitLabel = "Enviar consulta",
-  messagePlaceholder = "Contanos en qué podemos ayudarte",
+  submitLabel = "Skicka meddelande",
+  messagePlaceholder = "Berätta hur vi kan hjälpa dig",
   companyField = false,
-  successTitle = "¡Gracias! Recibimos tu mensaje.",
-  successText = "Te contactamos por WhatsApp dentro de las próximas 24 horas hábiles.",
+  successTitle = "Tack! Vi har tagit emot ditt meddelande.",
+  successText = "Vi hör av oss via e-post inom kort.",
 }: {
   /** Used when `reasons` is not given, or as the initial selection. */
   leadType: LeadFormType;
@@ -56,16 +56,15 @@ export function LeadForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 6) {
-      setError("Ingresá un número de WhatsApp válido.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      setError("Ange en giltig e-postadress.");
       return;
     }
     setError(null);
     setSending(true);
 
     const body = [
-      companyField && company ? `Inmobiliaria / empresa: ${company}` : null,
+      companyField && company ? `Mäklarbyrå / företag: ${company}` : null,
       message,
     ]
       .filter(Boolean)
@@ -78,8 +77,12 @@ export function LeadForm({
         body: JSON.stringify({
           leadType: type,
           name: name || undefined,
-          email: email || undefined,
-          whatsapp: phone.trim(),
+          email,
+          // This form serves both Swedish buyers (/contacto) and Spanish
+          // agencies (/para-inmobiliarias) — it cannot assume one country
+          // code for both, so the number is stored exactly as typed; the
+          // placeholder hints the expected format per caller.
+          phone: phone.trim() || undefined,
           message: body || undefined,
           utm: readUtm(),
         }),
@@ -87,9 +90,7 @@ export function LeadForm({
       if (!res.ok) throw new Error(String(res.status));
       setSent(true);
     } catch {
-      setError(
-        "No pudimos enviar tu mensaje. Probá de nuevo o escribinos por WhatsApp.",
-      );
+      setError("Vi kunde inte skicka ditt meddelande. Försök igen om en liten stund.");
     } finally {
       setSending(false);
     }
@@ -111,7 +112,7 @@ export function LeadForm({
     <form className="lead-form" onSubmit={onSubmit}>
       {reasons && reasons.length > 0 && (
         <label className="lead-form__field">
-          <span className="lead-form__label">Motivo de contacto</span>
+          <span className="lead-form__label">Anledning till kontakt</span>
           <select
             className="lead-form__input"
             value={type}
@@ -128,51 +129,51 @@ export function LeadForm({
 
       <div className="lead-form__row">
         <label className="lead-form__field">
-          <span className="lead-form__label">Nombre</span>
+          <span className="lead-form__label">Namn</span>
           <input
             className="lead-form__input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Tu nombre"
+            placeholder="Ditt namn"
             autoComplete="name"
           />
         </label>
         <label className="lead-form__field">
           <span className="lead-form__label">
-            WhatsApp <span aria-hidden>*</span>
+            E-post <span aria-hidden>*</span>
           </span>
           <input
             className="lead-form__input"
-            type="tel"
+            type="email"
             required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+595 981 234 567"
-            autoComplete="tel"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="din@epost.se"
+            autoComplete="email"
           />
         </label>
       </div>
 
       <div className="lead-form__row">
         <label className="lead-form__field">
-          <span className="lead-form__label">Email (opcional)</span>
+          <span className="lead-form__label">Telefon (valfritt)</span>
           <input
             className="lead-form__input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
-            autoComplete="email"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+46 70 123 45 67"
+            autoComplete="tel"
           />
         </label>
         {companyField && (
           <label className="lead-form__field">
-            <span className="lead-form__label">Inmobiliaria / empresa</span>
+            <span className="lead-form__label">Mäklarbyrå / företag</span>
             <input
               className="lead-form__input"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="Nombre comercial"
+              placeholder="Företagsnamn"
               autoComplete="organization"
             />
           </label>
@@ -180,7 +181,7 @@ export function LeadForm({
       </div>
 
       <label className="lead-form__field">
-        <span className="lead-form__label">Mensaje</span>
+        <span className="lead-form__label">Meddelande</span>
         <textarea
           className="lead-form__input lead-form__textarea"
           value={message}
@@ -197,14 +198,14 @@ export function LeadForm({
       )}
 
       <button className="lead-form__submit" type="submit" disabled={sending}>
-        {sending ? "Enviando…" : submitLabel}
+        {sending ? "Skickar…" : submitLabel}
       </button>
 
       <p className="lead-form__fineprint">
-        Al enviar aceptás nuestros{" "}
-        <a href="/terminos">términos</a> y la{" "}
-        <a href="/privacidad">política de privacidad</a>. Usamos tus datos solo
-        para responderte.
+        Genom att skicka godkänner du våra{" "}
+        <a href="/terminos">villkor</a> och vår{" "}
+        <a href="/privacidad">integritetspolicy</a>. Vi använder dina uppgifter
+        enbart för att svara dig.
       </p>
     </form>
   );

@@ -58,9 +58,9 @@ export async function SiteFooter() {
         <div className="site-footer__about">
           <div className="site-footer__brand">{brand}</div>
           <p className="site-footer__tagline">
-            El portal inmobiliario de Paraguay. Casas, departamentos, terrenos y
-            proyectos nuevos en venta y alquiler — con precios de referencia por
-            zona y cuota estimada en cada aviso.
+            Spansk bostad för svenska köpare. Villor, lägenheter, tomter och
+            nyproduktion till försäljning och uthyrning — med referenspriser
+            per område och uppskattad total köpkostnad på varje bostad.
           </p>
 
           <ul className="site-footer__contact">
@@ -86,26 +86,26 @@ export async function SiteFooter() {
                 </a>
               ) : (
                 <Link className="site-footer__link" href="/contacto">
-                  ✉️ Escribinos
+                  ✉️ Kontakta oss
                 </Link>
               )}
             </li>
             <li>
-              <span className="site-footer__muted">📍 Asunción, Paraguay</span>
+              <span className="site-footer__muted">📍 Marbella, Spanien</span>
             </li>
           </ul>
         </div>
 
-        <Column title="Comprar y alquilar" links={FOOTER_BUY} />
-        <Column title="Herramientas" links={FOOTER_TOOLS} />
-        <Column title="Para profesionales" links={FOOTER_PRO} />
-        <Column title="Ubicaciones" links={FOOTER_LOCATIONS} />
-        <Column title="Por tipo" links={FOOTER_TYPES} />
+        <Column title="Köpa och hyra" links={FOOTER_BUY} />
+        <Column title="Verktyg" links={FOOTER_TOOLS} />
+        <Column title="För proffs" links={FOOTER_PRO} />
+        <Column title="Orter" links={FOOTER_LOCATIONS} />
+        <Column title="Per typ" links={FOOTER_TYPES} />
       </div>
 
       <div className="site-footer__bottom">
         <span>
-          © {year} {brand} — Encontrá tu propiedad en Paraguay.
+          © {year} {brand} — Hitta din bostad i Spanien.
         </span>
         <span className="site-footer__legal">
           {FOOTER_COMPANY.map((l) => (
@@ -117,13 +117,12 @@ export async function SiteFooter() {
       </div>
 
       <div className="site-footer__disclaimer">
-        Los precios de referencia, las cuotas estimadas y las tasaciones
-        publicadas son cálculos orientativos elaborados a partir de los avisos
-        del portal y de las condiciones vigentes de los programas de
-        financiamiento. No constituyen una tasación oficial, una oferta de
-        crédito ni asesoramiento financiero. {brand} no participa de las
-        negociaciones entre las partes ni verifica de forma independiente la
-        titularidad de cada inmueble publicado.
+        Referenspriserna, köpkostnadsuppskattningarna och värderingarna som
+        publiceras är vägledande beräkningar baserade på portalens annonser och
+        gällande offentliga skattesatser. De utgör inte en officiell
+        värdering, ett låneerbjudande eller finansiell rådgivning. {brand}{" "}
+        deltar inte i förhandlingar mellan parterna och verifierar inte
+        självständigt äganderätten till varje publicerad bostad.
       </div>
     </footer>
   );

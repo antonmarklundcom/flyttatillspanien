@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
@@ -31,26 +31,44 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
  */
 export function ListingMap({ lat, lng, zoom = 14 }: { lat: number; lng: number; zoom?: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // A WebGL failure (disabled by the visitor, blocked by an extension or
+  // policy, an older device) must not take down the whole listing page for
+  // the sake of a map widget — everything else on this page (price, contact
+  // form) matters far more than the map. Caught locally rather than relying
+  // on the route's error boundary, which would discard all of it.
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current) return;
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: OSM_STYLE,
-      center: [lng, lat],
-      zoom,
-      attributionControl: false,
-      interactive: true,
-    });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.addControl(new maplibregl.AttributionControl({ compact: true }));
+    let map: maplibregl.Map | undefined;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: OSM_STYLE,
+        center: [lng, lat],
+        zoom,
+        attributionControl: false,
+        interactive: true,
+      });
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
+      map.addControl(new maplibregl.AttributionControl({ compact: true }));
 
-    const marker = document.createElement("div");
-    marker.className = "listing-map__marker";
-    new maplibregl.Marker({ element: marker }).setLngLat([lng, lat]).addTo(map);
-
-    return () => map.remove();
+      const marker = document.createElement("div");
+      marker.className = "listing-map__marker";
+      new maplibregl.Marker({ element: marker }).setLngLat([lng, lat]).addTo(map);
+    } catch {
+      setFailed(true);
+      return;
+    }
+    return () => map?.remove();
   }, [lat, lng, zoom]);
 
+  if (failed) {
+    return (
+      <div className="listing-map listing-map--unavailable">
+        Kartan kunde inte laddas i den här webbläsaren.
+      </div>
+    );
+  }
   return <div ref={containerRef} className="listing-map" />;
 }

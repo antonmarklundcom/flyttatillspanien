@@ -51,7 +51,7 @@ export function MobileMenu() {
         ref={buttonRef}
         type="button"
         className="site-header__burger"
-        aria-label={open ? "Cerrar menú" : "Abrir menú"}
+        aria-label={open ? "Stäng meny" : "Öppna meny"}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
@@ -94,7 +94,7 @@ export function MobileMenu() {
 
             <div className="mobile-menu__group">
               <span className="mobile-menu__group-title">
-                {"Sobre nosotros"}
+                {"Om oss"}
               </span>
               <ul className="mobile-menu__list">
                 {FOOTER_COMPANY.map((l) => (
@@ -108,7 +108,7 @@ export function MobileMenu() {
             </div>
 
             <Link className="mobile-menu__cta" href="/publicar">
-              Publicar propiedad
+              Publicera bostad
             </Link>
             </div>
           </div>,

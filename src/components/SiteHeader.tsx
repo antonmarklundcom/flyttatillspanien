@@ -80,13 +80,13 @@ export async function SiteHeader() {
 
         <div className="site-header__actions">
           <Link className="site-header__login" href="/login">
-            Ingresar
+            Logga in
           </Link>
           {/* Two labels, one shown at a time — on a 320px screen the full label
               plus the brand no longer fit on one line (globals.css @560px). */}
           <Link className="site-header__cta" href="/publicar">
-            <span className="site-header__cta-full">Publicar propiedad</span>
-            <span className="site-header__cta-short">Publicar</span>
+            <span className="site-header__cta-full">Publicera bostad</span>
+            <span className="site-header__cta-short">Publicera</span>
           </Link>
           <MobileMenu />
         </div>

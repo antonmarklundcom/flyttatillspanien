@@ -13,7 +13,7 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="es">
+    <html lang="sv">
       <body
         style={{
           fontFamily: "system-ui, sans-serif",
@@ -26,10 +26,10 @@ export default function GlobalError({
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, marginBottom: 8 }}>Algo salió mal</h1>
+          <h1 style={{ fontSize: 22, marginBottom: 8 }}>Något gick fel</h1>
           <p style={{ color: "#555", marginBottom: 16 }}>
-            Tuvimos un problema al cargar el sitio. Probá de nuevo en unos
-            segundos.
+            Vi hade ett problem med att ladda sidan. Försök igen om en liten
+            stund.
           </p>
           <button
             onClick={() => reset()}
@@ -42,7 +42,7 @@ export default function GlobalError({
               cursor: "pointer",
             }}
           >
-            Reintentar
+            Försök igen
           </button>
         </div>
       </body>

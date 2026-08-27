@@ -19,7 +19,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const TITLE = "Para inmobiliarias y agentes";
-const DESCRIPTION = (brand: string) => `Publicá tu cartera completa en ${brand}, recibí consultas por WhatsApp y mostrá tu inmobiliaria en el directorio. Empezar es gratis.`;
+const DESCRIPTION = (brand: string) => `Publica toda tu cartera en ${brand}, el portal para compradores suecos de propiedad en España. Recibe consultas por WhatsApp y muestra tu inmobiliaria en el directorio. Empezar es gratis.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
@@ -34,75 +34,75 @@ export async function generateMetadata(): Promise<Metadata> {
 const BENEFITS = [
   {
     icon: "📇",
-    title: "Tu cartera completa, en un solo lugar",
-    text: "Cargá propiedad por propiedad o importá tu cartera entera desde una planilla o desde el enlace de tu aviso. Sin límite de avisos en el plan gratuito.",
+    title: "Toda tu cartera, en un solo lugar",
+    text: "Sube propiedad por propiedad o importa tu cartera entera desde una hoja de cálculo o pegando el enlace de tu anuncio. Sin límite de anuncios en el plan gratuito.",
   },
   {
     icon: "💬",
-    title: "Las consultas llegan directo a vos",
-    text: "Cada aviso lleva tu WhatsApp. No intermediamos la conversación, no te cobramos por contacto y no revendemos tus leads a la competencia.",
+    title: "Las consultas llegan directas a ti",
+    text: "Cada anuncio lleva tu WhatsApp. No intermediamos la conversación, no cobramos por contacto y no revendemos tus leads a la competencia.",
   },
   {
     icon: "🏢",
     title: "Perfil público de tu inmobiliaria",
-    text: "Tu página con logo, equipo de agentes y todos tus avisos activos — un enlace que podés compartir y que además posiciona en Google.",
+    text: "Tu página con logo, equipo de agentes y todos tus anuncios activos — un enlace que puedes compartir y que además posiciona en Google.",
   },
   {
     icon: "📊",
     title: "Datos reales del mercado",
-    text: "Medianas de precio por ciudad y por m² calculadas sobre avisos publicados. Argumentos concretos para la próxima captación.",
+    text: "Medianas de precio por zona y por m² calculadas sobre los anuncios publicados. Argumentos concretos para tu próxima captación.",
   },
   {
-    icon: "💳",
-    title: "Cuota estimada en cada aviso",
-    text: "Mostramos automáticamente la cuota mensual aproximada con financiamiento vigente. El comprador entiende de entrada si le cierra el número.",
+    icon: "💶",
+    title: "Coste de compra estimado en cada anuncio",
+    text: "Mostramos automáticamente una estimación del coste total de compra (ITP/IVA, notaría, registro) según la comunidad autónoma. El comprador sueco entiende desde el principio qué se suma al precio.",
   },
   {
     icon: "👥",
-    title: "Cuentas para tu equipo",
-    text: "Cada agente con su usuario y su perfil público, todo bajo la cuenta de la inmobiliaria. Vos ves la actividad de toda la oficina.",
+    title: "Cuentas para todo tu equipo",
+    text: "Cada agente con su usuario y su perfil público, todo bajo la cuenta de la inmobiliaria. Tú ves la actividad de toda la oficina.",
   },
 ];
 
 const STEPS = [
   {
-    title: "Creá tu cuenta",
-    text: "Registro con tu WhatsApp en menos de dos minutos. No pedimos tarjeta.",
+    title: "Crea tu cuenta",
+    text: "Alta en menos de dos minutos. No pedimos tarjeta.",
   },
   {
-    title: "Cargá tu cartera",
-    text: "Publicá una por una desde el panel, o importá varias de una vez. Nosotros te ayudamos con la primera carga si querés.",
+    title: "Sube tu cartera",
+    text: "Publica una por una desde el panel, o importa varias a la vez. Te ayudamos con la primera carga si quieres.",
   },
   {
     title: "Verificamos tu inmobiliaria",
-    text: "Revisamos los datos y activamos el sello de verificado en tu perfil y en todos tus avisos.",
+    text: "Revisamos los datos y activamos el sello de verificado en tu perfil y en todos tus anuncios.",
   },
   {
-    title: "Recibí y gestioná consultas",
-    text: "Las consultas te llegan por WhatsApp y quedan registradas en tu panel, con la propiedad que las originó.",
+    title: "Recibe y gestiona consultas",
+    text: "Las consultas te llegan por WhatsApp y quedan registradas en tu panel, junto con la propiedad que las originó.",
   },
 ];
 
 const FAQ = [
   {
     q: "¿Cuánto cuesta publicar como inmobiliaria?",
-    a: "El plan Profesional es gratuito e incluye avisos ilimitados, perfil público y panel con consultas. Los planes pagos agregan destaque en las búsquedas y posiciones fijas en la portada; podés verlos en la página de planes.",
+    a: "El plan Profesional es gratuito e incluye anuncios ilimitados, perfil público y panel con consultas. Los planes de pago añaden destacados en las búsquedas y posiciones fijas en la portada; puedes verlos en la página de planes.",
   },
   {
-    q: "¿Cobran comisión sobre mis operaciones?",
-    a: "No. No participamos de la negociación ni cobramos porcentaje sobre ninguna venta o alquiler que cierres. Lo que se acuerde entre vos y tu cliente es entre ustedes.",
+    q: "¿Cobráis comisión sobre mis operaciones?",
+    a: "No. No participamos en la negociación ni cobramos porcentaje sobre ninguna venta o alquiler que cierres. Lo que acordéis tú y tu cliente es cosa vuestra.",
   },
   {
-    q: "¿Puedo importar mi cartera desde otro portal o desde una planilla?",
-    a: "Sí. Desde el panel podés importar avisos a partir de una planilla o pegando el enlace de una publicación existente, y después ajustar lo que haga falta antes de publicar.",
+    q: "¿Puedo importar mi cartera desde otro portal o desde una hoja de cálculo?",
+    a: "Sí. Desde el panel puedes importar anuncios a partir de una hoja de cálculo o pegando el enlace de una publicación existente, y luego ajustar lo que haga falta antes de publicar.",
   },
   {
     q: "¿Qué pasa con mis leads?",
-    a: "Son tuyos. Las consultas de tus avisos van directo a tu WhatsApp y quedan en tu panel. No los vendemos ni los compartimos con otras inmobiliarias.",
+    a: "Son tuyos. Las consultas de tus anuncios van directas a tu WhatsApp y quedan en tu panel. No los vendemos ni los compartimos con otras inmobiliarias.",
   },
   {
     q: "¿Y si soy agente independiente, sin inmobiliaria?",
-    a: "También podés publicar. Tenés perfil de agente propio, con tu foto, tu WhatsApp y tus avisos, sin necesidad de estar vinculado a una oficina.",
+    a: "También puedes publicar. Tienes tu propio perfil de agente, con tu foto, tu WhatsApp y tus anuncios, sin necesidad de estar vinculado a una oficina.",
   },
 ];
 
@@ -125,8 +125,8 @@ export default async function ParaInmobiliariasPage() {
       <PageHero
         tone="dark"
         kicker="Para profesionales del sector"
-        title="Tu cartera, frente a quien la está buscando"
-        subtitle={`Publicá todas tus propiedades en ${brand}, recibí las consultas directo en tu WhatsApp y mostrá tu inmobiliaria en el directorio del portal. Empezar es gratis y no pedimos tarjeta.`}
+        title="Tu cartera, frente a compradores suecos"
+        subtitle={`Publica todas tus propiedades en ${brand}, el portal de propiedad española pensado para compradores suecos. Recibe las consultas directas en tu WhatsApp y muestra tu inmobiliaria en el directorio del portal. Empezar es gratis y no pedimos tarjeta.`}
         actions={
           <>
             <Link className="mk-btn mk-btn--accent" href="/registro">
@@ -144,18 +144,18 @@ export default async function ParaInmobiliariasPage() {
           <StatRow
             stats={[
               {
-                value: stats.listings.toLocaleString("es-PY"),
+                value: stats.listings.toLocaleString("es-ES"),
                 label: "Propiedades publicadas",
               },
               {
-                value: stats.cities.toLocaleString("es-PY"),
+                value: stats.cities.toLocaleString("es-ES"),
                 label: "Zonas con inventario activo",
               },
               {
-                value: stats.agencies.toLocaleString("es-PY"),
+                value: stats.agencies.toLocaleString("es-ES"),
                 label: "Inmobiliarias publicando",
               },
-              { value: "Gs. 0", label: "Costo por consulta recibida" },
+              { value: "0 €", label: "Coste por consulta recibida" },
             ]}
           />
         </Section>
@@ -163,14 +163,14 @@ export default async function ParaInmobiliariasPage() {
 
       <Section
         title="Lo que incluye publicar con nosotros"
-        subtitle="Todo esto entra en el plan gratuito. Sin límite de avisos, sin costo por consulta."
+        subtitle="Todo esto entra en el plan gratuito. Sin límite de anuncios, sin coste por consulta."
       >
         <FeatureGrid items={BENEFITS} />
       </Section>
 
       <Section
         tone="muted"
-        title="Cómo empezás"
+        title="Cómo empezar"
         subtitle="De crear la cuenta a tener la cartera publicada, normalmente el mismo día."
       >
         <StepList steps={STEPS} />
@@ -192,21 +192,21 @@ export default async function ParaInmobiliariasPage() {
         tone="muted"
         width="narrow"
         title="Hablemos de tu cartera"
-        subtitle="Dejanos tus datos y te escribimos por WhatsApp para activar tu cuenta y ayudarte con la primera carga."
+        subtitle="Déjanos tus datos y te escribimos por WhatsApp para activar tu cuenta y ayudarte con la primera carga."
       >
         <LeadForm
           leadType="agent_signup"
           companyField
           submitLabel="Quiero publicar mi cartera"
-          messagePlaceholder="¿Cuántas propiedades tenés publicadas hoy? ¿En qué zonas trabajás?"
+          messagePlaceholder="¿Cuántas propiedades tienes publicadas hoy? ¿En qué zonas trabajas?"
           successTitle="¡Listo! Te escribimos enseguida."
           successText="Un integrante del equipo te contacta por WhatsApp para activar tu cuenta de inmobiliaria."
         />
       </Section>
 
       <CtaBand
-        title="Empezá hoy, sin costo"
-        text="Creá tu cuenta, cargá tu primera propiedad y mirá cuántas consultas llegan."
+        title="Empieza hoy, sin coste"
+        text="Crea tu cuenta, sube tu primera propiedad y mira cuántas consultas llegan."
         primary={{ label: "Crear cuenta gratis", href: "/registro" }}
         secondary={{ label: "Ver planes", href: "/planes" }}
       />
