@@ -14,7 +14,6 @@ import { DEFAULT_VERTICAL_KEY } from "@/config/verticals";
 import { db } from "@/db";
 import { leads } from "@/db/schema";
 import { getCrm } from "@/lib/crm";
-import { canonPhone } from "@/lib/import/normalize";
 import { estimateValue, type ValuationResult } from "@/lib/valuation";
 import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -44,12 +43,12 @@ export type ValuationLeadResult = { ok: true } | { ok: false };
 
 export async function requestValuationContactAction(input: {
   name: string;
-  whatsapp: string;
+  email: string;
   /** What they asked about, so the follow-up starts informed. */
   context: string;
 }): Promise<ValuationLeadResult> {
-  const whatsapp = canonPhone(input.whatsapp);
-  if (whatsapp.length < 6) return { ok: false };
+  const email = input.email.trim().toLowerCase();
+  if (!email.includes("@")) return { ok: false };
 
   const vertical = (await headers()).get("x-vertical") ?? DEFAULT_VERTICAL_KEY;
 
@@ -59,7 +58,7 @@ export async function requestValuationContactAction(input: {
     leadType: "valuation",
     vertical,
     name: input.name.trim().slice(0, 140) || null,
-    whatsapp,
+    email,
     message: input.context.slice(0, 2000),
     // A valuation lead belongs to no agency: it is a seller the portal itself
     // should work, and it shows up under "Interno" in /admin/leads.
@@ -70,7 +69,7 @@ export async function requestValuationContactAction(input: {
     leadType: "valuation",
     vertical,
     name: input.name.trim() || undefined,
-    whatsapp,
+    whatsapp: email,
     message: input.context,
     routedTo: "internal",
   });
