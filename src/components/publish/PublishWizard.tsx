@@ -1,17 +1,16 @@
 "use client";
 
 /**
- * 3-step publish wizard (ARCHITECTURE.md §3, M5). Detalles → Ubicación →
- * Precio & publicación, then WhatsApp OTP at publish. Autosave is two-layer:
- * localStorage on every change (instant, survives a reload) and a server draft
- * (a status='draft' listings row) written when a step is completed, so a draft
- * also survives a device change and shows up in the panel. All identity,
- * ownership and the verified flag are decided server-side in ../app/publicar/
- * actions.ts — this component only collects and previews.
+ * 3-step publish wizard. Detaljer → Läge → Pris & publicering, then email
+ * OTP at publish (Sweden is email-first, docs/SPAIN-PORTAL-DESIGN.md §3.7).
+ * Autosave is two-layer: localStorage on every change (instant, survives a
+ * reload) and a server draft (a status='draft' listings row) written when a
+ * step is completed, so a draft also survives a device change and shows up
+ * in the panel. All identity, ownership and the verified flag are decided
+ * server-side in ../app/publicar/actions.ts — this component only collects
+ * and previews.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { bestCuota, type FinancingProgram } from "@/lib/cuota";
-import { formatCuota } from "@/lib/format";
 import { svPublish } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
@@ -31,10 +30,12 @@ import { imageThumbUrl } from "@/lib/format";
 import type { ListingImageRow } from "@/lib/listing-images";
 
 const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
-  { value: "venta", label: "Venta" },
-  { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_temporal", label: "Alquiler temporal" },
+  { value: "venta", label: "Köp" },
+  { value: "alquiler", label: "Uthyrning" },
+  { value: "alquiler_vacacional", label: "Korttidshyra" },
 ];
+
+const ENERGY_RATING_OPTIONS = ["A", "B", "C", "D", "E", "F", "G", "en_tramite", "exento"] as const;
 
 /** Terrenos have no rooms; every other type does. */
 function hasRooms(t: PropertyType | ""): boolean {
@@ -50,14 +51,19 @@ interface WizardState {
   bedrooms: string;
   bathrooms: string;
   parking: string;
-  areaM2: string;
-  landM2: string;
+  builtM2: string;
+  plotM2: string;
   locationId: number;
   projectId: number | null;
-  priceCurrency: "USD" | "PYG";
-  priceAmount: string;
+  priceEur: string;
   videoUrl: string;
-  foreignExposure: boolean;
+  /**
+   * Spain's RD 390/2021 requires the energy rating in the ad itself, and the
+   * server refuses to publish without it (the gate lives in
+   * listing-edit.ts/upsert.ts, not here — this is only the form's copy of
+   * the same requirement).
+   */
+  energyRating: string;
 }
 
 export interface InitialDraft extends Partial<WizardState> {
@@ -71,7 +77,7 @@ export interface InitialDraft extends Partial<WizardState> {
  * to a draft in progress on this device.
  */
 export type PublishPrefill = Partial<
-  Pick<WizardState, "operation" | "propertyType" | "areaM2" | "landM2" | "locationId">
+  Pick<WizardState, "operation" | "propertyType" | "builtM2" | "plotM2" | "locationId">
 >;
 
 const EMPTY: WizardState = {
@@ -83,23 +89,20 @@ const EMPTY: WizardState = {
   bedrooms: "",
   bathrooms: "",
   parking: "",
-  areaM2: "",
-  landM2: "",
+  builtM2: "",
+  plotM2: "",
   locationId: 0,
   projectId: null,
-  priceCurrency: "USD",
-  priceAmount: "",
+  priceEur: "",
   videoUrl: "",
-  foreignExposure: true,
+  energyRating: "",
 };
 
-const LS_KEY = "propia:publish-draft";
+const LS_KEY = "ftse:publish-draft";
 
 export function PublishWizard({
   locations,
   projects,
-  programs,
-  usdToPyg,
   initialDraft,
   initialPhotos,
   prefill,
@@ -108,14 +111,12 @@ export function PublishWizard({
 }: {
   locations: PublishLocation[];
   projects: NearbyProject[];
-  programs: FinancingProgram[];
-  usdToPyg: number;
   initialDraft: InitialDraft | null;
   initialPhotos?: ListingImageRow[];
   /** Seed values from /tasacion. See PublishPrefill. */
   prefill?: PublishPrefill | null;
   /**
-   * Whether a WhatsApp code can actually be delivered. False → publish
+   * Whether an email code can actually be delivered. False → publish
    * directly; the server enforces the same rule, this only shapes the UI.
    */
   otpEnabled: boolean;
@@ -140,7 +141,7 @@ export function PublishWizard({
 
   // OTP sub-state (step 3 → publish).
   const [otpSent, setOtpSent] = useState(false);
-  const [whatsapp, setWhatsapp] = useState("");
+  const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [otpBusy, setOtpBusy] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
@@ -202,18 +203,6 @@ export function PublishWizard({
     return state.projectId ? byId.get(state.projectId) ?? "" : "";
   }, [projects, state.projectId]);
 
-  // Cuota preview (venta only), computed client-side from the same engine the
-  // nightly cron uses. Converts the entered price to Gs first.
-  const cuotaPreview = useMemo(() => {
-    if (state.operation !== "venta") return null;
-    const amount = Number(state.priceAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return null;
-    const priceGs = state.priceCurrency === "PYG" ? amount : amount * usdToPyg;
-    const best = bestCuota(priceGs, programs);
-    if (!best) return null;
-    return { text: formatCuota(best.monthlyGs), programName: best.programName };
-  }, [state.operation, state.priceAmount, state.priceCurrency, usdToPyg, programs]);
-
   const payload = useCallback(
     (): DraftPayload => ({
       draftId: state.draftId,
@@ -221,17 +210,16 @@ export function PublishWizard({
       propertyType: state.propertyType || undefined,
       title: state.title,
       descriptionEs: state.descriptionEs,
-      priceAmount: Number(state.priceAmount) || 0,
-      priceCurrency: state.priceCurrency,
+      priceEur: Number(state.priceEur) || 0,
       bedrooms: hasRooms(state.propertyType) ? numOrNull(state.bedrooms) : null,
       bathrooms: hasRooms(state.propertyType) ? numOrNull(state.bathrooms) : null,
       parking: numOrNull(state.parking),
-      areaM2: numOrNull(state.areaM2),
-      landM2: numOrNull(state.landM2),
+      builtM2: numOrNull(state.builtM2),
+      plotM2: numOrNull(state.plotM2),
       locationId: state.locationId,
       projectId: state.projectId,
       videoUrl: state.videoUrl,
-      foreignExposure: state.foreignExposure,
+      energyRating: state.energyRating || null,
     }),
     [state],
   );
@@ -318,7 +306,7 @@ export function PublishWizard({
         if (state.title.trim().length < 8) return svPublish.errors.title;
       }
       if (i === 1 && !state.locationId) return svPublish.errors.location;
-      if (i === 2 && !(Number(state.priceAmount) > 0)) return svPublish.errors.price;
+      if (i === 2 && !(Number(state.priceEur) > 0)) return svPublish.errors.price;
       return null;
     },
     [state],
@@ -348,7 +336,7 @@ export function PublishWizard({
       // Make sure the latest edits are on the draft before we verify & publish.
       const saved = await persist();
       if (saved === null) return;
-      const res = await requestOtpAction(whatsapp);
+      const res = await requestOtpAction(email);
       if (!res.ok) {
         if (res.error === "cooldown") {
           setCooldown(Math.ceil((res.cooldownMs ?? 60000) / 1000));
@@ -365,7 +353,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp]);
+  }, [persist, email]);
 
   /** Publish with no code, when none can be delivered (otpEnabled === false). */
   const publishDirect = useCallback(async () => {
@@ -374,7 +362,7 @@ export function PublishWizard({
     try {
       const saved = await persist();
       if (saved === null) return;
-      const res = await publishDraftAction({ draftId: saved, whatsapp });
+      const res = await publishDraftAction({ draftId: saved });
       if (!res.ok) {
         setOtpError(svPublish.errors.generic);
         return;
@@ -390,7 +378,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp]);
+  }, [persist]);
 
   const verifyAndPublish = useCallback(async () => {
     if (!state.draftId) return;
@@ -399,7 +387,7 @@ export function PublishWizard({
     try {
       const res = await verifyAndPublishAction({
         draftId: state.draftId,
-        whatsapp,
+        email,
         code,
       });
       if (!res.ok) {
@@ -423,7 +411,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [state.draftId, whatsapp, code]);
+  }, [state.draftId, email, code]);
 
   if (done) {
     return (
@@ -442,7 +430,7 @@ export function PublishWizard({
 
   return (
     <div className="wizard">
-      <ol className="wizard-steps" aria-label="Pasos">
+      <ol className="wizard-steps" aria-label="Steg">
         {svPublish.stepLabels.map((label, i) => (
           <li
             key={label}
@@ -462,7 +450,7 @@ export function PublishWizard({
         <p className="wizard-prefill">{svPublish.prefillNote}</p>
       )}
 
-      {/* Step 1 — Detalles */}
+      {/* Step 1 — Detaljer */}
       {step === 0 && (
         <div className="wizard-panel">
           <div className="wizard-field">
@@ -534,15 +522,15 @@ export function PublishWizard({
                 <NumField label={svPublish.bedroomsLabel} value={state.bedrooms} onChange={(v) => set("bedrooms", v)} />
                 <NumField label={svPublish.bathroomsLabel} value={state.bathrooms} onChange={(v) => set("bathrooms", v)} />
                 <NumField label={svPublish.parkingLabel} value={state.parking} onChange={(v) => set("parking", v)} />
-                <NumField label={svPublish.areaLabel} value={state.areaM2} onChange={(v) => set("areaM2", v)} />
+                <NumField label={svPublish.areaLabel} value={state.builtM2} onChange={(v) => set("builtM2", v)} />
               </>
             )}
-            <NumField label={svPublish.landLabel} value={state.landM2} onChange={(v) => set("landM2", v)} />
+            <NumField label={svPublish.landLabel} value={state.plotM2} onChange={(v) => set("plotM2", v)} />
           </div>
         </div>
       )}
 
-      {/* Step 2 — Ubicación */}
+      {/* Step 2 — Läge */}
       {step === 1 && (
         <div className="wizard-panel">
           <div className="wizard-field">
@@ -595,33 +583,42 @@ export function PublishWizard({
         </div>
       )}
 
-      {/* Step 3 — Precio y publicación */}
+      {/* Step 3 — Pris och publicering */}
       {step === 2 && (
         <div className="wizard-panel">
           <div className="wizard-field">
-            <label className="wizard-label">{svPublish.priceLabel}</label>
+            <label className="wizard-label">{svPublish.priceLabel} (€)</label>
             <div className="wizard-price">
-              <select
-                className="wizard-input wizard-currency"
-                value={state.priceCurrency}
-                onChange={(e) => set("priceCurrency", e.target.value as "USD" | "PYG")}
-              >
-                <option value="USD">US$</option>
-                <option value="PYG">Gs</option>
-              </select>
               <input
                 className="wizard-input"
                 inputMode="numeric"
-                value={state.priceAmount}
+                value={state.priceEur}
                 placeholder="0"
-                onChange={(e) => set("priceAmount", e.target.value.replace(/[^\d.]/g, ""))}
+                onChange={(e) => set("priceEur", e.target.value.replace(/[^\d.]/g, ""))}
               />
             </div>
-            {cuotaPreview && (
-              <p className="wizard-cuota">
-                🏦 {cuotaPreview.text} {svPublish.cuotaWith} {cuotaPreview.programName}
-              </p>
-            )}
+          </div>
+
+          <div className="wizard-field">
+            <label className="wizard-label" htmlFor="energy">
+              Energiklass
+            </label>
+            <select
+              id="energy"
+              className="wizard-input"
+              value={state.energyRating}
+              onChange={(e) => set("energyRating", e.target.value)}
+            >
+              <option value="">—</option>
+              {ENERGY_RATING_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r === "en_tramite" ? "Ansökt" : r === "exento" ? "Undantagen" : r}
+                </option>
+              ))}
+            </select>
+            <p className="wizard-hint">
+              Krävs enligt spansk lag (RD 390/2021) för att annonsen ska kunna publiceras.
+            </p>
           </div>
 
           <div className="wizard-field">
@@ -690,15 +687,6 @@ export function PublishWizard({
             )}
           </div>
 
-          <label className="wizard-toggle">
-            <input
-              type="checkbox"
-              checked={state.foreignExposure}
-              onChange={(e) => set("foreignExposure", e.target.checked)}
-            />
-            <span>{svPublish.foreignExposureLabel}</span>
-          </label>
-
           {/* OTP-at-publish — only when a code can actually reach them. */}
           <div className="wizard-otp">
             <h3 className="wizard-otp__title">
@@ -714,10 +702,11 @@ export function PublishWizard({
               <input
                 id="wa"
                 className="wizard-input"
-                inputMode="tel"
-                value={whatsapp}
-                placeholder="0981 123 456"
-                onChange={(e) => setWhatsapp(e.target.value)}
+                type="email"
+                inputMode="email"
+                value={email}
+                placeholder="namn@exempel.se"
+                onChange={(e) => setEmail(e.target.value)}
                 disabled={otpEnabled && otpSent}
               />
             </div>
@@ -747,7 +736,7 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--primary"
                   onClick={publishDirect}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || Number(state.priceEur) <= 0}
                 >
                   {otpBusy ? svPublish.publishing : svPublish.publish}
                 </button>
@@ -756,7 +745,7 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--whatsapp"
                   onClick={sendCode}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || Number(state.priceEur) <= 0}
                 >
                   {otpBusy ? svPublish.sending : svPublish.sendCode}
                 </button>
