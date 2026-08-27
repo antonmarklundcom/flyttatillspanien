@@ -28,7 +28,7 @@ type Params = { params: Promise<{ affar: string }> };
  * The category route (`/[affar]/[...segments]`) needs at least one
  * segment, so these bare URLs used to 404 — even though they are exactly
  * where competitors put their top-level "Venta" and "Alquiler" tabs, and
- * where a search for "casas en venta paraguay" wants to land. This page is
+ * where a search for "villor till salu spanien" wants to land. This page is
  * the parent of the whole category tree: every city and every property type
  * for the operation, with real counts.
  *
@@ -76,7 +76,7 @@ export default async function OperationHubPage({ params }: Params) {
     getRecentListingsBy({ operation: op, vertical }, 8),
   ]);
 
-  const topCity = hub.cities[0]?.slug ?? "asuncion";
+  const topCity = hub.cities[0]?.slug ?? "marbella";
 
   return (
     <main>
@@ -165,7 +165,7 @@ export default async function OperationHubPage({ params }: Params) {
           <p className="mk-note">
             {t.latestNoteLead}{" "}
             <Link href={categoryUrl({ operation: op, citySlug: topCity })}>
-              {copy.cityLabel} {hub.cities[0]?.name ?? "Asunción"}
+              {copy.cityLabel} {hub.cities[0]?.name ?? "Marbella"}
             </Link>{" "}
             {t.latestNoteTail}
           </p>

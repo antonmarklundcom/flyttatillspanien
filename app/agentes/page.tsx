@@ -17,7 +17,7 @@ const DESCRIPTION = (brand: string) => `Agentes inmobiliarios que publican en ${
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} en Paraguay`,
+    title: `${TITLE} en España`,
     description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/agentes` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
@@ -51,7 +51,7 @@ export default async function AgentesPage() {
 
       <PageHero
         kicker="Empresas"
-        title="Agentes inmobiliarios en Paraguay"
+        title="Agentes inmobiliarios en España"
         subtitle="Trabajar con un agente que conoce la zona acorta la búsqueda. Cada perfil muestra su cartera activa y su contacto directo."
       />
 

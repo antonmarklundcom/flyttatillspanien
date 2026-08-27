@@ -2,7 +2,7 @@
  * Bounding-box pin feed for the map view (ARCHITECTURE.md M4).
  *
  * GET /api/mapa?bbox=minLng,minLat,maxLng,maxLat&affar=venta&tipo=casas
- *              &ciudad=asuncion[&barrio=recoleta]&precio_min=…
+ *              &ort=marbella[&omrade=nueva-andalucia]&pris_min=…
  *
  * Read-only and public — it serves exactly what the category grid already
  * shows, so there is nothing here a visitor could not scroll to. Two things
@@ -35,7 +35,7 @@ export const dynamic = "force-dynamic";
  * `?ciudad=` (optionally `&barrio=`) → the location ids the grid is scoped to.
  *
  * Without this the map answered the viewport alone, so panning a
- * "Casas en venta en Asunción" page surfaced pins from Luque that its grid
+ * "Villor till salu i Marbella" page surfaced pins from Estepona that its grid
  * would never list — the exact grid/map divergence the shared facet layer
  * exists to prevent. An unknown slug scopes to nothing rather than silently
  * widening back to the whole country.

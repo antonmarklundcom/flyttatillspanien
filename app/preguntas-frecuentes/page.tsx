@@ -76,7 +76,7 @@ export default async function FaqPage() {
         title="¿No encontraste lo que buscabas?"
         text="Escribinos y te contestamos por WhatsApp."
         primary={{ label: "Contactarnos", href: "/contacto" }}
-        secondary={{ label: "Ver propiedades", href: "/venta/asuncion" }}
+        secondary={{ label: "Ver propiedades", href: "/kopa/marbella" }}
       />
     </main>
   );

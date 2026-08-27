@@ -16,12 +16,12 @@ import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 export const dynamic = "force-dynamic";
 
 const TITLE = "Guías y notas";
-const DESCRIPTION = (brand: string) => `Guías prácticas para comprar, vender y alquilar en Paraguay, y análisis del mercado inmobiliario — escritas por el equipo de ${brand}.`;
+const DESCRIPTION = (brand: string) => `Guías prácticas para comprar, vender y alquilar en España, y análisis del mercado inmobiliario — escritas por el equipo de ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} sobre el mercado inmobiliario paraguayo`,
+    title: `${TITLE} sobre el mercado inmobiliario español`,
     description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/guias` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
@@ -110,7 +110,7 @@ export default async function GuiasPage() {
 
       <PageHero
         kicker="Guías"
-        title="Comprar, vender y alquilar en Paraguay, explicado"
+        title="Comprar, vender y alquilar en España, explicado"
         subtitle="Lo que conviene saber antes de firmar: documentos, financiamiento, precios de referencia y los errores que salen caros."
       />
 

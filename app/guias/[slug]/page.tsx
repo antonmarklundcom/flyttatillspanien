@@ -177,7 +177,7 @@ export default async function GuiaPage({ params }: Params) {
 
       <CtaBand
         title="Pasá de leer a buscar"
-        text="Casas, departamentos y terrenos en todo Paraguay, con cuota estimada."
+        text="Casas, departamentos y terrenos en toda España."
         primary={{ label: "Ver propiedades", href: "/venta" }}
         secondary={{ label: "Tasar la mía", href: "/tasacion" }}
       />

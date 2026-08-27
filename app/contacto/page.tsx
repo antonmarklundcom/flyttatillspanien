@@ -105,7 +105,7 @@ export default async function ContactoPage() {
                   </li>
                 )}
                 <li>📝 Formulario de contacto (respondemos por acá)</li>
-                <li>📍 Asunción, Paraguay</li>
+                <li>📍 Marbella, España</li>
                 <li>🕘 Lunes a viernes, 8:00 a 18:00</li>
               </ul>
             </div>
@@ -120,7 +120,7 @@ export default async function ContactoPage() {
                 WhatsApp que están en la ficha — así te contesta directamente el
                 vendedor o la inmobiliaria.
               </p>
-              <Link className="mk-card__link" href="/venta/asuncion">
+              <Link className="mk-card__link" href="/kopa/marbella">
                 Ver propiedades →
               </Link>
             </div>

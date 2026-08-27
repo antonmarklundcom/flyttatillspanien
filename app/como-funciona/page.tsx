@@ -72,7 +72,7 @@ const RENT_TIPS = [
   {
     icon: "📄",
     title: "Qué suelen pedir",
-    text: "En Paraguay lo habitual es un depósito de garantía, uno o dos meses adelantados y un garante propietario o seguro de caución. Confirmalo con el propietario antes de reservar.",
+    text: "En España lo habitual es un depósito de garantía, uno o dos meses adelantados y un garante propietario o seguro de caución. Confirmalo con el propietario antes de reservar.",
   },
   {
     icon: "🧾",
@@ -134,7 +134,7 @@ export default async function ComoFuncionaPage() {
       <CtaBand
         title="Empezá por donde te sirva"
         text="Buscar, tasar o publicar — las tres cosas son gratis."
-        primary={{ label: "Ver propiedades", href: "/venta/asuncion" }}
+        primary={{ label: "Ver propiedades", href: "/kopa/marbella" }}
         secondary={{ label: "Publicar la mía", href: "/publicar" }}
       />
     </main>

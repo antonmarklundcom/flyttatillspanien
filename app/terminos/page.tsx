@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * cuota/median/valuation figures, and takedown.
  *
  * TODO (founder, before launch): replace the operator paragraph with the real
- * razón social and RUC once the company is constituted, and have a Paraguayan
+ * razón social and CIF/NIF once the company is constituted, and have a Spanish
  * lawyer review this text — it is a reasonable starting point, not legal advice.
  */
 export default async function TerminosPage() {
@@ -55,7 +55,7 @@ export default async function TerminosPage() {
           <h2>1. Quiénes somos y qué es este servicio</h2>
           <p>
             {brand} es un portal de avisos inmobiliarios que opera en la
-            República del Paraguay. El portal pone en contacto a quienes ofrecen
+            Reino de España. El portal pone en contacto a quienes ofrecen
             inmuebles en venta o alquiler con quienes los buscan. No somos una
             inmobiliaria, no somos corredores ni representamos a ninguna de las
             partes, y no intervenimos en la negociación, en la seña, en el pago
@@ -90,7 +90,7 @@ export default async function TerminosPage() {
             </li>
             <li>
               publicar contenido discriminatorio, ofensivo o contrario a la
-              legislación paraguaya vigente;
+              legislación española vigente;
             </li>
             <li>
               extraer datos del sitio de forma automatizada (scraping),
@@ -180,9 +180,9 @@ export default async function TerminosPage() {
 
           <h2>10. Ley aplicable</h2>
           <p>
-            Estos términos se rigen por las leyes de la República del Paraguay.
+            Estos términos se rigen por las leyes de la Reino de España.
             Cualquier controversia se someterá a los tribunales ordinarios de la
-            ciudad de Asunción.
+            ciudad de Marbella.
           </p>
         </Prose>
       </Section>

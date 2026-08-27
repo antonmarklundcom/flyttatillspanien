@@ -26,63 +26,63 @@ export interface FaqSection {
 export const faqSections = (brand: string): FaqSection[] => [
   {
     id: "general",
-    title: "Sobre el portal",
+    title: "Om sidan",
     items: [
       {
-        q: `¿Qué es ${brand}?`,
-        a: `${brand} es un portal inmobiliario de Paraguay donde podés buscar casas, departamentos y terrenos en venta y alquiler, comparar precios por zona y contactar directamente a vendedores e inmobiliarias por WhatsApp.`,
+        q: `Vad är ${brand}?`,
+        a: `${brand} är en bostadsportal med spansk fastigheter för svenska köpare. Du kan söka villor, lägenheter och tomter till salu och uthyrning, jämföra priser per område och kontakta säljare och mäklarbyråer direkt.`,
       },
       {
-        q: "¿Es gratis buscar propiedades?",
-        a: "Sí, buscar y contactar es 100% gratis. No cobramos comisión al comprador ni al inquilino, y no hace falta registrarse para ver los avisos.",
+        q: "Är det gratis att söka bostäder?",
+        a: "Ja, att söka och kontakta är helt gratis. Vi tar ingen provision från köparen eller hyresgästen, och det krävs ingen registrering för att se objekten.",
       },
       {
-        q: "¿Cobran comisión por la operación?",
-        a: "No. Somos el lugar donde se encuentran las partes, no una inmobiliaria: no participamos de la negociación ni cobramos porcentaje sobre la venta o el alquiler. Si el aviso es de una inmobiliaria, sus honorarios los acuerda cada parte con ella.",
+        q: "Tar ni provision på affären?",
+        a: "Nej. Vi är platsen där parterna hittar varandra, inte en mäklarbyrå: vi deltar inte i förhandlingen och tar ingen procentandel av köpet eller hyran. Om objektet publiceras av en mäklarbyrå avtalar du deras arvode direkt med dem.",
       },
     ],
   },
   {
     id: "comprar",
-    title: "Comprar y alquilar",
+    title: "Köpa och hyra",
     items: [
       {
-        q: "¿Cómo contacto a un vendedor o inmobiliaria?",
-        a: "Cada aviso tiene un formulario y un botón de WhatsApp que abre un chat directo con quien publicó, con el enlace de la propiedad ya incluido en el mensaje.",
+        q: "Hur kontaktar jag en säljare eller mäklarbyrå?",
+        a: "Varje objekt har ett formulär och en kontaktknapp som öppnar en direktkonversation med den som publicerat, med länken till bostaden redan inkluderad.",
       },
       {
-        q: "¿Qué es la cuota estimada que aparece en los avisos?",
-        a: "Para propiedades en venta calculamos una cuota mensual aproximada usando las condiciones de los programas de financiamiento vigentes en Paraguay. Es una referencia para saber de entrada si el número te cierra — no es una oferta de crédito ni una aprobación.",
+        q: "Vad kostar det totalt att köpa en bostad i Spanien?",
+        a: "Utöver utropspriset tillkommer skatt (ITP vid andrahandsköp, IVA plus AJD vid nyproduktion), notarie, lagfart och juridisk hjälp — normalt 10–14% på toppen. Vi visar en uppskattning per comunidad på varje objekt.",
       },
       {
-        q: "¿Los precios están en guaraníes o en dólares?",
-        a: "Mostramos el precio en la moneda en la que fue publicado y la conversión de referencia en la otra, porque en Paraguay se opera en ambas.",
+        q: "Visas priserna i euro eller kronor?",
+        a: "Priset är alltid i euro, den enda valuta bostaden faktiskt är prissatt i. Vi visar en ungefärlig kronomräkning bredvid, tydligt märkt som en uppskattning baserad på den senaste växelkursen.",
       },
       {
-        q: "¿Cómo sé si un aviso sigue disponible?",
-        a: "Los avisos publicados se revisan y actualizan de forma continua, y los vencidos se despublican. Igual, lo primero que conviene preguntar por WhatsApp es si sigue disponible.",
+        q: "Hur vet jag om ett objekt fortfarande är tillgängligt?",
+        a: "Publicerade objekt granskas och uppdateras löpande, och de som gått ut avpubliceras. Ändå är det första du bör fråga om det fortfarande är tillgängligt."
       },
     ],
   },
   {
     id: "publicar",
-    title: "Publicar y vender",
+    title: "Publicera och sälja",
     items: [
       {
-        q: "¿Cómo publico mi propiedad?",
-        a: "Entrá a «Publicar propiedad», creá tu cuenta y cargá fotos, precio y ubicación. Publicar es gratis y tu aviso queda visible en las búsquedas y en Google.",
+        q: "Hur publicerar jag min bostad?",
+        a: "Gå in på \"Publicera bostad\", skapa ditt konto och lägg till bilder, pris och läge. Att publicera är gratis och din annons blir synlig i sökningar och på Google.",
       },
       {
-        q: "¿Puedo publicar como inmobiliaria o agente?",
-        a: "Sí. Las inmobiliarias y agentes tienen panel propio, carga masiva de cartera, perfil público con todos sus avisos y las consultas les llegan directo. Empezá en la sección «Para inmobiliarias».",
+        q: "Kan jag publicera som mäklarbyrå eller agent?",
+        a: "Ja. Mäklarbyråer och agenter har en egen panel, massimport av utbud, en offentlig profil med alla sina objekt och förfrågningar direkt till sig. Börja under \"För mäklarbyråer\".",
       },
       {
-        q: "¿Cuánto tarda en aparecer mi aviso?",
-        a: "El aviso queda visible apenas lo publicás. La indexación en Google depende del buscador y suele tomar de unos días a un par de semanas.",
+        q: "Hur lång tid tar det innan min annons syns?",
+        a: "Annonsen blir synlig så snart den publicerats. Indexering i Google beror på sökmotorn och tar oftast från några dagar till ett par veckor.",
       },
       {
-        q: "¿Cuánto vale mi propiedad?",
-        a: "Nuestra herramienta de tasación online te da un rango estimado gratis a partir de los precios publicados en la misma zona y tipo de propiedad. Es un punto de partida para fijar el precio, no una tasación oficial.",
+        q: "Vad är min bostad värd?",
+        a: "Vårt värderingsverktyg online ger dig gratis ett uppskattat intervall utifrån priserna publicerade i samma område och bostadstyp. Det är en utgångspunkt för att sätta pris, inte en officiell värdering.",
       },
     ],
   },

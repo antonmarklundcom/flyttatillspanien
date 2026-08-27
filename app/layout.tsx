@@ -11,7 +11,7 @@ import { themeFor } from "@/design/themes";
 
 /**
  * The brand suffix on every page title is set ONCE, here, as a title template.
- * Pages return only their own title segment ("Casas en Asunción") and Next
+ * Pages return only their own title segment ("Villor i Marbella") and Next
  * appends " — <brand>" from whichever domain served the request. Before this,
  * all 50 pages interpolated a global constant into their own title string,
  * which made the brand un-varyable by host and meant renaming it touched every
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(await siteOrigin()),
     title: { default: `${name} — ${tagline}`, template: `%s — ${name}` },
     description:
-      "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay.",
+      "Villor, lägenheter och tomter till salu och uthyrning i hela Spanien.",
     // Default Open Graph for every page that doesn't set its own: Next only
     // emits og:* when metadata.openGraph is truthy, so before this the whole
     // category tree, /precios, profiles and legal pages shared as bare links

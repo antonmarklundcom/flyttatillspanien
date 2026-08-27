@@ -26,9 +26,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { developer, projects } = r;
   const description = `${developer.name}: ${projects.length} ${
     projects.length === 1 ? "proyecto" : "proyectos"
-  } en Paraguay. Etapa de obra, fecha de entrega y unidades disponibles.`;
+  } en España. Etapa de obra, fecha de entrega y unidades disponibles.`;
   return {
-    title: `${developer.name} — proyectos en Paraguay`,
+    title: `${developer.name} — proyectos en España`,
     description,
     alternates: {
       canonical: `${await siteOrigin()}/desarrolladora/${developer.slug}`,

@@ -19,12 +19,12 @@ export const dynamic = "force-dynamic";
 
 const TITLE = "Proyectos y obra nueva";
 const DESCRIPTION =
-  "Edificios, condominios, barrios cerrados y loteamientos en desarrollo en Paraguay: en pozo, en construcción y con entrega inmediata.";
+  "Edificios, condominios, barrios cerrados y loteamientos en desarrollo en España: en pozo, en construcción y con entrega inmediata.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} en Paraguay`,
+    title: `${TITLE} en España`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/proyectos` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
@@ -85,7 +85,7 @@ export default async function ProyectosPage() {
 
       <PageHero
         kicker="Obra nueva"
-        title="Proyectos en desarrollo en Paraguay"
+        title="Proyectos en desarrollo en España"
         subtitle="Departamentos en pozo, condominios, barrios cerrados y loteamientos — con la etapa de obra, la fecha de entrega y el precio desde el que arrancan las unidades."
       />
 

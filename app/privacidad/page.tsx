@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
  * than none.
  *
  * TODO (founder, before launch): add the razón social, RUC and domicilio of
- * the responsible entity, and confirm the text with a Paraguayan lawyer.
+ * the responsible entity, and confirm the text with a Spanish lawyer.
  */
 export default async function PrivacidadPage() {
   const origin = await siteOrigin();
@@ -166,7 +166,7 @@ export default async function PrivacidadPage() {
             <Link href="/contacto">página de contacto</Link>
             {CONTACT_EMAIL ? <> o a {CONTACT_EMAIL}</> : null}. Respondemos
             dentro de los plazos que establece
-            la normativa aplicable en Paraguay, incluida la Ley N.º 6534/2020 de
+            la normativa aplicable en España, incluido el Reglamento (UE) 2016/679 de
             protección de datos personales crediticios en lo que resulte
             pertinente.
           </p>

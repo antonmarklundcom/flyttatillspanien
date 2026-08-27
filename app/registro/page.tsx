@@ -13,7 +13,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
     title: `Creá tu cuenta`,
-    description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
+    description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en España.`,
     // Renders per ?invite= token — keep every variant out of the index (F40).
     robots: { index: false, follow: true },
   };

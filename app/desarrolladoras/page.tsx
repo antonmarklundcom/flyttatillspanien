@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const TITLE = "Desarrolladoras";
 const DESCRIPTION =
-  "Desarrolladoras inmobiliarias que construyen en Paraguay: sus proyectos, en qué ciudades y en qué etapa de obra están.";
+  "Desarrolladoras inmobiliarias que construyen en España: sus proyectos, en qué ciudades y en qué etapa de obra están.";
 
 const STAGE_LABEL: Record<string, string> = {
   en_pozo: "En pozo",
@@ -23,7 +23,7 @@ const STAGE_LABEL: Record<string, string> = {
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} inmobiliarias en Paraguay`,
+    title: `${TITLE} inmobiliarias en España`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/desarrolladoras` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
@@ -60,7 +60,7 @@ export default async function DesarrolladorasPage() {
 
       <PageHero
         kicker="Empresas"
-        title="Desarrolladoras que construyen en Paraguay"
+        title="Desarrolladoras que construyen en España"
         subtitle="Quién está detrás de cada proyecto. Antes de reservar una unidad en pozo, mirá qué más construyó la desarrolladora y en qué etapa está cada obra."
       />
 

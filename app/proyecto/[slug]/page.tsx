@@ -56,7 +56,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title: `${project.name}${developer ? ` — ${developer.name}` : ""}`,
     description:
       project.descriptionEs?.slice(0, 160) ??
-      `${project.name}: proyecto inmobiliario en Paraguay.`,
+      `${project.name}: proyecto inmobiliario en España.`,
     alternates: {
       canonical: `${await siteOrigin()}/proyecto/${project.slug}`,
     },

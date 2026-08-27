@@ -456,7 +456,7 @@ export default async function ListingPage({ params }: Params) {
           </div>
 
           {/* Acquisition-cost module — the deterministic money figure that
-              fills the slot the Paraguayan cuota module used to occupy (see
+              fills the slot the inherited cuota module used to occupy (see
               docs/SPAIN-PORTAL-DESIGN.md §4). */}
           {acquisitionCost && (
             <div className="financing-box">

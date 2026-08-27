@@ -374,7 +374,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
    *
    * Built by the shared facet layer, which is also what the endpoint parses it
    * back with — and it carries the location too. Without `ciudad`/`barrio` the
-   * map answered the viewport alone, so panning an Asunción page surfaced pins
+   * map answered the viewport alone, so panning a Marbella page surfaced pins
    * this page's grid would never list.
    */
   const mapQuery: Record<string, string> = {

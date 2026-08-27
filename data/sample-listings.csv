@@ -1,7 +1,5 @@
-operation,property_type,title,description_es,price_amount,price_currency,bedrooms,bathrooms,parking,area_m2,land_m2,property_state,location_full_slug,location_name,address_text,lat,lng,contact_phone,source_external_id,source_url,image_urls
-venta,casa,Casa en Recoleta con patio,Linda casa a metros de Av. España,145000,USD,3,2,2,210,300,usado,asuncion/recoleta,,Calle Ejemplo 123,-25.2865,-57.5759,0981 123-456,WG-001,,https://ex/1.jpg|https://ex/2.jpg
-venta,departamento,Departamento a estrenar Villa Morra,Torre nueva entrega inmediata,98000,USD,2,2,1,72,,entrega_inmediata,asuncion/villa-morra,,,-25.2937,-57.5679,0971555777,WG-002,,
-alquiler,departamento,Depto amoblado Las Mercedes,Ideal ejecutivos,3500000,PYG,1,1,1,55,,usado,asuncion/las-mercedes,,,,,+595 981 123 456,WG-003,,
-venta,terreno,Terreno en Luque,Zona en crecimiento,60000,USD,,,,,450,,central/luque,,,-25.267,-57.4872,0985 000111,WG-004,,
-venta,casa,Casa Recoleta patio (re-publicada),Mismo inmueble otro precio,147000,USD,3,2,2,208,300,usado,,Recoleta,,,,0981123456,WG-XREP,,
-venta,casa,Casa sin ubicacion valida,Falta location,80000,USD,3,2,1,120,,usado,,Ciudad Inexistente XYZ,,,,0999888777,WG-BAD,,
+operation,property_type,title,description_es,price_eur,bedrooms,bathrooms,parking,built_m2,plot_m2,property_state,location_full_slug,location_name,address_text,lat,lng,contact_phone,source_external_id,source_url,image_urls,referencia_catastral,energy_rating,legal_status,charges_status,ibi_annual_eur,community_monthly_eur,is_vpo,land_classification,buildable_m2,tourist_licence
+venta,villa,Villa con piscina en Nueva Andalucía,Preciosa villa reformada a pocos minutos de Puerto Banús. Jardín privado y piscina.,1250000,4,3,2,320,800,segunda_mano,nueva-andalucia,,Calle Ejemplo 12,36.5027,-4.9535,+34 611 223 344,WG-001,,https://ex/1.jpg|https://ex/2.jpg,9872023VF1997S0001AB,C,escritura_registrada,libre_de_cargas,2400,180,0,,,
+venta,apartamento,Ático con vistas al mar en Puerto Banús,Ático de dos dormitorios a estrenar con terraza y vistas al mar.,650000,2,2,1,110,,obra_nueva,puerto-banus,,,36.4874,-4.9526,+34 611 223 345,WG-002,,,,B,obra_nueva_lpo,libre_de_cargas,,220,0,,,
+alquiler,apartamento,Piso amueblado en Fuengirola,Ideal para estancias de larga duración. Cerca de la playa.,900,1,1,1,55,,segunda_mano,fuengirola,,,36.5411,-4.6247,+34 611 223 346,WG-003,,,,D,desconocido,desconocido,,,0,,,
+venta,terreno,Parcela urbanizable en Estepona,"Terreno en zona en crecimiento, ideal para promoción.",180000,,,,,1200,,estepona,,,36.4285,-5.1449,+34 611 223 347,WG-004,,,,,,,,,,urbanizable,900,

@@ -161,7 +161,7 @@ export default async function PlanesPage() {
         </div>
 
         <p className="mk-note">
-          Los planes pagos se facturan en guaraníes y no tienen permanencia
+          Los planes pagos se facturan en euros y no tienen permanencia
           mínima. Escribinos y armamos la propuesta según el tamaño de tu
           cartera.
         </p>
