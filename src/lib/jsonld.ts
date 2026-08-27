@@ -53,8 +53,8 @@ export function listingJsonLd(origin: string, detail: ListingDetail): object {
     },
     address: {
       "@type": "PostalAddress",
-      addressLocality: chain.find((c) => c.level === "ciudad")?.name,
-      addressRegion: chain.find((c) => c.level === "departamento")?.name,
+      addressLocality: chain.find((c) => c.level === "municipio")?.name,
+      addressRegion: chain.find((c) => c.level === "comunidad")?.name,
       addressCountry: "PY",
     },
     ...(listing.lat && listing.lng

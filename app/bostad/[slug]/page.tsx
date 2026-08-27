@@ -161,8 +161,8 @@ export default async function ListingPage({ params }: Params) {
   const waMessage = inquiryPrefillFor(brand, listing.title, canonical);
   const waHref = waLink(contactWhatsapp, waMessage);
 
-  const city = chain.find((c) => c.level === "ciudad");
-  const barrio = chain.find((c) => c.level === "barrio");
+  const city = chain.find((c) => c.level === "municipio");
+  const barrio = chain.find((c) => c.level === "zona");
   const typeLabel = PROPERTY_TYPE_LABELS[listing.propertyType];
   const typeUrl = city
     ? categoryUrl({ operation: listing.operation, citySlug: city.slug, type: listing.propertyType })

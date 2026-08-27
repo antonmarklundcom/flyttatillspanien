@@ -227,9 +227,9 @@ async function citiesWithPricesUncached(): Promise<
   const cityOf = (locationId: number) => {
     const loc = byId.get(locationId);
     if (!loc) return null;
-    if (loc.level === "ciudad") return loc;
+    if (loc.level === "municipio") return loc;
     const parent = loc.parentId != null ? byId.get(loc.parentId) : undefined;
-    return parent?.level === "ciudad" ? parent : null;
+    return parent?.level === "municipio" ? parent : null;
   };
 
   // Samples per (city × type × operation), so reliability is judged on the same

@@ -115,8 +115,8 @@ export async function buildSitemapEntries(
   const cityOf = (locationId: number) => {
     const loc = locById.get(locationId);
     if (!loc) return null;
-    if (loc.level === "ciudad") return loc;
-    if (loc.level === "barrio" && loc.parentId)
+    if (loc.level === "municipio") return loc;
+    if (loc.level === "zona" && loc.parentId)
       return locById.get(loc.parentId) ?? null;
     return null;
   };
@@ -133,7 +133,7 @@ export async function buildSitemapEntries(
       `${op}|${city.id}|${type}`,
       (cityTypeCount.get(`${op}|${city.id}|${type}`) ?? 0) + 1,
     );
-    if (loc && loc.level === "barrio") {
+    if (loc && loc.level === "zona") {
       barrioTypeCount.set(
         `${op}|${loc.id}|${type}`,
         (barrioTypeCount.get(`${op}|${loc.id}|${type}`) ?? 0) + 1,

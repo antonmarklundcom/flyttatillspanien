@@ -44,11 +44,11 @@ export async function listPublishLocations(): Promise<PublishLocation[]> {
 
   const nameById = new Map(rows.map((r) => [r.id, r.name]));
   return rows
-    .filter((r) => r.level === "ciudad" || r.level === "barrio")
+    .filter((r) => r.level === "municipio" || r.level === "zona")
     .map((r) => ({
       id: r.id,
       label:
-        r.level === "barrio" && r.parentId
+        r.level === "zona" && r.parentId
           ? `${r.name}, ${nameById.get(r.parentId) ?? ""}`.replace(/, $/, "")
           : r.name,
     }))

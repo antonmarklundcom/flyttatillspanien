@@ -53,7 +53,7 @@ const cachedCities = unstable_cache(
     db
       .select({ id: locations.id, name: locations.name, slug: locations.slug })
       .from(locations)
-      .where(eq(locations.level, "ciudad"))
+      .where(eq(locations.level, "municipio"))
       .orderBy(asc(locations.name)),
   ["queries:listCities"],
   { revalidate: CACHE_TTL.locations, tags: [CACHE_TAGS.locations] },
@@ -70,7 +70,7 @@ export async function resolveCity(citySlug: string): Promise<LocationRow | null>
   const [row] = await db
     .select()
     .from(locations)
-    .where(and(eq(locations.slug, citySlug), eq(locations.level, "ciudad")))
+    .where(and(eq(locations.slug, citySlug), eq(locations.level, "municipio")))
     .limit(1);
   return row ?? null;
 }
@@ -86,7 +86,7 @@ export async function resolveBarrio(
     .where(
       and(
         eq(locations.slug, barrioSlug),
-        eq(locations.level, "barrio"),
+        eq(locations.level, "zona"),
         eq(locations.parentId, cityId),
       ),
     )

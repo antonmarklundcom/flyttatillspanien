@@ -104,9 +104,9 @@ async function listAgenciesForDirectoryUncached(): Promise<AgencyDirectoryRow[]>
   const cityNameOf = (locationId: number): string | null => {
     const loc = locById.get(locationId);
     if (!loc) return null;
-    if (loc.level === "ciudad") return loc.name;
+    if (loc.level === "municipio") return loc.name;
     const parent = loc.parentId != null ? locById.get(loc.parentId) : undefined;
-    return parent?.level === "ciudad" ? parent.name : null;
+    return parent?.level === "municipio" ? parent.name : null;
   };
 
   // Rank cities by how much inventory the agency has there, keep the top 3.
@@ -361,9 +361,9 @@ async function listAgentsForDirectoryUncached(): Promise<AgentDirectoryRow[]> {
     const loc = locById.get(r.locationId);
     if (!loc) continue;
     const city =
-      loc.level === "ciudad"
+      loc.level === "municipio"
         ? loc.name
-        : loc.parentId != null && locById.get(loc.parentId)?.level === "ciudad"
+        : loc.parentId != null && locById.get(loc.parentId)?.level === "municipio"
           ? locById.get(loc.parentId)!.name
           : null;
     if (!city) continue;
@@ -435,9 +435,9 @@ export async function getOperationHubData(
     const loc = locById.get(r.locationId);
     if (!loc) continue;
     const city =
-      loc.level === "ciudad"
+      loc.level === "municipio"
         ? loc
-        : loc.parentId != null && locById.get(loc.parentId)?.level === "ciudad"
+        : loc.parentId != null && locById.get(loc.parentId)?.level === "municipio"
           ? locById.get(loc.parentId)!
           : null;
     if (!city) continue;

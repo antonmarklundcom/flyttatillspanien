@@ -1,15 +1,20 @@
 import type { PropertyType } from "./import/types";
 
-/** Spanish label per property type, in the order shown in selects. */
+/**
+ * Swedish label per property type, in the order shown in selects. DB values
+ * stay in Spanish (docs/SPAIN-PORTAL-DESIGN.md §3.1) since that is the
+ * language of every agency feed the importer will read; labels here are what
+ * the Swedish-facing panel and category pages show.
+ */
 export const PROPERTY_TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
-  { value: "casa", label: "Casas" },
-  { value: "departamento", label: "Departamentos" },
-  { value: "terreno", label: "Terrenos" },
-  { value: "duplex", label: "Dúplex" },
-  { value: "comercial", label: "Locales comerciales" },
-  { value: "oficina", label: "Oficinas" },
-  { value: "deposito", label: "Depósitos" },
-  { value: "quinta", label: "Quintas" },
+  { value: "villa", label: "Villor" },
+  { value: "apartamento", label: "Lägenheter" },
+  { value: "atico", label: "Takvåningar" },
+  { value: "adosado", label: "Radhus" },
+  { value: "duplex", label: "Etagelägenheter" },
+  { value: "finca", label: "Lantegendomar" },
+  { value: "terreno", label: "Tomter" },
+  { value: "local", label: "Lokaler" },
 ];
 
 /** Same labels, keyed by type — for breadcrumbs and other lookups. */
