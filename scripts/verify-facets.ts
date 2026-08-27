@@ -48,7 +48,7 @@ function toText(cond: SQL | undefined): string {
 console.log("\nfacets: parsing");
 
 const parsed = parseFacetParams({
-  affar: "venta",
+  affar: "kopa",
   typ: "villor",
   pris_min: "50000",
   pris_max: "500000",
