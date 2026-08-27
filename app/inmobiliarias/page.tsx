@@ -1,0 +1,143 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { brandName } from "@/lib/brand-server";
+import { siteOrigin } from "@/lib/origin";
+import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
+import { JsonLd } from "@/components/JsonLd";
+import { agencyUrl } from "@/lib/urls";
+import { listAgenciesForDirectory } from "@/lib/directory-queries";
+import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
+import { safeImageUrl } from "@/lib/external-image";
+
+export const dynamic = "force-dynamic";
+
+const TITLE = "Directorio de inmobiliarias";
+const DESCRIPTION = (brand: string) => `Inmobiliarias y agentes que publican su cartera en ${brand}. Mirá sus propiedades activas y contactalos directo por WhatsApp.`;
+
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
+  return {
+    title: `${TITLE} de Paraguay`,
+    description: DESCRIPTION(brand),
+    alternates: { canonical: `${await siteOrigin()}/inmobiliarias` },
+    openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
+  };
+}
+
+export default async function InmobiliariasPage() {
+  const [origin, agencies] = await Promise.all([
+    siteOrigin(),
+    listAgenciesForDirectory(),
+  ]);
+
+  return (
+    <main>
+      <JsonLd
+        data={[
+          breadcrumbJsonLd(origin, [
+            { name: "Inicio", url: "/" },
+            { name: TITLE, url: "/inmobiliarias" },
+          ]),
+          ...(agencies.length > 0
+            ? [
+                itemListJsonLd(
+                  origin,
+                  agencies.map((a) => ({
+                    title: a.name,
+                    url: agencyUrl(a.slug),
+                  })),
+                ),
+              ]
+            : []),
+        ]}
+      />
+
+      <PageHero
+        kicker="Directorio"
+        title="Inmobiliarias y agentes en Paraguay"
+        subtitle="Cada perfil muestra la cartera activa de la inmobiliaria y su contacto directo. El sello verificado indica que confirmamos los datos de la oficina."
+      />
+
+      <Section>
+        {agencies.length === 0 ? (
+          <div className="mk-empty">
+            <p>
+              Todavía no hay inmobiliarias con cartera publicada en el
+              directorio.
+            </p>
+            <Link className="mk-btn mk-btn--accent" href="/para-inmobiliarias">
+              Sumar mi inmobiliaria
+            </Link>
+          </div>
+        ) : (
+          <div className="mk-agency-grid">
+            {agencies.map((a) => (
+              <Link
+                key={a.id}
+                className="mk-agency"
+                href={agencyUrl(a.slug)}
+              >
+                <div className="mk-agency__head">
+                  {safeImageUrl(a.logoUrl) ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      className="mk-agency__logo"
+                      src={safeImageUrl(a.logoUrl) ?? undefined}
+                      referrerPolicy="no-referrer"
+                      alt={a.name}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div
+                      className="mk-agency__logo mk-agency__logo--fallback"
+                      aria-hidden
+                    >
+                      {a.name.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <div className="mk-agency__name">
+                      {a.name}
+                      {a.isVerified && (
+                        <span className="mk-agency__verified" title="Verificada">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                    {a.cities.length > 0 && (
+                      <div className="mk-agency__cities">
+                        {a.cities.join(" · ")}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mk-agency__meta">
+                  <span>
+                    {a.listingCount.toLocaleString("es-PY")}{" "}
+                    {a.listingCount === 1 ? "propiedad" : "propiedades"}
+                  </span>
+                  {a.agentCount > 0 && (
+                    <span>
+                      {a.agentCount} {a.agentCount === 1 ? "agente" : "agentes"}
+                    </span>
+                  )}
+                </div>
+
+                <span className="mk-agency__cta">Ver cartera →</span>
+              </Link>
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <CtaBand
+        title="¿Tenés una inmobiliaria?"
+        text="Publicá tu cartera completa, obtené tu perfil verificado y recibí las consultas directo en tu WhatsApp."
+        primary={{ label: "Sumar mi inmobiliaria", href: "/para-inmobiliarias" }}
+        secondary={{ label: "Ver planes", href: "/planes" }}
+      />
+    </main>
+  );
+}

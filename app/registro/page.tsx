@@ -1,0 +1,221 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { esPanel } from "@/i18n/es";
+import { brandName } from "@/lib/brand-server";
+import { getSessionUser } from "@/lib/auth/session";
+import { homeForRole } from "@/lib/auth/guards";
+import { MIN_PASSWORD_LENGTH } from "@/lib/registration";
+import { getUsableInvite } from "@/lib/agency-invites";
+import { registerAction } from "./actions";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const brand = await brandName();
+  return {
+    title: `Creá tu cuenta`,
+    description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
+    // Renders per ?invite= token — keep every variant out of the index (F40).
+    robots: { index: false, follow: true },
+  };
+}
+
+// Session state is per-request; never statically cache the sign-up page.
+export const dynamic = "force-dynamic";
+
+const ERRORS: Record<string, string> = {
+  name: esPanel.registerErrorName,
+  email: esPanel.registerErrorEmail,
+  email_taken: esPanel.registerErrorEmailTaken,
+  password: esPanel.registerErrorPassword,
+  agency_name: esPanel.registerErrorAgencyName,
+  invite: esPanel.registerErrorInvite,
+  generic: esPanel.registerErrorGeneric,
+};
+
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; kind?: string; invite?: string }>;
+}) {
+  const { error, kind, invite } = await searchParams;
+
+  // Already signed in → straight to the right home, unless they arrived with an
+  // invitation: an existing account should be able to *join* that agency rather
+  // than be told to create a second login (see /agencia/invite/[token]).
+  const user = await getSessionUser();
+  if (user) {
+    if (invite) redirect(`/agencia/invite/${encodeURIComponent(invite)}`);
+    redirect(homeForRole(user));
+  }
+
+  // Resolve the invitation before rendering, so the visitor sees *which*
+  // inmobiliaria they are joining before they type anything — and so a guessed
+  // or expired token simply falls back to the ordinary sign-up form.
+  const invitation = invite ? await getUsableInvite(invite) : null;
+  const inviteFailed = Boolean(invite) && invitation == null;
+
+  // Keep the chosen account type across a failed submit, so an agency that
+  // mistyped its email doesn't come back as an independent agent.
+  const isInvite = invitation != null && kind !== "agency" && kind !== "independent";
+  const isAgency = !isInvite && kind !== "independent";
+
+  return (
+    <main className="site-main">
+      <div className="auth-wrap">
+        <div className="auth-card">
+          <h1 className="auth-card__title">{esPanel.registerTitle}</h1>
+          <p className="auth-card__subtitle">{esPanel.registerSubtitle}</p>
+
+          {error ? (
+            <p className="auth-error">{ERRORS[error] ?? ERRORS.generic}</p>
+          ) : null}
+
+          {inviteFailed ? (
+            <p className="auth-error">{esPanel.registerErrorInvite}</p>
+          ) : null}
+
+          {invitation ? (
+            <p className="auth-note">
+              {esPanel.registerInviteNote(
+                invitation.agencyName,
+                invitation.role === "agency_admin"
+                  ? esPanel.teamRoleAdmin
+                  : esPanel.teamRoleAgent,
+              )}
+            </p>
+          ) : null}
+
+          <form action={registerAction}>
+            {/* The token carries the agency and the role. The form asks for
+                neither — same rule as the missing `role` field. */}
+            {invitation ? (
+              <input type="hidden" name="invite" value={invitation.token} />
+            ) : null}
+
+            <fieldset className="auth-choice">
+              <legend className="auth-field__label">
+                {esPanel.registerKindLabel}
+              </legend>
+              {invitation ? (
+                <label className="auth-choice__option">
+                  <input
+                    type="radio"
+                    name="kind"
+                    value="invite"
+                    defaultChecked={isInvite}
+                  />
+                  <span>{esPanel.registerKindInvite(invitation.agencyName)}</span>
+                </label>
+              ) : null}
+              <label className="auth-choice__option">
+                <input
+                  type="radio"
+                  name="kind"
+                  value="agency"
+                  defaultChecked={isAgency}
+                />
+                <span>{esPanel.registerKindAgency}</span>
+              </label>
+              <label className="auth-choice__option">
+                <input
+                  type="radio"
+                  name="kind"
+                  value="independent"
+                  defaultChecked={!isAgency && !isInvite}
+                />
+                <span>{esPanel.registerKindIndependent}</span>
+              </label>
+            </fieldset>
+
+            {/* Always present: an independent agent simply leaves it empty, and
+                the server ignores it for that account type. */}
+            <div className="auth-field">
+              <label className="auth-field__label" htmlFor="agencyName">
+                {esPanel.registerAgencyNameLabel}
+              </label>
+              <input
+                className="auth-field__input"
+                id="agencyName"
+                name="agencyName"
+                type="text"
+                maxLength={160}
+                autoComplete="organization"
+              />
+            </div>
+
+            <div className="auth-field">
+              <label className="auth-field__label" htmlFor="name">
+                {esPanel.registerYourNameLabel}
+              </label>
+              <input
+                className="auth-field__input"
+                id="name"
+                name="name"
+                type="text"
+                maxLength={140}
+                autoComplete="name"
+                required
+              />
+            </div>
+
+            <div className="auth-field">
+              <label className="auth-field__label" htmlFor="email">
+                {esPanel.emailLabel}
+              </label>
+              <input
+                className="auth-field__input"
+                id="email"
+                name="email"
+                type="email"
+                maxLength={190}
+                autoComplete="email"
+                required
+              />
+            </div>
+
+            <div className="auth-field">
+              <label className="auth-field__label" htmlFor="whatsapp">
+                {esPanel.registerWhatsappLabel}
+              </label>
+              <input
+                className="auth-field__input"
+                id="whatsapp"
+                name="whatsapp"
+                type="tel"
+                inputMode="tel"
+                placeholder="0981 123 456"
+                maxLength={30}
+                autoComplete="tel"
+              />
+            </div>
+
+            <div className="auth-field">
+              <label className="auth-field__label" htmlFor="password">
+                {esPanel.registerPasswordLabel}
+              </label>
+              <input
+                className="auth-field__input"
+                id="password"
+                name="password"
+                type="password"
+                minLength={MIN_PASSWORD_LENGTH}
+                autoComplete="new-password"
+                required
+              />
+              <p className="auth-field__hint">{esPanel.registerPasswordHint}</p>
+            </div>
+
+            <button className="auth-submit" type="submit">
+              {esPanel.registerSubmit}
+            </button>
+          </form>
+
+          <p className="auth-note">{esPanel.registerPendingNote}</p>
+          <p className="auth-alt">
+            <Link href="/login">{esPanel.registerToLogin}</Link>
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}

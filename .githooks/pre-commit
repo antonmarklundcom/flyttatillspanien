@@ -1,0 +1,12 @@
+#!/bin/sh
+# Zero-runner policy: this repo deploys via Hostinger's build servers, which
+# GitHub reaches with a webhook. Webhooks are free; Actions minutes are billed
+# per account across every repo. A workflow file here costs minutes for no
+# deploy benefit, so it is blocked at the commit rather than argued about later.
+if git diff --cached --name-only | grep -q '^\.github/workflows/'; then
+  echo "BLOCKED: .github/workflows/ files are not permitted in this repo."
+  echo "CI runs locally via .githooks/pre-push (npm run verify:local)."
+  echo "If you genuinely need a workflow, get an explicit yes first, then:"
+  echo "  git commit --no-verify"
+  exit 1
+fi
