@@ -39,7 +39,7 @@ export interface TeamMember {
   name: string;
   slug: string;
   email: string | null;
-  whatsapp: string | null;
+  phone: string | null;
   /** NULL when the agents row has no login attached yet (imported profile). */
   role: UserRole | null;
   isVerified: boolean;
@@ -54,7 +54,7 @@ export async function listAgencyTeam(agencyId: number): Promise<TeamMember[]> {
       name: agents.name,
       slug: agents.slug,
       email: users.email,
-      whatsapp: agents.whatsapp,
+      phone: agents.phone,
       role: users.role,
       isVerified: agents.isVerified,
     })
@@ -252,7 +252,7 @@ export interface AdminAgentRow {
   name: string;
   slug: string;
   email: string | null;
-  whatsapp: string | null;
+  phone: string | null;
   role: UserRole | null;
   isVerified: boolean;
   agencyId: number | null;
@@ -268,7 +268,7 @@ export async function listAgentsWithAgency(): Promise<AdminAgentRow[]> {
       name: agents.name,
       slug: agents.slug,
       email: users.email,
-      whatsapp: agents.whatsapp,
+      phone: agents.phone,
       role: users.role,
       isVerified: agents.isVerified,
       agencyId: agents.agencyId,

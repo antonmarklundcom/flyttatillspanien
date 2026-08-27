@@ -7,7 +7,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { citiesWithPrices } from "@/lib/precios-queries";
 import {
   getPortalStats,
-  listFinancingPrograms,
+  listAcquisitionCosts,
 } from "@/lib/directory-queries";
 import {
   CtaBand,
@@ -20,14 +20,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Datos del mercado inmobiliario";
+const TITLE = "Marknadsdata för bostäder i Spanien";
 const DESCRIPTION =
-  "Precios de referencia por ciudad, cuotas de financiamiento vigentes y tasación online: los números del mercado inmobiliario paraguayo, calculados sobre avisos publicados.";
+  "Referenspriser per ort, uppskattad total köpkostnad och gratis värdering online — siffrorna från den spanska bostadsmarknaden, beräknade på publicerade objekt.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} de Paraguay`,
+    title: TITLE,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/datos` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
@@ -37,101 +37,99 @@ export async function generateMetadata(): Promise<Metadata> {
 const TOOLS = [
   {
     icon: "📊",
-    title: "Precios por ciudad",
-    text: "Mediana de precio por m² en venta y en alquiler, por ciudad y tipo de propiedad. Solo publicamos la cifra cuando la muestra alcanza un mínimo razonable.",
+    title: "Priser per ort",
+    text: "Medianpris per m² för köp och uthyrning, per ort och bostadstyp. Vi visar bara en siffra när urvalet är tillräckligt stort.",
   },
   {
     icon: "💰",
-    title: "Tasación online gratis",
-    text: "Un rango estimado para tu propiedad a partir de los avisos comparables de tu zona. Sin registro y en menos de un minuto.",
+    title: "Gratis värdering online",
+    text: "Ett uppskattat intervall för din bostad utifrån jämförbara objekt i ditt område. Utan registrering, på under en minut.",
   },
   {
-    icon: "🏦",
-    title: "Financiamiento y cuotas",
-    text: "Las condiciones de los programas vigentes y cómo se convierte un precio de venta en una cuota mensual estimada.",
+    icon: "📄",
+    title: "Total köpkostnad",
+    text: "Skatt, notarie, lagfart och juridisk hjälp per comunidad — vad det verkligen kostar att köpa utöver utropspriset.",
   },
 ];
 
 /**
- * Market-data hub — the "Datos" tab competitors have and this portal spread
- * across three unrelated URLs. It doesn't invent a new dataset: it puts the
- * medians job, the valuation tool and the financing programs behind one
- * entry point, and states plainly how each number is produced.
+ * Market-data hub — puts the medians job, the valuation tool and the
+ * acquisition-cost estimate behind one entry point, and states plainly how
+ * each number is produced.
  */
 export default async function DatosPage() {
-  const [origin, priceCities, programs, stats] = await Promise.all([
+  const [origin, priceCities, costs, stats] = await Promise.all([
     siteOrigin(),
     citiesWithPrices(),
-    listFinancingPrograms(),
+    listAcquisitionCosts(),
     getPortalStats(),
   ]);
 
   const totalSample = priceCities.reduce((n, c) => n + c.reliableSample, 0);
-  const bestRate = programs[0];
+  const lowestItp = costs.length
+    ? costs.reduce((min, c) => (Number(c.itpPct) < Number(min.itpPct) ? c : min))
+    : null;
 
   return (
     <main>
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: "Datos", url: "/datos" },
+            { name: "Start", url: "/" },
+            { name: "Data", url: "/datos" },
           ]),
         ]}
       />
 
       <PageHero
-        kicker="Datos"
-        title="Los números del mercado inmobiliario paraguayo"
-        subtitle="Cuánto vale el m² en cada ciudad, qué cuota sale con los programas vigentes y cuánto pedirías por tu propiedad. Todo calculado sobre avisos publicados, con la muestra a la vista."
+        kicker="Data"
+        title="Siffrorna från den spanska bostadsmarknaden"
+        subtitle="Vad kostar kvadratmetern i varje område, vad kostar det totalt att köpa, och vad skulle du kunna begära för din bostad. Allt beräknat på publicerade objekt, med urvalet synligt."
       />
 
       <Section>
         <StatRow
           stats={[
             {
-              value: stats.listings.toLocaleString("es-PY"),
-              label: "Avisos publicados analizados",
+              value: stats.listings.toLocaleString("sv-SE"),
+              label: "Analyserade publicerade objekt",
             },
             {
-              value: priceCities.length.toLocaleString("es-PY"),
-              label: "Ciudades con precio de referencia",
+              value: priceCities.length.toLocaleString("sv-SE"),
+              label: "Orter med referenspris",
             },
             {
-              value: totalSample.toLocaleString("es-PY"),
-              label: "Avisos en la muestra de precios",
+              value: totalSample.toLocaleString("sv-SE"),
+              label: "Objekt i prisunderlaget",
             },
             {
-              value: bestRate
-                ? `${Number(bestRate.annualRate).toLocaleString("es-PY", {
+              value: lowestItp
+                ? `${Number(lowestItp.itpPct).toLocaleString("sv-SE", {
                     maximumFractionDigits: 2,
                   })}%`
                 : "—",
-              label: "Tasa anual más baja vigente",
+              label: "Lägsta överlåtelseskatt (ITP)",
             },
           ]}
         />
       </Section>
 
-      <Section tone="muted" title="Herramientas">
+      <Section tone="muted" title="Verktyg">
         <FeatureGrid items={TOOLS} />
         <div className="mk-cta__actions" style={{ marginTop: 24 }}>
           <Link className="mk-btn mk-btn--outline" href="/precios">
-            Ver precios por ciudad
+            Se priser per ort
           </Link>
           <Link className="mk-btn mk-btn--outline" href="/tasacion">
-            Tasar mi propiedad
-          </Link>
-          <Link className="mk-btn mk-btn--outline" href="/financiamiento">
-            Financiamiento
+            Värdera min bostad
           </Link>
         </div>
       </Section>
 
       {priceCities.length > 0 && (
         <Section
-          title="Precio de referencia por ciudad"
-          subtitle="Entrá a cada ciudad para ver la mediana por m², por tipo de propiedad y por operación."
+          title="Referenspris per ort"
+          subtitle="Gå in på varje ort för att se medianen per m², per bostadstyp och affär."
         >
           <div className="hub-grid hub-grid--cities">
             {priceCities.map((c) => (
@@ -142,82 +140,82 @@ export default async function DatosPage() {
               >
                 <span className="hub-tile__label">{c.name}</span>
                 <span className="hub-tile__count">
-                  {c.reliableSample.toLocaleString("es-PY")}
+                  {c.reliableSample.toLocaleString("sv-SE")}
                 </span>
               </Link>
             ))}
           </div>
           <p className="mk-note">
-            El número de cada tarjeta es el tamaño de la muestra: cuántos
-            avisos publicados sostienen la mediana de esa ciudad. Cuanto mayor
-            sea, más confiable es el dato.
+            Talet på varje kort är urvalets storlek: hur många publicerade
+            objekt medianen för den orten bygger på. Ju högre, desto mer
+            tillförlitlig siffra.
           </p>
         </Section>
       )}
 
-      <Section tone="muted" width="narrow" title="Cómo se calculan estos números">
+      <Section tone="muted" width="narrow" title="Så räknar vi fram siffrorna">
         <Prose>
-          <h2>Precios de referencia</h2>
+          <h2>Referenspriser</h2>
           <p>
-            Tomamos los avisos publicados de cada ciudad y tipo de propiedad y
-            calculamos la <strong>mediana</strong> de precio por m², no el
-            promedio: la mediana no se deforma por unos pocos avisos muy caros
-            o muy baratos. Solo publicamos la cifra de un grupo cuando tiene
-            una muestra mínima; por debajo de eso, el número no se muestra en
-            lugar de mostrar algo poco confiable.
+            Vi tar de publicerade objekten per ort och bostadstyp och räknar
+            fram <strong>medianen</strong> av priset per m², inte
+            medelvärdet: medianen påverkas inte av några enstaka väldigt dyra
+            eller väldigt billiga objekt. Vi visar bara siffran för en grupp
+            som har ett tillräckligt stort urval; annars visas ingen siffra
+            alls hellre än en opålitlig.
           </p>
           <p>
-            Importante: son precios <em>de publicación</em>, no de cierre. En
-            Paraguay lo habitual es que la operación cierre por debajo del
-            precio publicado, así que tomalos como el techo de la negociación.
-          </p>
-
-          <h2>Cuotas estimadas</h2>
-          <p>
-            Convertimos el precio de venta en una cuota mensual con la fórmula
-            de cuota fija (sistema francés), usando las condiciones de los
-            programas de financiamiento cargados en el portal y descontando la
-            entrega mínima que cada uno exige. Cuando una propiedad califica
-            para más de un programa, mostramos el que da la cuota más baja.
-          </p>
-          <p>
-            No incluyen seguros, gastos administrativos ni escrituración, y no
-            consideran tu perfil crediticio.{" "}
-            <Link href="/financiamiento">Ver el detalle de cada programa</Link>.
+            Viktigt: det är <em>utropspriser</em>, inte slutpriser. Räkna med
+            att det slutliga priset kan avvika, i endera riktningen, beroende
+            på förhandling och marknadsläge.
           </p>
 
-          <h2>Tasación</h2>
+          <h2>Total köpkostnad</h2>
           <p>
-            La tasación online compara tu propiedad con los avisos publicados de
-            la misma zona, tipo y rango de superficie, y devuelve un rango. Es
-            un punto de partida para fijar precio, no una tasación oficial: esa
-            la hace un tasador matriculado o la entidad que otorga el crédito.
+            Vi beräknar den uppskattade totala köpkostnaden per comunidad
+            autónoma utifrån offentliga skattesatser (ITP vid andrahandsköp,
+            IVA plus AJD vid nyproduktion) plus uppskattade avgifter för
+            notarie, lagfart och juridisk hjälp. Se{" "}
+            <Link href="/bostad">respektive objekt</Link> för beräkningen på
+            just det priset.
+          </p>
+          <p>
+            Uppskattningen ersätter inte rådgivning från en jurist eller
+            gestoría inför ett köp, och siffrorna är märkta som preliminära
+            tills de är verifierade mot varje comunidads publicerade skala.
           </p>
 
-          <h2>Con qué frecuencia se actualizan</h2>
+          <h2>Värdering</h2>
           <p>
-            Las medianas se recalculan periódicamente sobre el inventario
-            vigente y las cuotas se recalculan cuando cambian los precios o las
-            condiciones de los programas. Cada página de precios indica el
-            período sobre el que está calculada.
+            Värderingen online jämför din bostad med publicerade objekt i
+            samma område, typ och storleksintervall, och ger dig ett
+            intervall. Det är en utgångspunkt för att sätta pris, inte en
+            officiell värdering — den görs av en auktoriserad värderare eller
+            av den bank som ger lånet.
+          </p>
+
+          <h2>Hur ofta uppdateras det</h2>
+          <p>
+            Medianerna räknas om periodiskt utifrån det aktuella utbudet.
+            Varje prissida anger perioden siffrorna avser.
           </p>
         </Prose>
       </Section>
 
       <Section width="narrow">
         <p className="mk-note">
-          ¿Sos periodista o analista y querés citar estos datos? Podés hacerlo
-          con atribución y enlace a la página correspondiente.{" "}
-          <Link href="/contacto">Escribinos</Link> si necesitás un corte
-          específico del mercado.
+          Är du journalist eller analytiker och vill citera dessa siffror? Det
+          går bra, med källhänvisning och länk till motsvarande sida.{" "}
+          <Link href="/contacto">Skriv till oss</Link> om du behöver ett
+          specifikt utdrag ur marknaden.
         </p>
       </Section>
 
       <CtaBand
-        title="Empezá por tu propiedad"
-        text="Mirá cuánto vale hoy, según los avisos publicados en tu zona."
-        primary={{ label: "Tasar gratis", href: "/tasacion" }}
-        secondary={{ label: "Ver precios por ciudad", href: "/precios" }}
+        title="Börja med din bostad"
+        text="Se vad den är värd idag, enligt objekten publicerade i ditt område."
+        primary={{ label: "Värdera gratis", href: "/tasacion" }}
+        secondary={{ label: "Se priser per ort", href: "/precios" }}
       />
     </main>
   );

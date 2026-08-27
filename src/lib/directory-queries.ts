@@ -10,10 +10,10 @@
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
+  acquisitionCosts,
   agencies,
   agents,
   developers,
-  financingPrograms,
   listings,
   locations,
   projects,
@@ -29,7 +29,7 @@ export interface AgencyDirectoryRow {
   slug: string;
   logoUrl: string | null;
   isVerified: boolean;
-  plan: "free" | "destacado" | "partner";
+  plan: "free" | "premium" | "partner";
   listingCount: number;
   agentCount: number;
   /** Cities where this agency has published inventory, most listings first. */
@@ -134,7 +134,7 @@ async function listAgenciesForDirectoryUncached(): Promise<AgencyDirectoryRow[]>
       .map((r) => [r.agencyId as number, Number(r.n)]),
   );
 
-  const planRank: Record<string, number> = { partner: 0, destacado: 1, free: 2 };
+  const planRank: Record<string, number> = { partner: 0, premium: 1, free: 2 };
   return rows
     .map((r) => ({
       ...r,
@@ -171,15 +171,15 @@ async function listAllProjectsUncached(limit = 60): Promise<ProjectCard[]> {
   return projectCardsFrom(rows);
 }
 
-export type FinancingProgramRow = typeof financingPrograms.$inferSelect;
+export type AcquisitionCostRow = typeof acquisitionCosts.$inferSelect;
 
-/** Active financing programs, cheapest rate first — /financiamiento. */
-async function listFinancingProgramsUncached(): Promise<FinancingProgramRow[]> {
+/** Active acquisition-cost rows, one per comunidad — /datos. */
+async function listAcquisitionCostsUncached(): Promise<AcquisitionCostRow[]> {
   return db
     .select()
-    .from(financingPrograms)
-    .where(eq(financingPrograms.active, true))
-    .orderBy(asc(financingPrograms.annualRate));
+    .from(acquisitionCosts)
+    .where(eq(acquisitionCosts.active, true))
+    .orderBy(asc(acquisitionCosts.name));
 }
 
 export interface DeveloperDirectoryRow {
@@ -562,21 +562,23 @@ export const getPortalStats = unstable_cache(
   DIRECTORY_CACHE,
 );
 
-const cachedFinancingPrograms = unstable_cache(
-  listFinancingProgramsUncached,
-  ["directory:financing-programs"],
-  { revalidate: CACHE_TTL.directory, tags: [CACHE_TAGS.directory] },
+const cachedAcquisitionCosts = unstable_cache(
+  listAcquisitionCostsUncached,
+  ["directory:acquisition-costs"],
+  { revalidate: CACHE_TTL.acquisitionCosts, tags: [CACHE_TAGS.acquisitionCosts] },
 );
 
 /**
- * Active financing programs, cheapest rate first — /financiamiento.
+ * Active acquisition-cost rows, one per comunidad — occupies the slot
+ * listFinancingPrograms() vacated. See src/lib/acquisition-cost.ts for the
+ * pure computation and docs/SPAIN-PORTAL-DESIGN.md §4 for why this is a
+ * cron-owned reference table rather than a per-listing cached column.
  *
  * `updatedAt` is re-wrapped because the cache serializes it to a string while
- * the row type still says `Date | null`. Nothing renders it today; the wrap
- * is so that the first thing that does is not quietly wrong.
+ * the row type still says `Date | null`.
  */
-export async function listFinancingPrograms(): Promise<FinancingProgramRow[]> {
-  const rows = await cachedFinancingPrograms();
+export async function listAcquisitionCosts(): Promise<AcquisitionCostRow[]> {
+  const rows = await cachedAcquisitionCosts();
   return rows.map((r) => ({
     ...r,
     updatedAt: r.updatedAt == null ? null : new Date(r.updatedAt),

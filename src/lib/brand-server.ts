@@ -4,7 +4,7 @@ import { brandTaglineFor } from "@/lib/brand";
 
 /**
  * Brand naming, request-scoped half. Split from `brand.ts` because that module
- * is reachable from client components (via `src/i18n/es.ts`) and this one
+ * is reachable from client components (via `src/i18n/sv.ts`) and this one
  * reads `next/headers`.
  *
  * Use `brandName()` on every public page — in `generateMetadata` and in the
@@ -21,7 +21,7 @@ export async function brandName(): Promise<string> {
 export async function brandMeta(): Promise<{
   name: string;
   tagline: string;
-  locale: "es" | "en";
+  locale: "sv";
 }> {
   const v = await currentVertical();
   return { name: v.brand, tagline: brandTaglineFor(v.locale), locale: v.locale };

@@ -1,12 +1,12 @@
 import { CANONICAL_HOST, VERTICALS, resolveVertical } from "@/config/verticals";
 
 /**
- * Brand naming, client-safe half. **The domain is the brand** (founder
- * decision, 2026-08-16) — there is no separate wordmark, so the name is
- * per-host config in `verticals.ts` rather than one global string.
+ * Brand naming, client-safe half. **The domain is the brand** — there is no
+ * separate wordmark, so the name is per-host config in `verticals.ts` rather
+ * than one global string.
  *
  * This module must never import `next/headers`, directly or transitively:
- * `src/i18n/es.ts` imports it, and six client components import that. The
+ * `src/i18n/sv.ts` imports it, and six client components import that. The
  * request-scoped resolver therefore lives in `brand-server.ts`.
  *
  * Two ways in, and picking the wrong one is the mistake to avoid:
@@ -33,11 +33,10 @@ export const BRAND_NAME: string =
  * design system's two-line brand mark). Deliberately not a name — it stays
  * true on every door, which is the point now that the wordmark itself varies.
  */
-export const BRAND_KICKER = "Paraguay";
+export const BRAND_KICKER = "Spanien";
 
 /** Homepage/OG tagline. Follows the vertical's language, not its wordmark. */
-export function brandTaglineFor(locale: "es" | "en"): string {
-  return locale === "en"
-    ? "Find your property in Paraguay"
-    : "Encontrá tu propiedad en Paraguay";
+export function brandTaglineFor(locale: "sv"): string {
+  void locale; // single served locale today; widens when English is added
+  return "Hitta din bostad i Spanien";
 }
