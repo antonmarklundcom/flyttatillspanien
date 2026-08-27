@@ -410,6 +410,7 @@ export interface AgencyListingRow {
   status: ListingStatus;
   operation: (typeof listings.$inferSelect)["operation"];
   propertyType: (typeof listings.$inferSelect)["propertyType"];
+  priceEur: string;
   updatedAt: Date;
   /** Rejection reason set by admin review (status "removed"), else null. */
   reviewNotes: string | null;
@@ -434,6 +435,7 @@ export async function getPanelListings(
       status: listings.status,
       operation: listings.operation,
       propertyType: listings.propertyType,
+      priceEur: listings.priceEur,
       updatedAt: listings.updatedAt,
       reviewNotes: listings.reviewNotes,
     })

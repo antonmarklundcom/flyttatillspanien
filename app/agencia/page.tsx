@@ -14,7 +14,7 @@ import {
   totalsFrom,
 } from "@/lib/stats-queries";
 import { svPanel, listingStatusLabel } from "@/i18n/sv";
-import { formatPrice } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { agencyTabs } from "./tabs";
@@ -129,10 +129,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
               </td>
               <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
               <td>
-                {formatPrice({
-                  priceAmount: row.priceAmount,
-                  priceCurrency: row.priceCurrency,
-                })}
+                {formatEur(row.priceEur)}
               </td>
               <td>
                 <span className={`panel-status panel-status--${row.status}`}>

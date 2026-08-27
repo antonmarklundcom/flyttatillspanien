@@ -7,7 +7,7 @@ import { countReviewQueue, listAgencies } from "@/lib/panel-queries";
 import { listImportJobs } from "@/lib/import/jobs";
 import { recentPriceChanges } from "@/lib/import/resync";
 import { UPLOAD_SOURCES } from "@/lib/import/intake";
-import { formatUsd } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../tabs";
 import { commitImportAction, dryRunImportAction } from "./actions";
@@ -138,8 +138,8 @@ export default async function AdminImportPage() {
                           {c.title ?? `#${c.listingId}`}
                         </Link>
                       </td>
-                      <td>{c.before ? formatUsd(c.before) : "—"}</td>
-                      <td>{formatUsd(c.after)}</td>
+                      <td>{c.before ? formatEur(c.before) : "—"}</td>
+                      <td>{formatEur(c.after)}</td>
                       <td>{formatDate(c.at)}</td>
                     </tr>
                   ))}

@@ -3,7 +3,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
 import { svPanel } from "@/i18n/sv";
-import { formatPrice } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
 import { approveAction, rejectAction } from "./actions";
@@ -56,10 +56,7 @@ export default async function AdminReviewPage() {
                   </div>
                 </div>
                 <span className="panel-card__price">
-                  {formatPrice({
-                    priceAmount: row.priceAmount,
-                    priceCurrency: row.priceCurrency,
-                  })}
+                  {formatEur(row.priceEur)}
                 </span>
               </div>
 

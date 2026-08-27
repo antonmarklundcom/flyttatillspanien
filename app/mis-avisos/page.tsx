@@ -6,7 +6,7 @@ import { AGENCY_LOCKED_STATUSES, agencyStatusOptions } from "@/lib/listing-edit"
 import { getPanelListings } from "@/lib/panel-queries";
 import { getPanelListingStats } from "@/lib/stats-queries";
 import { svOwner, svPanel, listingStatusLabel } from "@/i18n/sv";
-import { formatPrice } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { ownerTabs } from "./tabs";
@@ -76,10 +76,7 @@ export default async function OwnerListingsPage() {
                       </td>
                       <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
                       <td>
-                        {formatPrice({
-                          priceAmount: row.priceAmount,
-                          priceCurrency: row.priceCurrency,
-                        })}
+                        {formatEur(row.priceEur)}
                       </td>
                       <td>
                         <span className={`panel-status panel-status--${row.status}`}>

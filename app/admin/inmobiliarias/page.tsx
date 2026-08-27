@@ -30,9 +30,9 @@ function VerifiedPill({ on }: { on: boolean }) {
 }
 
 /** Plan values as the founder reads them, not as the enum spells them. */
-const PLAN_OPTIONS: { value: "free" | "destacado" | "partner"; label: string }[] = [
+const PLAN_OPTIONS: { value: "free" | "premium" | "partner"; label: string }[] = [
   { value: "free", label: "Gratis" },
-  { value: "destacado", label: "Destacado" },
+  { value: "premium", label: "Premium" },
   { value: "partner", label: "Partner" },
 ];
 
@@ -93,7 +93,7 @@ export default async function AdminAgenciesPage({
             </label>
             <label className="panel-form__field">
               <span className="auth-field__label">{svPanel.agencyWhatsappLabel}</span>
-              <input className="auth-field__input" name="whatsapp" type="tel" />
+              <input className="auth-field__input" name="phone" type="tel" />
             </label>
             <label className="panel-form__field">
               <span className="auth-field__label">{svPanel.planLabel}</span>
@@ -135,7 +135,7 @@ export default async function AdminAgenciesPage({
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
                     <td>{planLabel(a.plan)}</td>
-                    <td>{a.whatsapp ?? a.email ?? "—"}</td>
+                    <td>{a.phone ?? a.email ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />
                     </td>
@@ -181,7 +181,7 @@ export default async function AdminAgenciesPage({
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
                     <td>{a.agencyName ?? "Independiente"}</td>
-                    <td>{a.whatsapp ?? "—"}</td>
+                    <td>{a.phone ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />
                     </td>

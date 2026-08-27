@@ -123,10 +123,10 @@ export default async function AgencyProfilePage({
                     </span>
                     <input
                       className="auth-field__input"
-                      name="whatsapp"
+                      name="phone"
                       type="tel"
                       inputMode="tel"
-                      defaultValue={agency.whatsapp ?? ""}
+                      defaultValue={agency.phone ?? ""}
                       maxLength={30}
                       disabled={!canEditAgency}
                     />
@@ -209,10 +209,10 @@ export default async function AgencyProfilePage({
                   </span>
                   <input
                     className="auth-field__input"
-                    name="whatsapp"
+                    name="phone"
                     type="tel"
                     inputMode="tel"
-                    defaultValue={agent.whatsapp ?? ""}
+                    defaultValue={agent.phone ?? ""}
                     maxLength={30}
                   />
                 </label>

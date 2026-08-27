@@ -116,7 +116,7 @@ function AgentCard({
             <span>{agent.email ?? svPanel.teamRoleNoLogin}</span>
             <span>{agent.agencyName ?? svPanel.agencyNone}</span>
             <span>{roleName(agent.role)}</span>
-            {agent.whatsapp ? <span>{agent.whatsapp}</span> : null}
+            {agent.phone ? <span>{agent.phone}</span> : null}
           </div>
         </div>
       </div>

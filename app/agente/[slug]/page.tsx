@@ -139,7 +139,7 @@ export default async function AgentProfilePage({ params }: Params) {
               <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
             </p>
           )}
-          {agent.whatsapp && (
+          {agent.phone && (
             <div className="agent-profile__contact">
               <a className="contact-form__altlink" href="#contacto">
                 {svAgentProfile.whatsappLink}
@@ -162,12 +162,12 @@ export default async function AgentProfilePage({ params }: Params) {
         <p className="agent-profile__empty">{svAgentProfile.empty}</p>
       )}
 
-      {agent.whatsapp && (
+      {agent.phone && (
         <section className="contact-panel" id="contacto">
           <h2 className="contact-panel__title">{svAgentProfile.contactTitle}</h2>
           <p className="contact-panel__subtitle">{svAgentProfile.contactSubtitle}</p>
           <ContactForm
-            contactWhatsapp={agent.whatsapp}
+            contactWhatsapp={agent.phone}
             leadType="buyer"
             prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
             variant="panel"

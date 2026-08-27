@@ -10,7 +10,7 @@ import {
   type ListingStatusValue,
 } from "@/lib/listing-edit";
 import { svPanel, listingStatusLabel } from "@/i18n/sv";
-import { formatPrice } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { BulkCount, BulkSelectAll } from "@/components/panel/BulkSelect";
@@ -192,10 +192,7 @@ export default async function AdminListingsPage({
                     <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
                     <td>{row.agencyName ?? "Particular"}</td>
                     <td>
-                      {formatPrice({
-                        priceAmount: row.priceAmount,
-                        priceCurrency: row.priceCurrency,
-                      })}
+                      {formatEur(row.priceEur)}
                     </td>
                     <td>
                       <span className={`panel-status panel-status--${row.status}`}>
