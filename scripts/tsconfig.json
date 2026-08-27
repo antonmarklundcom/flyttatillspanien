@@ -1,0 +1,11 @@
+{
+  "//": "tsx runs the scripts under this config so `server-only` resolves to a no-op shim — see scripts/shims/server-only.ts. The app's own build never uses it.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "..",
+    "paths": {
+      "@/*": ["./src/*"],
+      "server-only": ["./scripts/shims/server-only.ts"]
+    }
+  }
+}

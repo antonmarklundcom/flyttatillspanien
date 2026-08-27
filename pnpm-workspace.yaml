@@ -1,0 +1,10 @@
+# Hostinger builds with pnpm, which refuses to run install scripts for native
+# dependencies unless they are allowlisted. pnpm >= 10.6 reads that allowlist
+# from this file rather than from package.json's "pnpm" field, so the same list
+# lives in both places — whichever version the build host ships, one of them is
+# read. sharp powers listing photo processing; esbuild ships native binaries.
+#
+# npm ignores this file entirely, and npm is what the repo's lockfile is for.
+onlyBuiltDependencies:
+  - sharp
+  - esbuild

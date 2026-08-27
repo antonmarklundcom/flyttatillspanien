@@ -1,0 +1,66 @@
+{
+  "name": "propia",
+  "version": "0.1.0",
+  "private": true,
+  "description": "propia.com.py — Paraguay real-estate portal. One engine, multiple branded doors.",
+  "scripts": {
+    "prepare": "git config core.hooksPath .githooks || true",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "verify:local": "npm run typecheck && npm run build && npm run verify:import && npm run verify:facets && npm run verify:i18n && npm run verify:seo",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:status": "tsx --tsconfig scripts/tsconfig.json scripts/check-migrations.ts",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "seed:financing": "tsx --tsconfig scripts/tsconfig.json scripts/seed-financing.ts",
+    "seed:locations": "tsx --tsconfig scripts/tsconfig.json scripts/seed-locations.ts",
+    "cron:cuotas": "tsx --tsconfig scripts/tsconfig.json scripts/recompute-cuotas.ts",
+    "cron:medians": "tsx --tsconfig scripts/tsconfig.json scripts/compute-medians.ts",
+    "cron:resync": "tsx --tsconfig scripts/tsconfig.json scripts/resync-stale.ts",
+    "cron:geo": "tsx --tsconfig scripts/tsconfig.json scripts/sync-display-coords.ts",
+    "cron:translate": "tsx --tsconfig scripts/tsconfig.json scripts/translate-listings.ts",
+    "cron:sessions": "tsx --tsconfig scripts/tsconfig.json scripts/purge-sessions.ts",
+    "verify:import": "tsx --tsconfig scripts/tsconfig.json scripts/verify-import.ts",
+    "verify:facets": "tsx --tsconfig scripts/tsconfig.json scripts/verify-facets.ts",
+    "verify:i18n": "tsx --tsconfig scripts/tsconfig.json scripts/verify-i18n.ts",
+    "verify:seo": "tsx --tsconfig scripts/tsconfig.json scripts/verify-seo.ts",
+    "import:csv": "tsx --tsconfig scripts/tsconfig.json scripts/import-csv.ts",
+    "backfill:images": "tsx --tsconfig scripts/tsconfig.json scripts/backfill-images.ts",
+    "verify:scopes": "tsx --tsconfig scripts/tsconfig.json scripts/verify-scopes.ts",
+    "user:create": "tsx --tsconfig scripts/tsconfig.json scripts/create-user.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "@aws-sdk/client-s3": "^3.1095.0",
+    "drizzle-orm": "^0.45.2",
+    "maplibre-gl": "^5.24.0",
+    "mysql2": "^3.14.1",
+    "next": "^15.3.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "sharp": "^0.35.3",
+    "zod": "^3.25.67"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.32",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.23.0",
+    "typescript": "^5.8.3"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1",
+    "postcss": "^8.5.10"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "sharp",
+      "esbuild"
+    ]
+  }
+}

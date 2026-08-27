@@ -1,0 +1,7 @@
+operation,property_type,title,description_es,price_amount,price_currency,bedrooms,bathrooms,parking,area_m2,land_m2,property_state,location_full_slug,location_name,address_text,lat,lng,contact_phone,source_external_id,source_url,image_urls
+venta,casa,Casa en Recoleta con patio,Linda casa a metros de Av. España,145000,USD,3,2,2,210,300,usado,asuncion/recoleta,,Calle Ejemplo 123,-25.2865,-57.5759,0981 123-456,WG-001,,https://ex/1.jpg|https://ex/2.jpg
+venta,departamento,Departamento a estrenar Villa Morra,Torre nueva entrega inmediata,98000,USD,2,2,1,72,,entrega_inmediata,asuncion/villa-morra,,,-25.2937,-57.5679,0971555777,WG-002,,
+alquiler,departamento,Depto amoblado Las Mercedes,Ideal ejecutivos,3500000,PYG,1,1,1,55,,usado,asuncion/las-mercedes,,,,,+595 981 123 456,WG-003,,
+venta,terreno,Terreno en Luque,Zona en crecimiento,60000,USD,,,,,450,,central/luque,,,-25.267,-57.4872,0985 000111,WG-004,,
+venta,casa,Casa Recoleta patio (re-publicada),Mismo inmueble otro precio,147000,USD,3,2,2,208,300,usado,,Recoleta,,,,0981123456,WG-XREP,,
+venta,casa,Casa sin ubicacion valida,Falta location,80000,USD,3,2,1,120,,usado,,Ciudad Inexistente XYZ,,,,0999888777,WG-BAD,,

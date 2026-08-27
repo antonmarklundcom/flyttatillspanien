@@ -1,0 +1,1 @@
+ALTER TABLE `market_medians` ADD `sample_size_m2` int unsigned DEFAULT 0 NOT NULL;
