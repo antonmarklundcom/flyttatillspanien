@@ -10,7 +10,7 @@
  *      the divergence the file exists to prevent, and types cannot see it.
  *   2. **`VerticalConfig.filters` narrows, and only with real enum values.**
  *      The config is hand-written TypeScript with `string[]` fields, so a typo
- *      (`"casas"` for `"casa"`) compiles. Rendered into SQL it would match
+ *      (`"villaa"` for `"villa"`) compiles. Rendered into SQL it would match
  *      nothing and read as "the whole site is empty" on that domain.
  *
  * Run: npm run verify:facets   (also part of npm run verify:local)
@@ -48,25 +48,25 @@ function toText(cond: SQL | undefined): string {
 console.log("\nfacets: parsing");
 
 const parsed = parseFacetParams({
-  operacion: "venta",
-  tipo: "casas",
-  precio_min: "50000",
-  precio_max: "150000",
-  dormitorios: "3",
-  orden: "precio_asc",
+  affar: "venta",
+  typ: "villor",
+  pris_min: "50000",
+  pris_max: "500000",
+  sovrum: "3",
+  sortering: "pris_upp",
 });
 check("full query string parses", parsed.operation === "venta");
-check("plural type segment maps to the enum", parsed.propertyType === "casa");
-check("numbers parse", parsed.priceMin === 50000 && parsed.priceMax === 150000);
-check("sort parses", parsed.sort === "precio_asc");
+check("plural type segment maps to the enum", parsed.propertyType === "villa");
+check("numbers parse", parsed.priceMin === 50000 && parsed.priceMax === 500000);
+check("sort parses", parsed.sort === "pris_upp");
 
 const junk = parseFacetParams({
-  operacion: "comprar",
-  tipo: "mansiones",
-  precio_min: "abc",
-  precio_max: "-5",
-  dormitorios: "0",
-  orden: "cheapest",
+  affar: "comprar",
+  typ: "mansiones",
+  pris_min: "abc",
+  pris_max: "-5",
+  sovrum: "0",
+  sortering: "cheapest",
 });
 check(
   "unknown operation/type are dropped, not passed through",
@@ -81,14 +81,14 @@ check(
 check("unknown sort is dropped", junk.sort === undefined);
 check(
   "repeated params (string[]) are ignored rather than coerced",
-  parseFacetParams({ precio_min: ["1", "2"] }).priceMin === undefined,
+  parseFacetParams({ pris_min: ["1", "2"] }).priceMin === undefined,
 );
-check("empty string is not a filter", parseFacetParams({ orden: "" }).sort === undefined);
+check("empty string is not a filter", parseFacetParams({ sortering: "" }).sort === undefined);
 
-const locs = parseLocationSlugs({ ciudad: "asuncion", barrio: "recoleta" });
+const locs = parseLocationSlugs({ ort: "marbella", omrade: "nueva-andalucia" });
 check(
   "location slugs read back",
-  locs.citySlug === "asuncion" && locs.barrioSlug === "recoleta",
+  locs.citySlug === "marbella" && locs.barrioSlug === "nueva-andalucia",
 );
 
 check("no filters means no active filters", !hasUserFacets({}));
@@ -101,8 +101,8 @@ const roundTrips: ListingFacets[] = [
   {},
   { priceMin: 50000 },
   { priceMax: 90000, minBedrooms: 2 },
-  { priceMin: 1, priceMax: 2, minBedrooms: 3, sort: "precio_desc" },
-  { sort: "precio_asc" },
+  { priceMin: 1, priceMax: 2, minBedrooms: 3, sort: "pris_ner" },
+  { sort: "pris_upp" },
 ];
 for (const f of roundTrips) {
   const back = parseFacetParams(facetSearchParams(f));
@@ -117,12 +117,12 @@ for (const f of roundTrips) {
 const withPath = parseFacetParams(
   facetSearchParams(
     { priceMin: 1000 },
-    { operationSlug: "alquiler", typeSlug: "departamentos" },
+    { operationSlug: "hyra", typeSlug: "lagenheter" },
   ),
 );
 check(
   "operation/type survive the round-trip as enum values",
-  withPath.operation === "alquiler" && withPath.propertyType === "departamento",
+  withPath.operation === "alquiler" && withPath.propertyType === "apartamento",
 );
 
 console.log("\nfacet-sql: the published gate");
@@ -137,7 +137,7 @@ check(
     const t = toText(
       publishedFacetWhere({
         operation: "venta",
-        propertyType: "casa",
+        propertyType: "villa",
         locationIds: [1, 2],
         minBedrooms: 3,
       }),
@@ -152,27 +152,27 @@ check(
   toText(
     publishedFacetWhere({
       operation: "venta",
-      propertyType: "casa",
+      propertyType: "villa",
       locationIds: [1, 2],
       minBedrooms: 3,
     }),
   ),
 );
 check(
-  "price filters run on price_usd, never price_amount",
+  "price filters run on price_eur",
   (() => {
     const t = toText(publishedFacetWhere({ priceMin: 1, priceMax: 2 }));
-    return t.includes("price_usd") && !t.includes("price_amount");
+    return t.includes("price_eur");
   })(),
 );
 
 console.log("\nfacet-sql: a door's hard filters");
 
 const noFilters: VerticalConfig = {
-  key: "en",
+  key: "sv",
   brand: "x",
-  locale: "en",
-  copy: "foreign",
+  locale: "sv",
+  copy: "relocation",
   enabled: false,
   ownsListingDetail: false,
 };
@@ -189,15 +189,7 @@ check(
 );
 check(
   "a typo in the config narrows nothing rather than everything",
-  verticalConds({ ...noFilters, filters: { property_type: ["casas"] } }).length === 0,
-);
-check(
-  "foreign_exposure: true is a filter",
-  verticalConds({ ...noFilters, filters: { foreign_exposure: true } }).length === 1,
-);
-check(
-  "foreign_exposure: false is not (the column is an opt-in, default true)",
-  verticalConds({ ...noFilters, filters: { foreign_exposure: false } }).length === 0,
+  verticalConds({ ...noFilters, filters: { property_type: ["villas"] } }).length === 0,
 );
 
 const narrowed = toText(

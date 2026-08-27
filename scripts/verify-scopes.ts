@@ -88,7 +88,7 @@ async function main() {
       name: "Verify Agency Owner",
       email: mail("agency"),
       password: "secreto123",
-      whatsapp: null,
+      phone: null,
       agencyName: `Verify Inmobiliaria ${stamp}`,
     });
     check("agency signup succeeds", agencyOwner.ok);
@@ -126,7 +126,7 @@ async function main() {
       name: "Verify Independent",
       email: mail("independent"),
       password: "secreto123",
-      whatsapp: null,
+      phone: null,
       agencyName: null,
     });
     check("independent signup succeeds", independent.ok);
@@ -149,7 +149,7 @@ async function main() {
       name: "Duplicate",
       email: ownerUser.email!,
       password: "secreto123",
-      whatsapp: null,
+      phone: null,
       agencyName: null,
     });
     check("duplicate email refused", !dup.ok && dup.error === "email_taken");
@@ -159,7 +159,7 @@ async function main() {
       name: "Weak",
       email: mail("weak"),
       password: "corto",
-      whatsapp: null,
+      phone: null,
       agencyName: null,
     });
     check("short password refused", !weak.ok && weak.error === "password");
@@ -169,10 +169,11 @@ async function main() {
     /* ---------------------------------------------------------------- */
     const base = {
       operation: "venta" as const,
-      propertyType: "casa" as const,
-      priceCurrency: "USD" as const,
+      propertyType: "villa" as const,
       locationId,
       status: "published" as const,
+      legalStatus: "desconocido" as const,
+      chargesStatus: "desconocido" as const,
     };
     await db.insert(listings).values([
       {
@@ -180,8 +181,7 @@ async function main() {
         publicId: `vfy${String(stamp).slice(-7)}`,
         slug: `verify-agency-${stamp}`,
         title: "Verify agency listing",
-        priceAmount: "100000",
-        priceUsd: "100000",
+        priceEur: "285000",
         agencyId,
         /**
          * Must start as a DRAFT, and this is not cosmetic. maySetStatus()
@@ -198,8 +198,7 @@ async function main() {
         publicId: `vfx${String(stamp).slice(-7)}`,
         slug: `verify-owner-${stamp}`,
         title: "Verify independent listing",
-        priceAmount: "90000",
-        priceUsd: "90000",
+        priceEur: "260000",
         ownerUserId: independent.userId,
       },
     ]);
@@ -284,17 +283,16 @@ async function main() {
         title: "Verify agency listing (edited)",
         descriptionEs: null,
         operation: "venta",
-        propertyType: "casa",
-        priceAmount: 100000,
-        priceCurrency: "USD",
+        propertyType: "villa",
+        priceEur: 285000,
         bedrooms: null,
         bathrooms: null,
         parking: null,
-        areaM2: null,
-        landM2: null,
+        builtM2: null,
+        plotM2: null,
         locationId,
         videoUrl: null,
-        foreignExposure: true,
+        energyRating: "D",
         status: "published",
       },
     });
@@ -331,7 +329,7 @@ async function main() {
         leadType: "buyer",
         vertical: "verify",
         listingId: ownerRows[0].id,
-        whatsapp: `0983${String(stamp).slice(-6)}`,
+        email: `buyer-${stamp}@verify.test`,
         name: "Verify buyer lead",
         routedTo: "owner",
       },
@@ -339,7 +337,7 @@ async function main() {
         leadType: "valuation",
         vertical: "verify",
         listingId: ownerRows[0].id,
-        whatsapp: `0984${String(stamp).slice(-6)}`,
+        email: `internal-${stamp}@verify.test`,
         name: "Verify internal lead",
         routedTo: "internal",
       },
@@ -369,7 +367,7 @@ async function main() {
     await updateAgencyProfile(agencyId, {
       name: "Verify Renamed",
       logoUrl: "https://example.test/logo.png",
-      whatsapp: "0981000000",
+      phone: "0981000000",
       email: "hola@example.test",
     });
     const renamed = await getAgencyProfile(agencyId);
@@ -383,7 +381,7 @@ async function main() {
     await updateAgencyProfile(agencyId, {
       name: "Verify Renamed",
       logoUrl: "",
-      whatsapp: "",
+      phone: "",
       email: "",
     });
     check(
@@ -395,7 +393,7 @@ async function main() {
       (await updateAgencyProfile(agencyId, {
         name: " ",
         logoUrl: "",
-        whatsapp: "",
+        phone: "",
         email: "",
       })) === false,
     );
@@ -403,7 +401,7 @@ async function main() {
     await updateOwnAgentProfile(independent.userId, {
       name: "Verify Independent Renamed",
       photoUrl: "https://example.test/a.jpg",
-      whatsapp: "0982000000",
+      phone: "0982000000",
     });
     check(
       "own agent profile updates",
