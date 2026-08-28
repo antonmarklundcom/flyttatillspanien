@@ -5,85 +5,8 @@
     {
       "idx": 0,
       "version": "5",
-      "when": 1783162926450,
-      "tag": "0000_slimy_power_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1783631099911,
-      "tag": "0001_complete_invaders",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1784969984907,
-      "tag": "0002_flaky_penance",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1784978760101,
-      "tag": "0003_new_kang",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1785579722298,
-      "tag": "0004_mysterious_human_cannonball",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1785674244275,
-      "tag": "0005_elite_groot",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1786532390907,
-      "tag": "0006_tan_captain_america",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1786963891116,
-      "tag": "0007_petite_leech",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1786974709718,
-      "tag": "0008_cold_chat",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1787260349317,
-      "tag": "0009_redundant_robin_chapel",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "5",
-      "when": 1787737924660,
-      "tag": "0010_sweet_wilson_fisk",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "5",
-      "when": 1787738732051,
-      "tag": "0011_cuddly_lady_mastermind",
+      "when": 1787959812707,
+      "tag": "0000_spain_schema",
       "breakpoints": true
     }
   ]

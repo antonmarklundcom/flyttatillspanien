@@ -15,7 +15,7 @@ import { db } from "@/db";
 import { sessions, users } from "@/db/schema";
 import type { UserRole } from "./roles";
 
-const COOKIE_NAME = "propia_session";
+const COOKIE_NAME = "ftse_session";
 const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export interface SessionUser {

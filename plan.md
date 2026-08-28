@@ -594,9 +594,110 @@ numbered launch checklist.
 
 ## 9. Build log & handoff
 
-_Empty at plan creation. Each phase appends an entry here before its PR
-merges — phase id, PR link, 5–10 lines: what now exists, decisions/
-deviations, where the next phase should look first._
+_Each phase appends an entry here before its PR merges — phase id, PR link,
+5–10 lines: what now exists, decisions/deviations, where the next phase
+should look first._
+
+### Phase 1 — schema, config & core libs (2026-08-28)
+
+Branch `claude/opus-1-schema-config-xb1i3y` (the session's assigned branch;
+`phase/1` in §4.2 is the naming intent, the branch name is not load-bearing).
+
+**What now exists.** `src/db/schema.ts` is the Spain schema — EUR-only
+`price_eur`, `built_m2`/`usable_m2`/`plot_m2`, the full legal block
+(`referencia_catastral` + `uq_catastral`, energy quad, `legal_status`,
+`charges_status` + `nota_simple_seen_at`, IBI/comunidad, `is_vpo`,
+`land_classification`, `tourist_licence`), `source_lang`/`title_sv`/
+`description_sv`/`translation_hash_sv`, `agencies.kind`, email-first
+`users`/`leads`/`otp_codes`, five-level `locations` with
+`acquisition_region`, new `fx_rates` + `acquisition_costs`, no
+`financing_programs`. **The 12 inherited Paraguay migrations were deleted and
+regenerated as one `drizzle/0000_spain_schema.sql`** — a clean start, per the
+phase prompt. Also: single-entry `verticals.ts`; Swedish `FACET_PARAM` and
+`/bostad` + `kopa|hyra|korttidshyra` in `facets.ts`/`urls.ts`; `format.ts`
+(`formatEur`/`formatSek`/`formatRateNote`/`isFxFresh`); `amortization.ts`
+(only `frenchAmortization`, unused) and the new pure `acquisition-cost.ts`;
+`fx`/`acquisitionCosts` cache tags + TTLs + `revalidate*()`; `es.ts` → `sv.ts`
+with `en.ts` deleted; `seed:costs` and `cron:fx` added, `seed:financing` and
+`cron:cuotas` gone, `seed-locations` rewritten for Spain, `cron:translate`
+inverted to es→sv, `compute-medians` moved to `price_eur`/`built_m2`.
+
+**Verified against a local MySQL 8.4.** `db:migrate` applies clean;
+`db:status` reports 0 pending, **no drift**, 20 tables / 243 columns;
+`seed:locations` writes **69 rows — 1 pais, 7 comunidades, 10 provincias, 41
+municipios, 10 zonas** (6 Marbella, 4 Palma), every municipio carrying an
+`acquisition_region`; `seed:costs` writes **7** rows; both are idempotent
+(re-run leaves 69/7). `cron:fx` **fails gracefully** — the ECB feed is 403 through
+this environment's egress proxy, so it printed `wrote nothing, the previous
+rate stands` and exited 1, which is the sanctioned outcome; the parser and the
+`fx_rates` upsert were exercised separately and both work.
+
+**Decisions and deviations.**
+1. `scripts/check-migrations.ts` had a latent bug that made `db:status` unusable
+   on MySQL 8.x: `information_schema` column names come back UPPER regardless of
+   query case, so `r.table_schema` was `undefined` and the tracking query ran
+   against a database literally named `undefined`. Aliased all three queries.
+   Not in the plan; fixed because `db:status` is an exit criterion.
+2. In scope beyond §5.1's list, because nothing else would have caught them:
+   `src/lib/brand.ts` (`BRAND_KICKER`, tagline), `src/lib/property-types.ts`
+   and `src/lib/photos.ts` (both keyed by the changed enum),
+   `src/config/faq.ts`, `site-nav.ts`, `popular-searches.ts` — the nav hrefs
+   were hand-typed Paraguayan category paths that would have shipped as a menu
+   of 404s without a single type error. Category hrefs now go through
+   `categoryUrl()`/`operationSlug()`.
+3. `agencyUrl()`/`agentUrl()` deliberately still emit `/inmobiliaria/{slug}` and
+   `/agente/{slug}` — moving them means moving route directories, which is
+   Phase 3's. See `KNOWN-ISSUES.md`.
+4. **`sv.ts` is working-draft Swedish**, as the plan intends: correct language
+   and intent, no Spanish left, no empty strings, but not final voice. Phase 5
+   owns the editorial pass; `KNOWN-ISSUES.md` names the roughest namespaces in
+   priority order (`svPanel`, `svHome`, `svPrecios`, `svTasacion`) and the two
+   that are already close to final (`svListing`'s legal block, `svPublish`'s
+   legal step).
+5. Every `acquisition_costs` rate is a PLACEHOLDER with `source_url` NULL, in
+   the same voice `seed-financing.ts` used. Founder research task.
+
+**Where Phase 2 starts.** `npx tsc --noEmit` (root + `scripts/`) leaves **626
+error lines across 83 files, all Phase-2 or Phase-3 owned, none in a file this
+phase owns.** They cluster in exactly four places:
+(a) the query/write layer on deleted columns — `queries.ts`, `panel-queries.ts`,
+`publish-queries.ts`, `listing-edit.ts`, `directory-queries.ts`,
+`map-queries.ts`, `precios-queries.ts`, `profile-queries.ts`,
+`stats/team-queries`, `valuation.ts`, `jsonld.ts`, `sitemap.ts`,
+`facet-sql.ts` (`price_usd` → `price_eur`, `foreign_exposure` gone,
+`whatsapp` → `phone`/`email`, `area_m2` → `built_m2`, `USD_TO_PYG`);
+(b) the import pipeline — `import/{upsert,normalize,from-url,claim-import,csv,intake,resync}.ts`
+(the `RawListing` shape now carries `priceEur` and the catastral/legal fields);
+(c) auth/leads — `otp.ts`, `registration.ts`, `app/api/leads/route.ts`
+(`destination`/`channel`, `users.email` NOT NULL);
+(d) **every `@/i18n/es` import and every `es*` namespace identifier** across
+`app/**` and `src/components/**` — a mechanical `es` → `sv` rename, plus the
+handful of keys whose Paraguayan concept disappeared (`publishWaPrefill`,
+`investFinancingCta`, `ctaWhatsapp`, `financing*`, `detailArea`/`detailLand`,
+`ctaBarWhatsapp`, `foreignExposureLabel`) and the ones that replaced them
+(`publishEmailPrefill`, `investCostsCta`, `ctaEmail`, `acquisition*`,
+`detailBuilt`/`detailUsable`/`detailPlot`, `ctaBarContact`).
+The five `verify:*` scripts still carry Paraguayan fixtures and are Phase 2's
+per §5.2.6. Deleted modules that Phase 2 still has live imports of:
+`src/lib/cuota.ts` (`bestCuota`, `FinancingProgram`) in `PublishWizard.tsx` and
+`publish-queries.ts`, and `financingPrograms` / `listFinancingPrograms` in
+`directory-queries.ts` and `publish-queries.ts`. `app/financiamiento/` is
+deleted; `/financiamiento` links outside `site-nav.ts` (already cleaned) are
+Phase 2's to sweep. Local DB string is now
+`mysql://ftse:ftse@127.0.0.1:3306/ftse`.
+
+**The trap for Phases 2–3: typecheck does not see content.** These files carry
+Paraguayan or Spanish copy, or Paraguayan URLs, and compile perfectly — they
+will ship silently if someone treats a green `tsc` as done. Phase 1 already
+cleared the config half of this class (`faq.ts`, `site-nav.ts`,
+`popular-searches.ts`); the rest are pages and components, so they belong to
+Phase 3 (and Phase 5's editorial pass), not to Phase 2:
+`app/{nosotros,contacto,terminos,privacidad,planes,para-inmobiliarias,como-funciona,datos,preguntas-frecuentes,guias,guias/[slug],agentes,inmobiliarias,proyectos,desarrolladoras}/page.tsx`,
+`app/api/mapa/route.ts`, and
+`src/components/{SiteFooter,LeadForm,NewsletterSignup,panel/PostForm}.tsx`.
+Phase 2 owns one of them by subject rather than by content: `src/lib/wa.ts`,
+`crm.ts`, `otp.ts` and `auth/password.ts` narrate WhatsApp-first delivery as
+current fact (§5.2.4 already calls this out).
 
 ## 10. Backlog
 

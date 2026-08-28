@@ -1,8 +1,16 @@
 /**
- * Market medians job (ARCHITECTURE.md §2.6, §4) — powers the "precio mediano
- * en {barrio}" context module and the /precios pages. Computes the median
- * price and price/m² per (location × property_type × operation) for the
- * current month from published listings.
+ * Market medians job (ARCHITECTURE.md §2.6, §4) — powers the "medianpris i
+ * {ort}" context module and the price pages. Computes the median price and
+ * price/m² in EUR per (location × property_type × operation) for the current
+ * month from published listings.
+ *
+ * **`built_m2` is the only area figure the m² median may use.** Spain
+ * distinguishes superficie construida from superficie útil and the two differ
+ * by 10–15%; mixing them would produce a €/m² number that matches neither and
+ * that a buyer cannot compare against Idealista. `plot_m2` is deliberately not
+ * a fallback for terreno either — a €/m² of land and a €/m² of floor are
+ * different quantities, and averaging them into one bucket was only ever
+ * defensible while both were called "area".
  *
  * Median is computed in JS (trivial at 14.5k-row scale, keeps the SQL
  * portable — no MySQL-specific window/percentile functions). The context
@@ -45,9 +53,8 @@ async function main() {
       locationId: listings.locationId,
       propertyType: listings.propertyType,
       operation: listings.operation,
-      priceUsd: listings.priceUsd,
-      areaM2: listings.areaM2,
-      landM2: listings.landM2,
+      priceEur: listings.priceEur,
+      builtM2: listings.builtM2,
     })
     .from(listings)
     .where(eq(listings.status, "published"));
@@ -66,25 +73,25 @@ async function main() {
       };
       buckets.set(key, b);
     }
-    const price = Number(r.priceUsd);
+    const price = Number(r.priceEur);
     b.prices.push(price);
-    // Built area for structures, lot area for terreno; skip when area unknown.
-    const area = r.areaM2 != null ? Number(r.areaM2) : Number(r.landM2 ?? 0);
+    // Built area only — see the header note on why plot_m2 is not a fallback.
+    const area = r.builtM2 != null ? Number(r.builtM2) : 0;
     if (area > 0) b.pricesM2.push(price / area);
   }
 
   let written = 0;
   for (const b of buckets.values()) {
-    const medianPriceUsd = median(b.prices);
-    const medianPriceM2Usd = median(b.pricesM2);
+    const medianPriceEur = median(b.prices);
+    const medianPriceM2Eur = median(b.pricesM2);
     const values = {
       period,
       locationId: b.locationId,
       propertyType: b.propertyType,
       operation: b.operation,
-      medianPriceUsd: medianPriceUsd != null ? medianPriceUsd.toFixed(2) : null,
-      medianPriceM2Usd:
-        medianPriceM2Usd != null ? medianPriceM2Usd.toFixed(2) : null,
+      medianPriceEur: medianPriceEur != null ? medianPriceEur.toFixed(2) : null,
+      medianPriceM2Eur:
+        medianPriceM2Eur != null ? medianPriceM2Eur.toFixed(2) : null,
       sampleSize: b.prices.length,
       // The m² median's own sample — only listings that had an area. Reusing
       // the price count claimed 40 data points behind a number from 2 (F16).
@@ -96,8 +103,8 @@ async function main() {
       .values(values)
       .onDuplicateKeyUpdate({
         set: {
-          medianPriceUsd: values.medianPriceUsd,
-          medianPriceM2Usd: values.medianPriceM2Usd,
+          medianPriceEur: values.medianPriceEur,
+          medianPriceM2Eur: values.medianPriceM2Eur,
           sampleSize: values.sampleSize,
           sampleSizeM2: values.sampleSizeM2,
           source: values.source,

@@ -3,35 +3,44 @@
  * URL and every parse of an inbound path goes through here, so the shape is
  * defined once. Types are pluralized nouns; operations are nouns, never verbs.
  *
- *   /{operacion}/{ciudad}                    /venta/asuncion
- *   /{operacion}/{ciudad}/{tipo}             /venta/asuncion/casas
- *   /{operacion}/{ciudad}/{barrio}/{tipo}    /venta/asuncion/recoleta/casas
- *   /propiedad/{slug}-{public_id}            listing detail (canonical)
+ *   /{affar}/{ort}                    /kopa/marbella
+ *   /{affar}/{ort}/{typ}              /kopa/marbella/villor
+ *   /{affar}/{ort}/{omrade}/{typ}     /kopa/marbella/nueva-andalucia/villor
+ *   /bostad/{slug}-{public_id}        listing detail (canonical)
+ *
+ * **This file is the seam between two vocabularies.** The DB enums are Spanish
+ * because that is what every agency feed speaks; the URL segments are Swedish
+ * because that is what the visitor reads and what the site ranks on. Slug ↔
+ * enum lives here and nowhere else — an inline `"villa"` in a page is how the
+ * two drift apart.
+ *
+ * Location slugs are NOT translated: `nueva-andalucia` is what the buyer types
+ * into Google Maps and what every sign in the area says.
  */
 import type { Operation, PropertyType } from "./import/types";
 
-/** Enum value ↔ URL segment. alquiler_temporal hyphenates for the path. */
+/** Enum value ↔ URL segment. */
 const OPERATION_SLUG: Record<Operation, string> = {
-  venta: "venta",
-  alquiler: "alquiler",
-  alquiler_temporal: "alquiler-temporal",
+  venta: "kopa",
+  alquiler: "hyra",
+  alquiler_vacacional: "korttidshyra",
 };
 const OPERATION_FROM_SLUG: Record<string, Operation> = {
-  venta: "venta",
-  alquiler: "alquiler",
-  "alquiler-temporal": "alquiler_temporal",
+  kopa: "venta",
+  hyra: "alquiler",
+  korttidshyra: "alquiler_vacacional",
 };
 
-/** Singular enum → plural URL segment (and back). */
+/** Singular enum → plural Swedish URL segment (and back). */
 const TYPE_PLURAL: Record<PropertyType, string> = {
-  casa: "casas",
-  departamento: "departamentos",
-  terreno: "terrenos",
-  duplex: "duplex",
-  comercial: "comerciales",
-  oficina: "oficinas",
-  deposito: "depositos",
-  quinta: "quintas",
+  villa: "villor",
+  apartamento: "lagenheter",
+  atico: "takvaningar",
+  adosado: "radhus",
+  duplex: "etagelagenheter",
+  finca: "lantegendomar",
+  terreno: "tomter",
+  local: "lokaler",
 };
 const TYPE_FROM_PLURAL: Record<string, PropertyType> = Object.fromEntries(
   Object.entries(TYPE_PLURAL).map(([k, v]) => [v, k as PropertyType]),
@@ -52,8 +61,8 @@ export function parseTypePlural(seg: string): PropertyType | null {
 
 export interface CategoryParams {
   operation: Operation;
-  citySlug: string; // location.slug of a ciudad
-  barrioSlug?: string; // location.slug of a barrio
+  citySlug: string; // location.slug of a municipio
+  barrioSlug?: string; // location.slug of a zona
   type?: PropertyType;
 }
 
@@ -70,11 +79,11 @@ export function listingUrl(listing: {
   slug: string;
   publicId: string;
 }): string {
-  return `/propiedad/${listing.slug}-${listing.publicId}`;
+  return `/bostad/${listing.slug}-${listing.publicId}`;
 }
 
 /**
- * Extract the 10-char public_id from a /propiedad/{slug}-{public_id} param.
+ * Extract the 10-char public_id from a /bostad/{slug}-{public_id} param.
  * Returns null if the tail doesn't look like a public_id.
  */
 export function parseListingPublicId(slugParam: string): string | null {
@@ -82,7 +91,14 @@ export function parseListingPublicId(slugParam: string): string | null {
   return m ? m[1] : null;
 }
 
-/** Public agency profile URL. agencies.slug is already unique (schema.ts). */
+/**
+ * Public agency profile URL. agencies.slug is already unique (schema.ts).
+ *
+ * Still a Spanish segment, unlike the category and detail paths above: moving
+ * it means moving `app/inmobiliaria/[slug]/` too, which is a route-tree change
+ * belonging to the page phase. Decided per the design doc's handoff, which
+ * names only `/propiedad → /bostad` and the operation segments.
+ */
 export function agencyUrl(slug: string): string {
   return `/inmobiliaria/${slug}`;
 }
@@ -93,11 +109,11 @@ export function agentUrl(slug: string): string {
 }
 
 /**
- * Interpret the segments after /{operacion}/. Pure structure check — the
- * caller still resolves slugs against the DB (and 404s on unknown locations).
- *   [city]                 → city landing
- *   [city, tipo]           → city + type
- *   [city, barrio, tipo]   → barrio + type
+ * Interpret the segments after /{affar}/. Pure structure check — the caller
+ * still resolves slugs against the DB (and 404s on unknown locations).
+ *   [ort]                 → municipio landing
+ *   [ort, typ]            → municipio + type
+ *   [ort, omrade, typ]    → zona + type
  * Anything else is not a valid category shape.
  */
 export type CategoryShape =

@@ -1,8 +1,8 @@
 {
-  "name": "propia",
+  "name": "flyttatillspanien",
   "version": "0.1.0",
   "private": true,
-  "description": "propia.com.py — Paraguay real-estate portal. One engine, multiple branded doors.",
+  "description": "flyttatillspanien.se — Spanish property for Swedish buyers.",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
     "hooks:install": "git config core.hooksPath .githooks",
@@ -16,9 +16,9 @@
     "db:status": "tsx --tsconfig scripts/tsconfig.json scripts/check-migrations.ts",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "seed:financing": "tsx --tsconfig scripts/tsconfig.json scripts/seed-financing.ts",
+    "seed:costs": "tsx --tsconfig scripts/tsconfig.json scripts/seed-acquisition-costs.ts",
     "seed:locations": "tsx --tsconfig scripts/tsconfig.json scripts/seed-locations.ts",
-    "cron:cuotas": "tsx --tsconfig scripts/tsconfig.json scripts/recompute-cuotas.ts",
+    "cron:fx": "tsx --tsconfig scripts/tsconfig.json scripts/fetch-fx.ts",
     "cron:medians": "tsx --tsconfig scripts/tsconfig.json scripts/compute-medians.ts",
     "cron:resync": "tsx --tsconfig scripts/tsconfig.json scripts/resync-stale.ts",
     "cron:geo": "tsx --tsconfig scripts/tsconfig.json scripts/sync-display-coords.ts",

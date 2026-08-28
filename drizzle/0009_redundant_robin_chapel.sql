@@ -1,1 +1,0 @@
-ALTER TABLE `leads` MODIFY COLUMN `routed_to` enum('agency','agent','internal','developer','owner') NOT NULL;

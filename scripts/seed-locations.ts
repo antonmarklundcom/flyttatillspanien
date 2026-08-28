@@ -1,14 +1,29 @@
 /**
- * Seed the locations hierarchy (ARCHITECTURE.md §2.2, §4) — the tree that
- * drives every programmatic SEO page (/comprar/casa/{ciudad}, barrio guides).
+ * Seed the locations hierarchy — the tree that drives every programmatic SEO
+ * page (/kopa/{ort}/{typ}, area guides) and, via `acquisition_region`, the
+ * purchase-cost estimate on every detail page.
  *
- * Scope v1: the Gran Asunción metro (Central + capital), where inventory is
- * densest, plus the other cities with real listing volume. Not the full 250+
- * distrito census tree — pages only exist where listings will. New locations
- * are added by editing TREE and re-running; the script is idempotent (upsert
- * by full_slug), so re-runs never duplicate and safely backfill lat/lng.
+ * Scope v1: the coastal and island markets Swedes actually buy in, plus
+ * Madrid and Barcelona. Not Spain's 8 000-municipio census tree — pages only
+ * exist where listings will. New locations are added by editing TREE and
+ * re-running; the script is idempotent (upsert by full_slug), so re-runs never
+ * duplicate and safely backfill lat/lng and acquisition_region.
  *
- *   npx tsx scripts/seed-locations.ts
+ *   npm run seed:locations
+ *
+ * Two rules encoded here that are easy to get wrong:
+ *
+ *  1. **`full_slug` is the URL path, and the URL path starts at municipio.**
+ *     comunidad and provincia are grouping and tax-resolution levels that live
+ *     in `parent_id`; putting them in the path would produce
+ *     `espana/andalucia/malaga/marbella/nueva-andalucia` for no ranking
+ *     benefit. The column is still NOT NULL UNIQUE, so the levels above
+ *     municipio get a level-prefixed key (`provincia/malaga`) that can never
+ *     collide with a real path — it is an identity, not an address, and
+ *     nothing renders it.
+ *  2. **`acquisition_region` is copied down the tree at seed time**, not
+ *     resolved by walking `parent_id` later: a tree walk inside a query is not
+ *     sargable and would sit in the path of every listing render (audit F38).
  *
  * Coordinates are approximate centroids (OSM), good enough for map default
  * centering; per-listing lat/lng comes from the importer.
@@ -17,152 +32,261 @@ import { db } from "../src/db";
 import { locations } from "../src/db/schema";
 import { slugify, joinSlug } from "../src/lib/slug";
 
-type Level = "pais" | "departamento" | "ciudad" | "barrio";
+type Level = "pais" | "comunidad" | "provincia" | "municipio" | "zona";
 
 interface Node {
   name: string;
   level: Level;
+  /** ISO-3166-2:ES subdivision, set on a comunidad and inherited downward. */
+  region?: string;
   lat?: number;
   lng?: number;
   children?: Node[];
 }
 
-/**
- * Asunción is both the capital district and its own "ciudad" for URL purposes
- * (full_slug 'asuncion/recoleta'), so it sits at ciudad level, not under a
- * departamento. Central is the surrounding metro departamento.
- */
 const TREE: Node[] = [
   {
-    name: "Asunción",
-    level: "ciudad",
-    lat: -25.2637,
-    lng: -57.5759,
-    children: [
-      { name: "Recoleta", level: "barrio", lat: -25.2865, lng: -57.5759 },
-      { name: "Villa Morra", level: "barrio", lat: -25.2937, lng: -57.5679 },
-      { name: "Las Mercedes", level: "barrio", lat: -25.2828, lng: -57.6003 },
-      { name: "Carmelitas", level: "barrio", lat: -25.2986, lng: -57.5546 },
-      { name: "Mburicaó", level: "barrio", lat: -25.2789, lng: -57.6108 },
-      { name: "Ycuá Satí", level: "barrio", lat: -25.2999, lng: -57.5471 },
-      { name: "Manorá", level: "barrio", lat: -25.3055, lng: -57.5624 },
-      { name: "Los Laureles", level: "barrio", lat: -25.3097, lng: -57.5732 },
-      { name: "Sajonia", level: "barrio", lat: -25.3009, lng: -57.6247 },
-      { name: "Trinidad", level: "barrio", lat: -25.2569, lng: -57.5478 },
-      { name: "San Vicente", level: "barrio", lat: -25.2705, lng: -57.6218 },
-      { name: "Barrio Jara", level: "barrio", lat: -25.2761, lng: -57.5877 },
-    ],
-  },
-  {
-    name: "Central",
-    level: "departamento",
-    lat: -25.35,
-    lng: -57.52,
-    children: [
-      { name: "Luque", level: "ciudad", lat: -25.267, lng: -57.4872 },
-      { name: "San Lorenzo", level: "ciudad", lat: -25.34, lng: -57.5087 },
-      {
-        name: "Fernando de la Mora",
-        level: "ciudad",
-        lat: -25.3319,
-        lng: -57.5427,
-      },
-      { name: "Lambaré", level: "ciudad", lat: -25.3419, lng: -57.6083 },
-      { name: "Capiatá", level: "ciudad", lat: -25.3556, lng: -57.4453 },
-      { name: "Ñemby", level: "ciudad", lat: -25.3944, lng: -57.5358 },
-      {
-        name: "Mariano Roque Alonso",
-        level: "ciudad",
-        lat: -25.2058,
-        lng: -57.5325,
-      },
-      { name: "Villa Elisa", level: "ciudad", lat: -25.3639, lng: -57.5906 },
-      { name: "Limpio", level: "ciudad", lat: -25.1683, lng: -57.4869 },
-      { name: "Itauguá", level: "ciudad", lat: -25.3928, lng: -57.3536 },
-      { name: "Areguá", level: "ciudad", lat: -25.3078, lng: -57.4239 },
-      { name: "Villa Hayes", level: "ciudad", lat: -25.0928, lng: -57.5242 },
-      { name: "San Antonio", level: "ciudad", lat: -25.4128, lng: -57.5461 },
-      { name: "Guarambaré", level: "ciudad", lat: -25.4886, lng: -57.4544 },
-      { name: "Itá", level: "ciudad", lat: -25.5083, lng: -57.3617 },
-    ],
-  },
-  {
-    name: "Alto Paraná",
-    level: "departamento",
-    lat: -25.5,
-    lng: -54.75,
+    name: "España",
+    level: "pais",
+    lat: 40.4,
+    lng: -3.7,
     children: [
       {
-        name: "Ciudad del Este",
-        level: "ciudad",
-        lat: -25.5097,
-        lng: -54.6111,
+        name: "Andalucía",
+        level: "comunidad",
+        region: "AN",
+        lat: 37.5,
+        lng: -4.8,
+        children: [
+          {
+            name: "Málaga",
+            level: "provincia",
+            lat: 36.75,
+            lng: -4.5,
+            children: [
+              {
+                name: "Marbella",
+                level: "municipio",
+                lat: 36.5101,
+                lng: -4.8825,
+                children: [
+                  { name: "Nueva Andalucía", level: "zona", lat: 36.506, lng: -4.952 },
+                  { name: "Golden Mile", level: "zona", lat: 36.506, lng: -4.906 },
+                  { name: "San Pedro de Alcántara", level: "zona", lat: 36.486, lng: -4.989 },
+                  { name: "Puerto Banús", level: "zona", lat: 36.488, lng: -4.952 },
+                  { name: "Elviria", level: "zona", lat: 36.489, lng: -4.753 },
+                  { name: "Nagüeles", level: "zona", lat: 36.515, lng: -4.901 },
+                ],
+              },
+              { name: "Estepona", level: "municipio", lat: 36.4276, lng: -5.147 },
+              { name: "Mijas", level: "municipio", lat: 36.5959, lng: -4.6374 },
+              { name: "Fuengirola", level: "municipio", lat: 36.5397, lng: -4.625 },
+              { name: "Benalmádena", level: "municipio", lat: 36.5988, lng: -4.5163 },
+              { name: "Torremolinos", level: "municipio", lat: 36.6203, lng: -4.4998 },
+              { name: "Málaga", level: "municipio", lat: 36.7213, lng: -4.4214 },
+              { name: "Nerja", level: "municipio", lat: 36.744, lng: -3.8759 },
+              { name: "Manilva", level: "municipio", lat: 36.3763, lng: -5.25 },
+            ],
+          },
+          {
+            name: "Almería",
+            level: "provincia",
+            lat: 37.0,
+            lng: -2.3,
+            children: [
+              { name: "Mojácar", level: "municipio", lat: 37.1394, lng: -1.8514 },
+              { name: "Vera", level: "municipio", lat: 37.247, lng: -1.8697 },
+              { name: "Roquetas de Mar", level: "municipio", lat: 36.7642, lng: -2.6148 },
+            ],
+          },
+        ],
       },
       {
-        name: "Presidente Franco",
-        level: "ciudad",
-        lat: -25.5636,
-        lng: -54.6114,
+        name: "Comunitat Valenciana",
+        level: "comunidad",
+        region: "VC",
+        lat: 39.4,
+        lng: -0.4,
+        children: [
+          {
+            name: "Alicante",
+            level: "provincia",
+            lat: 38.5,
+            lng: -0.5,
+            children: [
+              { name: "Torrevieja", level: "municipio", lat: 37.9787, lng: -0.6822 },
+              { name: "Orihuela Costa", level: "municipio", lat: 37.927, lng: -0.748 },
+              { name: "Alfaz del Pi", level: "municipio", lat: 38.5793, lng: -0.103 },
+              { name: "Altea", level: "municipio", lat: 38.5989, lng: -0.0517 },
+              { name: "Calpe", level: "municipio", lat: 38.6447, lng: 0.0446 },
+              { name: "Jávea", level: "municipio", lat: 38.7891, lng: 0.1662 },
+              { name: "Dénia", level: "municipio", lat: 38.8407, lng: 0.1057 },
+              { name: "Guardamar del Segura", level: "municipio", lat: 38.0894, lng: -0.6534 },
+              { name: "Santa Pola", level: "municipio", lat: 38.1917, lng: -0.5622 },
+            ],
+          },
+        ],
       },
-      { name: "Hernandarias", level: "ciudad", lat: -25.3947, lng: -54.6383 },
-      { name: "Minga Guazú", level: "ciudad", lat: -25.4761, lng: -54.8214 },
-    ],
-  },
-  {
-    name: "Itapúa",
-    level: "departamento",
-    lat: -27.0,
-    lng: -55.75,
-    children: [
-      { name: "Encarnación", level: "ciudad", lat: -27.3306, lng: -55.8667 },
-      { name: "Cambyretá", level: "ciudad", lat: -27.2831, lng: -55.8258 },
-    ],
-  },
-  {
-    name: "Amambay",
-    level: "departamento",
-    lat: -22.55,
-    lng: -55.75,
-    children: [
       {
-        name: "Pedro Juan Caballero",
-        level: "ciudad",
-        lat: -22.5472,
-        lng: -55.7333,
+        name: "Región de Murcia",
+        level: "comunidad",
+        region: "MC",
+        lat: 37.99,
+        lng: -1.13,
+        children: [
+          {
+            name: "Murcia",
+            level: "provincia",
+            lat: 37.99,
+            lng: -1.13,
+            children: [
+              { name: "San Javier", level: "municipio", lat: 37.806, lng: -0.837 },
+              { name: "Los Alcázares", level: "municipio", lat: 37.743, lng: -0.851 },
+              { name: "Cartagena", level: "municipio", lat: 37.6257, lng: -0.9966 },
+              { name: "Mazarrón", level: "municipio", lat: 37.599, lng: -1.314 },
+            ],
+          },
+        ],
       },
-    ],
-  },
-  {
-    name: "Cordillera",
-    level: "departamento",
-    lat: -25.3,
-    lng: -57.0,
-    children: [
-      { name: "Caacupé", level: "ciudad", lat: -25.3858, lng: -57.1414 },
-      { name: "Tobatí", level: "ciudad", lat: -25.2586, lng: -57.0742 },
-    ],
-  },
-  {
-    name: "Paraguarí",
-    level: "departamento",
-    lat: -25.63,
-    lng: -57.15,
-    children: [
-      { name: "Paraguarí", level: "ciudad", lat: -25.6314, lng: -57.1461 },
-      { name: "Ypacaraí", level: "ciudad", lat: -25.4058, lng: -57.2839 },
+      {
+        name: "Illes Balears",
+        level: "comunidad",
+        region: "IB",
+        lat: 39.6,
+        lng: 2.9,
+        children: [
+          {
+            name: "Illes Balears",
+            level: "provincia",
+            lat: 39.6,
+            lng: 2.9,
+            children: [
+              {
+                name: "Palma",
+                level: "municipio",
+                lat: 39.5696,
+                lng: 2.6502,
+                children: [
+                  { name: "Santa Catalina", level: "zona", lat: 39.572, lng: 2.636 },
+                  { name: "Portixol", level: "zona", lat: 39.561, lng: 2.669 },
+                  { name: "Son Vida", level: "zona", lat: 39.585, lng: 2.618 },
+                  { name: "Old Town", level: "zona", lat: 39.571, lng: 2.649 },
+                ],
+              },
+              { name: "Calvià", level: "municipio", lat: 39.565, lng: 2.506 },
+              { name: "Andratx", level: "municipio", lat: 39.539, lng: 2.42 },
+              { name: "Pollença", level: "municipio", lat: 39.877, lng: 3.016 },
+              { name: "Alcúdia", level: "municipio", lat: 39.853, lng: 3.121 },
+              { name: "Santanyí", level: "municipio", lat: 39.355, lng: 3.129 },
+            ],
+          },
+        ],
+      },
+      {
+        name: "Canarias",
+        level: "comunidad",
+        region: "CN",
+        lat: 28.3,
+        lng: -16.0,
+        children: [
+          {
+            name: "Las Palmas",
+            level: "provincia",
+            lat: 28.1,
+            lng: -15.4,
+            children: [
+              { name: "Mogán", level: "municipio", lat: 27.883, lng: -15.723 },
+              { name: "San Bartolomé de Tirajana", level: "municipio", lat: 27.925, lng: -15.573 },
+            ],
+          },
+          {
+            name: "Santa Cruz de Tenerife",
+            level: "provincia",
+            lat: 28.3,
+            lng: -16.6,
+            children: [
+              { name: "Adeje", level: "municipio", lat: 28.1227, lng: -16.726 },
+              { name: "Arona", level: "municipio", lat: 28.0996, lng: -16.681 },
+            ],
+          },
+        ],
+      },
+      {
+        name: "Catalunya",
+        level: "comunidad",
+        region: "CT",
+        lat: 41.8,
+        lng: 1.6,
+        children: [
+          {
+            name: "Girona",
+            level: "provincia",
+            lat: 42.0,
+            lng: 2.8,
+            children: [
+              { name: "Lloret de Mar", level: "municipio", lat: 41.7, lng: 2.845 },
+              { name: "Roses", level: "municipio", lat: 42.262, lng: 3.176 },
+              { name: "Castell-Platja d'Aro", level: "municipio", lat: 41.817, lng: 3.068 },
+            ],
+          },
+          {
+            name: "Barcelona",
+            level: "provincia",
+            lat: 41.6,
+            lng: 1.9,
+            children: [
+              { name: "Barcelona", level: "municipio", lat: 41.3874, lng: 2.1686 },
+              { name: "Sitges", level: "municipio", lat: 41.235, lng: 1.811 },
+            ],
+          },
+        ],
+      },
+      {
+        name: "Comunidad de Madrid",
+        level: "comunidad",
+        region: "MD",
+        lat: 40.4,
+        lng: -3.7,
+        children: [
+          {
+            name: "Madrid",
+            level: "provincia",
+            lat: 40.4,
+            lng: -3.7,
+            children: [
+              { name: "Madrid", level: "municipio", lat: 40.4168, lng: -3.7038 },
+            ],
+          },
+        ],
+      },
     ],
   },
 ];
 
-let upserted = 0;
+const counts: Record<Level, number> = {
+  pais: 0,
+  comunidad: 0,
+  provincia: 0,
+  municipio: 0,
+  zona: 0,
+};
+
+/** The URL path starts at municipio; above it, an identity key that cannot collide. */
+function fullSlugFor(node: Node, slug: string, parentPath: string): string {
+  return node.level === "municipio" || node.level === "zona"
+    ? joinSlug(parentPath, slug)
+    : `${node.level}/${slug}`;
+}
 
 async function insertNode(
   node: Node,
   parentId: number | null,
-  parentFullSlug: string,
+  parentPath: string,
+  inheritedRegion: string | null,
 ): Promise<void> {
   const slug = slugify(node.name);
-  const fullSlug = joinSlug(parentFullSlug, slug);
+  const fullSlug = fullSlugFor(node, slug, parentPath);
+  const region = node.region ?? inheritedRegion;
 
   await db
     .insert(locations)
@@ -172,6 +296,7 @@ async function insertNode(
       name: node.name,
       slug,
       fullSlug,
+      acquisitionRegion: region ?? undefined,
       lat: node.lat != null ? node.lat.toString() : undefined,
       lng: node.lng != null ? node.lng.toString() : undefined,
     })
@@ -179,6 +304,7 @@ async function insertNode(
       set: {
         name: node.name,
         level: node.level,
+        acquisitionRegion: region ?? undefined,
         lat: node.lat != null ? node.lat.toString() : undefined,
         lng: node.lng != null ? node.lng.toString() : undefined,
       },
@@ -192,18 +318,26 @@ async function insertNode(
     limit: 1,
   });
   if (!row) throw new Error(`failed to read back location ${fullSlug}`);
-  upserted++;
+  counts[node.level]++;
+
+  // Only URL levels extend the path; a provincia does not prefix its municipios.
+  const childPath =
+    node.level === "municipio" || node.level === "zona" ? fullSlug : parentPath;
 
   for (const child of node.children ?? []) {
-    await insertNode(child, row.id, fullSlug);
+    await insertNode(child, row.id, childPath, region ?? null);
   }
 }
 
 async function main() {
   for (const root of TREE) {
-    await insertNode(root, null, "");
+    await insertNode(root, null, "", null);
   }
-  console.log(`seeded ${upserted} locations`);
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  console.log(
+    `seeded ${total} locations: ${counts.pais} pais, ${counts.comunidad} comunidades, ` +
+      `${counts.provincia} provincias, ${counts.municipio} municipios, ${counts.zona} zonas`,
+  );
   process.exit(0);
 }
 

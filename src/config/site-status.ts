@@ -1,13 +1,12 @@
 /**
- * Pre-launch disclosure (D6 / launch sequencing).
+ * Pre-launch disclosure.
  *
- * The site is publicly reachable on two domains before it holds real
- * inventory: the listing rows are seeded/imported samples and the photos are
- * still `picsum.photos` placeholders (PLAN.md). A visitor landing on a
- * polished-looking portal has no way to know that, and a listing that looks
- * like a real offer but isn't is the kind of thing that earns a complaint
- * rather than a lead. Hence a standing notice until real, permissioned
- * inventory is live.
+ * The site is publicly reachable before it holds real inventory: the listing
+ * rows are seeded samples and the photos are still placeholders. A visitor
+ * landing on a polished-looking portal has no way to know that, and a listing
+ * that looks like a real offer but isn't is the kind of thing that earns a
+ * complaint rather than a lead. Hence a standing notice until real,
+ * permissioned inventory is live.
  *
  * Flip `UNDER_CONSTRUCTION` to false (or set
  * `NEXT_PUBLIC_UNDER_CONSTRUCTION=false` in the Hostinger env) on launch day —

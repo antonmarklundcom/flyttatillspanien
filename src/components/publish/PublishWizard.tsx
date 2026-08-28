@@ -93,7 +93,7 @@ const EMPTY: WizardState = {
   foreignExposure: true,
 };
 
-const LS_KEY = "propia:publish-draft";
+const LS_KEY = "ftse:publish-draft";
 
 export function PublishWizard({
   locations,

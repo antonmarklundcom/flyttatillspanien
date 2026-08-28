@@ -19,7 +19,7 @@
 import type { Operation, PropertyType } from "./import/types";
 import { parseOperation, parseTypePlural } from "./urls";
 
-export type SortOption = "recientes" | "precio_asc" | "precio_desc";
+export type SortOption = "senaste" | "pris_upp" | "pris_ner";
 
 /**
  * Everything a listing query can be narrowed by.
@@ -32,6 +32,7 @@ export interface ListingFacets {
   operation?: Operation;
   propertyType?: PropertyType;
   locationIds?: number[];
+  /** EUR. Converted from a visitor's SEK bounds by the caller, never in SQL. */
   priceMin?: number;
   priceMax?: number;
   minBedrooms?: number;
@@ -39,19 +40,26 @@ export interface ListingFacets {
 }
 
 /**
- * The query-string names. Spanish, because they are part of the public URL
- * surface, and `?orden=` next to `?precio_min=` is what the URL scheme
- * (ARCHITECTURE.md §4) already committed to.
+ * The query-string names. Swedish, because they are part of the public URL
+ * surface the visitor reads — the same seam as `urls.ts`, where the DB's
+ * Spanish enums meet the site's Swedish vocabulary.
+ *
+ * `pris_min` / `pris_max` are bounds **in EUR**, the stored and indexed
+ * currency. A visitor filtering in kronor has their bounds converted SEK→EUR
+ * once, in the caller, before `facetConds()` ever sees them: `price_eur *
+ * :rate` in a WHERE is an expression over a column, so it cannot use the
+ * index, and every filtered search would scan the published set (the F38
+ * mistake in a different costume).
  */
 export const FACET_PARAM = {
-  operation: "operacion",
-  propertyType: "tipo",
-  city: "ciudad",
-  barrio: "barrio",
-  priceMin: "precio_min",
-  priceMax: "precio_max",
-  minBedrooms: "dormitorios",
-  sort: "orden",
+  operation: "affar",
+  propertyType: "typ",
+  city: "ort",
+  barrio: "omrade",
+  priceMin: "pris_min",
+  priceMax: "pris_max",
+  minBedrooms: "sovrum",
+  sort: "sortering",
 } as const;
 
 /** The narrowing params a visitor toggles, as opposed to the ones the path fixes. */
@@ -81,7 +89,7 @@ function positive(raw: string | undefined): number | undefined {
 }
 
 function parseSort(raw: string | undefined): SortOption | undefined {
-  return raw === "precio_asc" || raw === "precio_desc" ? raw : undefined;
+  return raw === "pris_upp" || raw === "pris_ner" ? raw : undefined;
 }
 
 /**
@@ -93,11 +101,11 @@ function parseSort(raw: string | undefined): SortOption | undefined {
  * `locationIds` never comes from the URL as ids — see `parseLocationSlugs`.
  */
 export function parseFacetParams(sp: ParamBag): ListingFacets {
-  const operacion = one(sp, FACET_PARAM.operation);
-  const tipo = one(sp, FACET_PARAM.propertyType);
+  const affar = one(sp, FACET_PARAM.operation);
+  const typ = one(sp, FACET_PARAM.propertyType);
   return {
-    operation: operacion ? parseOperation(operacion) ?? undefined : undefined,
-    propertyType: tipo ? parseTypePlural(tipo) ?? undefined : undefined,
+    operation: affar ? parseOperation(affar) ?? undefined : undefined,
+    propertyType: typ ? parseTypePlural(typ) ?? undefined : undefined,
     priceMin: positive(one(sp, FACET_PARAM.priceMin)),
     priceMax: positive(one(sp, FACET_PARAM.priceMax)),
     minBedrooms: positive(one(sp, FACET_PARAM.minBedrooms)),
@@ -105,7 +113,7 @@ export function parseFacetParams(sp: ParamBag): ListingFacets {
   };
 }
 
-/** The `?ciudad=&barrio=` pair, for callers that resolve slugs themselves. */
+/** The `?ort=&omrade=` pair, for callers that resolve slugs themselves. */
 export function parseLocationSlugs(sp: ParamBag): {
   citySlug?: string;
   barrioSlug?: string;
