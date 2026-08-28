@@ -47,7 +47,7 @@ async function download(url: string): Promise<Buffer> {
   const res = await fetch(url, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     // Some source sites 403 an unidentified client.
-    headers: { "user-agent": "propia-image-backfill/1.0" },
+    headers: { "user-agent": "ftse-image-backfill/1.0" },
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return Buffer.from(await res.arrayBuffer());

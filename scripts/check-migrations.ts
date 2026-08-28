@@ -104,7 +104,11 @@ async function main() {
     /* ---------------- migration tracking ---------------- */
 
     const [tracking] = (await c.query(
-      `SELECT table_schema FROM information_schema.tables
+      // Aliased to lower case on purpose: information_schema column names come
+      // back UPPER on MySQL 8.x whatever case the query is written in, and an
+      // unaliased `r.table_schema` is then silently `undefined` — which reads
+      // downstream as a query against a database literally named "undefined".
+      `SELECT table_schema AS \`table_schema\` FROM information_schema.tables
         WHERE table_name = '__drizzle_migrations'`,
     )) as [Array<{ table_schema: string }>, unknown];
 
@@ -175,7 +179,9 @@ async function main() {
       .map((t) => getTableConfig(t as MySqlTable));
 
     const [live] = (await c.query(
-      `SELECT table_name, column_name, column_type FROM information_schema.columns
+      `SELECT table_name AS \`table_name\`, column_name AS \`column_name\`,
+              column_type AS \`column_type\`
+         FROM information_schema.columns
         WHERE table_schema = DATABASE()`,
     )) as [
       Array<{ table_name: string; column_name: string; column_type: string }>,
@@ -293,7 +299,9 @@ async function main() {
 
     console.log("\n=== leads.routed_to (the D8 owner lane) ===");
     const [cols] = (await c.query(
-      `SELECT table_schema, column_type, is_nullable FROM information_schema.columns
+      `SELECT table_schema AS \`table_schema\`, column_type AS \`column_type\`,
+              is_nullable AS \`is_nullable\`
+         FROM information_schema.columns
         WHERE column_name = 'routed_to' AND table_name = 'leads'`,
     )) as [Array<{ table_schema: string; column_type: string; is_nullable: string }>, unknown];
 

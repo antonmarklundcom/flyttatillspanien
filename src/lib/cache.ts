@@ -18,6 +18,16 @@ import { revalidateTag } from "next/cache";
  *    which reads as "the save didn't work". Each tag below names the actions
  *    that must call its `revalidate*()` helper. `revalidatePath()` does NOT
  *    clear `unstable_cache` entries; the two caches are separate.
+ *
+ *    **One honest exception, for cron-written reference tables** (`fx_rates`,
+ *    `acquisition_costs`, `market_medians`): rule 1 assumes an in-process
+ *    writer, and these have none. `npm run cron:fx` runs as a separate `tsx`
+ *    process, and a `revalidateTag()` there cannot reach the running Next
+ *    server's data cache. So for those tags **the TTL is the invalidation
+ *    mechanism, not a backstop** — pick it to match the publication cadence of
+ *    the upstream data, not how fast an operator expects a save to appear. The
+ *    `revalidate*()` helpers still exist and are still called, from the
+ *    `/admin` manual-override actions, which genuinely are in-process.
  * 2. **Dates do not survive the cache.** Entries are serialized, so a `Date`
  *    comes back as an ISO string and `string > Date` is silently false (see
  *    ListingCard's featuredUntil re-wrap). A cached query that returns Dates
@@ -34,6 +44,10 @@ export const CACHE_TAGS = {
   locations: "locations",
   /** Computed price medians (precios-queries, valuation). */
   marketMedians: "market-medians",
+  /** The EUR/SEK reference rate. Cron-written — see the TTL note above. */
+  fx: "fx",
+  /** Per-comunidad purchase taxes and fees. Cron/operator-written. */
+  acquisitionCosts: "acquisition-costs",
 };
 
 /** Seconds. Short enough that a missed writer is a blip, not a bug report. */
@@ -44,6 +58,10 @@ export const CACHE_TTL = {
   /** Cities change when someone seeds them, i.e. never in normal operation. */
   locations: 3600,
   marketMedians: 21_600,
+  /** ECB publishes once per business day; an hour of lag is invisible. */
+  fx: 3600,
+  /** Regional tax scales move with an annual budget, not with a deploy. */
+  acquisitionCosts: 86_400,
 } as const;
 
 /**
@@ -68,4 +86,18 @@ export function revalidateDirectory(): void {
 /** Call after any post create / update / publish / delete. */
 export function revalidateGuides(): void {
   revalidateTag(CACHE_TAGS.guides);
+}
+
+/**
+ * Call from the `/admin` FX manual-override action — the one in-process writer
+ * of `fx_rates`. `npm run cron:fx` cannot call this (different process); its
+ * freshness comes from `CACHE_TTL.fx`.
+ */
+export function revalidateFx(): void {
+  revalidateTag(CACHE_TAGS.fx);
+}
+
+/** Call from the `/admin` acquisition-cost override action. Same story. */
+export function revalidateAcquisitionCosts(): void {
+  revalidateTag(CACHE_TAGS.acquisitionCosts);
 }

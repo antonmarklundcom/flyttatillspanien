@@ -1,6 +1,5 @@
 /**
- * Fill `listings.title_en` / `description_en` from the Spanish source
- * (PLAN.md D6, Batch 3 layer 3).
+ * Fill `listings.title_sv` / `description_sv` from the agency feed's Spanish.
  *
  *   DATABASE_URL="mysql://..." ANTHROPIC_API_KEY="sk-..." npm run cron:translate
  *   ... npm run cron:translate -- --dry            # what would run, no API calls
@@ -8,15 +7,17 @@
  *   ... npm run cron:translate -- --id 1234        # one listing, ignores the hash
  *   ... npm run cron:translate -- --force          # re-translate everything
  *
- * **What needs translating** is decided by `translation_hash`: the sha256 of
- * the title and Spanish description the stored English was made from. A row
+ * **What needs translating** is decided by `translation_hash_sv`: the sha256 of
+ * the title and Spanish description the stored Swedish was made from. A row
  * needs work when the hash is missing (never translated) or no longer matches
  * (the seller rewrote something). That is why the job can run on a schedule
  * and cost nothing on a quiet day, and why an edit is picked up without any
  * hook in the publish path — see src/lib/translate.ts for why there is no hook.
  *
- * Only `published` rows are translated: a draft is still being written, and a
- * removed listing is not on the English door either.
+ * Only `published` rows with `source_lang = 'es'` are translated: a draft is
+ * still being written, and a listing a Swedish relocation agent wrote in
+ * Swedish is already in the served language — machine-translating it would
+ * overwrite a human's words with a round trip through Spanish it never took.
  *
  * **Failure is per row and never fatal.** A row that throws keeps its old hash,
  * so the next run tries it again; the run reports every failure and exits
@@ -49,7 +50,7 @@ interface Candidate {
   id: number;
   title: string;
   descriptionEs: string | null;
-  translationHash: string | null;
+  translationHashSv: string | null;
 }
 
 /**
@@ -68,12 +69,13 @@ async function* candidates(): AsyncGenerator<Candidate> {
         id: listings.id,
         title: listings.title,
         descriptionEs: listings.descriptionEs,
-        translationHash: listings.translationHash,
+        translationHashSv: listings.translationHashSv,
       })
       .from(listings)
       .where(
         and(
           eq(listings.status, "published"),
+          eq(listings.sourceLang, "es"),
           gt(listings.id, after),
           onlyId ? eq(listings.id, onlyId) : undefined,
         ),
@@ -86,7 +88,7 @@ async function* candidates(): AsyncGenerator<Candidate> {
 
     for (const row of rows) {
       const wanted = translationSourceHash(row);
-      if (force || onlyId || row.translationHash !== wanted) yield row;
+      if (force || onlyId || row.translationHashSv !== wanted) yield row;
     }
     if (rows.length < PAGE) return;
   }
@@ -96,9 +98,9 @@ async function main() {
   if (!isTranslationConfigured() && !dry) {
     console.error(
       "ANTHROPIC_API_KEY is not set — nothing was translated.\n" +
-        "This is a disabled feature, not a failure: the English door reads\n" +
-        "title_en/description_en straight from the row and simply shows the\n" +
-        "Spanish text until they are filled. Re-run with the key set, or with\n" +
+        "This is a disabled feature, not a failure: the site reads\n" +
+        "title_sv/description_sv straight from the row and falls back to the\n" +
+        "Spanish title until they are filled. Re-run with the key set, or with\n" +
         "--dry to see what a run would do.",
     );
     process.exit(1);
@@ -130,13 +132,13 @@ async function main() {
       await db
         .update(listings)
         .set({
-          titleEn: t.titleEn,
-          descriptionEn: t.descriptionEn,
-          translationHash: translationSourceHash(row),
+          titleSv: t.titleSv,
+          descriptionSv: t.descriptionSv,
+          translationHashSv: translationSourceHash(row),
         })
         .where(eq(listings.id, row.id));
       done++;
-      console.log(`  #${row.id}  ${t.titleEn.slice(0, 60)}`);
+      console.log(`  #${row.id}  ${t.titleSv.slice(0, 60)}`);
     } catch (err) {
       failed++;
       console.error(`  #${row.id} FAILED: ${(err as Error).message}`);
@@ -150,23 +152,23 @@ async function main() {
   );
 
   /**
-   * Coverage, because the flip decision in PLAN.md D6 is "only once
-   * translation coverage looks solid" and that should be a number someone can
-   * read rather than a feeling.
+   * Coverage, because "how much of the site is actually in Swedish" should be
+   * a number someone can read rather than a feeling. Spanish-source rows only:
+   * a `source_lang = 'sv'` listing is already Swedish and would flatter it.
    */
   const [cov] = await db
     .select({
       total: sql<number>`count(*)`,
-      translated: sql<number>`sum(case when ${listings.titleEn} is not null then 1 else 0 end)`,
+      translated: sql<number>`sum(case when ${listings.titleSv} is not null then 1 else 0 end)`,
     })
     .from(listings)
-    .where(eq(listings.status, "published"));
+    .where(and(eq(listings.status, "published"), eq(listings.sourceLang, "es")));
 
   const total = Number(cov?.total ?? 0);
   const translated = Number(cov?.translated ?? 0);
   const pct = total === 0 ? 0 : Math.round((translated / total) * 100);
   console.log(
-    `coverage: ${translated}/${total} published listings have English copy (${pct}%).`,
+    `coverage: ${translated}/${total} Spanish-source published listings have Swedish copy (${pct}%).`,
   );
 
   if (failed > 0) process.exit(1);

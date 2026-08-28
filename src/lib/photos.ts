@@ -13,12 +13,12 @@ export function isPlaceholderPhoto(key: string | null | undefined): boolean {
 
 /** Icon shown on the "photo coming soon" placeholder, per property type. */
 export const TYPE_ICON: Record<PropertyType, string> = {
-  casa: "🏠",
-  departamento: "🏢",
-  terreno: "🌳",
+  villa: "🏠",
+  apartamento: "🏢",
+  atico: "🏙",
+  adosado: "🏘",
   duplex: "🏘",
-  comercial: "🏬",
-  oficina: "🏢",
-  deposito: "🏭",
-  quinta: "🌳",
+  finca: "🌾",
+  terreno: "🌳",
+  local: "🏬",
 };

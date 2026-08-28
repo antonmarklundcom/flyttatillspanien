@@ -12,9 +12,9 @@ import {
  * that module is reachable from client components and this one reads
  * `next/headers` — the same split as `brand.ts` / `brand-server.ts`.
  *
- * The locale comes from the `x-locale` header `middleware.ts` has been
- * setting since the vertical routing layer landed. Until now nothing read
- * it; this is its first consumer.
+ * The locale comes from the `x-locale` header `middleware.ts` sets. With one
+ * served locale it always resolves to `sv`; the indirection stays because it
+ * is what makes a second door a config change rather than a refactor.
  */
 
 /** The locale of the host this visitor actually typed. */

@@ -7,17 +7,23 @@
  * code change. NEXT_PUBLIC_ prefix because client components (Newsletter
  * signup) also read them — Next inlines these at build time.
  *
- * **Neither has a fallback, on purpose** (founder decision, 2026-08-17). The
- * old default was `hola@propia.com.py`, on a domain nobody owns, so every
- * mailto: on the site opened a compose window addressed to a black hole —
- * worse than showing no address at all. Until a real mailbox exists, the
- * contact channels are the on-site lead form (`/contacto`, `/publicar`,
- * the form on every listing) and WhatsApp. Every consumer must therefore
- * treat both of these as possibly-null and fall back to the form.
+ * **Neither has a fallback, on purpose.** A hard-coded default address is a
+ * compose window aimed at a mailbox nobody owns — worse than showing no
+ * address at all. Every consumer must treat both as possibly-null and fall
+ * back to the on-site lead form.
+ *
+ * **CONTACT_EMAIL is required before launch**, which is a config decision and
+ * not a type change: Sweden is email-first, and a Swedish consumer portal with
+ * no address on its contact page is not credible. CONTACT_WHATSAPP stays
+ * genuinely optional — here it is the AGENCY-side channel (Spanish agencies
+ * live on WhatsApp), not the buyer's.
  */
 export const CONTACT_EMAIL: string | null =
   process.env.NEXT_PUBLIC_CONTACT_EMAIL || null;
 
-/** Portal WhatsApp as typed (display form). Null = don't render WA CTAs. */
+/**
+ * Portal WhatsApp as typed (display form). Null = don't render WA CTAs.
+ * Agency-side channel; a Swedish buyer is answered by email.
+ */
 export const CONTACT_WHATSAPP: string | null =
   process.env.NEXT_PUBLIC_CONTACT_WHATSAPP || null;
