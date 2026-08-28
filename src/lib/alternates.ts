@@ -1,23 +1,24 @@
 /**
- * hreflang — the language-alternate layer (PLAN.md D6, flip-day item 4).
+ * hreflang — the language-alternate layer.
  *
- * One deployment serves several doors, and on flip day two of them serve the
- * *same* content in two languages: `inmobiliaria.com.py` in Spanish and
- * `realestateinparaguay.com` in English. Two language versions that do not
+ * One deployment can serve several doors, and the day a second one exists it
+ * will serve the *same* listings in a second language: Swedish on
+ * `flyttatillspanien.se`, English on whatever domain is bought for the
+ * Norwegian/Danish/Finnish/Dutch audience. Two language versions that do not
  * point at each other compete in search instead of pairing; Google picks one
  * and the other's audience never sees it. That pairing is `hreflang`, and it
- * has to ship in the same release as the locale flip — which is why the
- * mechanism lands now, ahead of the flip, rather than being invented under
- * time pressure on the day.
+ * has to ship in the same release as the second door — which is why the
+ * mechanism is kept now, ahead of it, rather than being invented under time
+ * pressure on the day.
  *
- * **It emits nothing today, on purpose.** Both enabled hosts are `locale:
- * "es"` and serve identical rows, so there is no translation to declare — and
- * annotating two Spanish URLs as language variants of each other would tell
- * Google the opposite of what `listingCanonicalOrigin()` tells it. Duplicates
- * are a canonical problem; hreflang is for translations. So the rule below is
- * "fewer than two distinct locales ⇒ no tags", and the day
- * `verticals.ts` says `locale: "en"` on one host, every wired page starts
- * emitting the pair with no further code change.
+ * **It emits nothing today, on purpose.** There is exactly one enabled host
+ * (`src/config/verticals.ts`), so there is no translation to declare. The rule
+ * below is "fewer than two distinct locales ⇒ no tags" — which also means that
+ * if two doors ever served the same rows in the SAME language, this would
+ * still stay silent: that is a duplicate, and a duplicate is the canonical
+ * tag's problem, not hreflang's. The day `verticals.ts` carries a second entry
+ * with `locale: "en"`, every wired page starts emitting the pair with no
+ * further code change.
  *
  * Pure on purpose (no `next/headers`), the same split as `facets.ts` /
  * `facet-sql.ts`: the set of language versions is a property of the *content*,
@@ -121,12 +122,11 @@ export function languageAlternates(
 /**
  * The same rule, over an explicitly supplied set of doors.
  *
- * Exported so `npm run verify:seo` can drive the *post-flip* configuration —
- * `realestateinparaguay.com` in English, `inmobiliaria.com.py` primary — while
- * this deployment is still pre-flip. `CANONICAL_HOST` is read from the
- * environment at module load, so a check that only ever saw the live table
- * could confirm nothing except that today emits nothing, which is the one
- * outcome that does not need proving.
+ * Exported so `npm run verify:seo` can drive a *synthetic two-door* table — a
+ * Swedish primary and an English second door — while this deployment has only
+ * one. `CANONICAL_HOST` is read from the environment at module load, so a
+ * check that only ever saw the live table could confirm nothing except that
+ * today emits nothing, which is the one outcome that does not need proving.
  */
 export function alternatesFor(
   doors: Door[],

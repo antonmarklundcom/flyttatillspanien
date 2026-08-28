@@ -1,14 +1,13 @@
 /**
- * Per-vertical themes — the mechanism PLAN.md D6 calls for, with the values
- * deliberately identical for now.
+ * Per-vertical themes — the mechanism, with the values deliberately identical
+ * for now.
  *
  * A theme is just the subset of `:root` custom properties a host is allowed to
  * override. `app/layout.tsx` writes them onto <html> for the resolved vertical,
  * so every rule that reads `var(--color-*)` follows the domain with no
- * component changes. Today both live hosts get the same editorial system, so
- * this is a no-op at runtime — but the wire exists, and giving
- * realestateinparaguay.com its own palette later is an entry in this file
- * rather than a refactor of every component.
+ * component changes. There is one enabled host today, so this is a no-op at
+ * runtime — but the wire exists, and giving a future English door its own
+ * palette is an entry in this file rather than a refactor of every component.
  *
  * Rules for adding one:
  *   - Values only. Structure (which sections a page has, which hero it uses)
