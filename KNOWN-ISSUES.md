@@ -46,6 +46,14 @@ Format: `- [phase found] area — what, and what would fix it.`
   table; renaming it is a one-line change plus a redirect if it has ever been
   indexed.
 
+- [1] Stale Paraguay narration survives in code comments wherever the file
+  otherwise compiles unchanged. Phase 1 cleared the routing/SEO/theme libs
+  (`alternates.ts`, `design/themes.ts`) and the config layer; Phase 2 owns the
+  same problem in `crm.ts`, `otp.ts`, `auth/password.ts` and `wa.ts` (plan
+  §5.2.4). **Phase 5's leftover-Paraguay grep only covers the four doc files**,
+  so a stale comment anywhere else survives as false documentation unless the
+  phase that touches the file fixes it.
+
 - [1] Local development pulls `mysql:8.4` from Docker Hub. In this build
   environment the Hub blob CDN (`production.cloudfront.docker.com`) is blocked by
   the outbound proxy, and the image had to come from `mirror.gcr.io/library/mysql:8.4`
