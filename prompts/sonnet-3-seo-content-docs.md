@@ -14,6 +14,14 @@ vocabulary changes.
 Phase rules:
 - Branch `phase/5` off latest `main`. If `phase/4` is not yet merged, stop
   and report.
+- **The editorial Swedish pass over the whole `sv.ts` dictionary is this
+  phase's scope** (plan §6 Phase 5): Phase 1 delivered working-draft
+  Swedish and its §9 build-log entry says where it's roughest. Read every
+  namespace end to end and finalize the voice — plain, concrete,
+  trust-building Swedish for a six-figure purchase in an unfamiliar legal
+  system. Translate intent, never invent a fact, keep brand-parameterised
+  functions parameterised. Budget real time: the dictionary is ~1,100
+  lines and this is scope on par with the docs rewrite.
 - The docs rewrite (`CLAUDE.md`, `ARCHITECTURE.md`, `README.md`, the
   upper-case `PLAN.md`) is real scope for this phase, not an afterthought —
   budget real time for it. These four files currently describe propia.node
@@ -35,7 +43,8 @@ Phase rules:
 - Re-runnable; minor issues → `KNOWN-ISSUES.md`; stop only per plan §4.4.
 
 Exit: the concrete checklist at the end of plan §6 Phase 5 — `verify:seo`
-green, the four docs read as self-consistent and free of leftover
+green, `verify:i18n` green with no draft-grade strings left (dictionary
+pass done), the four docs read as self-consistent and free of leftover
 Paraguay-as-current-fact statements, `npm run build` green. PR merged green
 on `main`.
 

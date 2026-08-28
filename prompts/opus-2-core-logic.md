@@ -19,10 +19,24 @@ Phase rules:
   belongs in the server action, matching where `commitImportAction`'s
   permission check already lives — a form-only check is bypassed by the
   importer, which is the primary listing-creation path.
+- The email transport is decided in plan §1: nodemailer over SMTP
+  (`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`EMAIL_FROM`, all in
+  `.env.example`), behind the existing `crm.ts`-style interface with the
+  dev-console fallback preserved. Do not pick a different provider.
 - The email-first flip touches `sendOtp` semantics: never log or return a
   line that claims a message was delivered when it was not (same rule
   `CLAUDE.md`'s pattern library states for the WhatsApp version — carry the
-  principle, not the channel).
+  principle, not the channel). While in `crm.ts`/`otp.ts`/
+  `auth/password.ts`, update their prose comments too — they narrate
+  "WhatsApp OTP" as current fact, and Phase 5's grep only covers the four
+  doc files, so a stale comment here survives as false documentation.
+- **Mechanical compile-fixes across pages/components are in scope** (plan
+  §5.2 item 7): rename-level only — `formatPrice` → `formatEur`, deleted
+  columns, `whatsapp` → `phone`/`email` in forms — enough to make the
+  repo compile and be truthful. Do NOT redesign or restyle any page; UI
+  substance is Phase 3's.
+- This phase restores the pre-push gate: push green, never `--no-verify`
+  (that exception was Phase 1's alone).
 - Re-runnable; minor issues → `KNOWN-ISSUES.md`; stop only per plan §4.4.
 
 Exit: the concrete checklist at the end of plan §5 Phase 2 — full

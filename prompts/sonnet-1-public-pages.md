@@ -20,12 +20,15 @@ Phase rules:
 - Every visible string goes through `sv.ts` — no new inline literal copy in
   a page or component, same rule the pattern-library docs state for
   propia.node's `es.ts`.
-- Before starting, confirm with Anton (or check `plan.md` §8 for an answer
-  already recorded there) whether `alquiler_vacacional` listings actually
-  launch at MVP — this decides whether the wizard/detail page need the
-  `tourist_licence` field live or the enum member can ship unused for now.
-  This is the one open item from plan §8 that touches this phase directly;
-  everything else in §8 is out of scope here.
+- `alquiler_vacacional` ships at MVP — already decided in plan §1, do NOT
+  stop to ask: build the `tourist_licence` input into the wizard (shown
+  for holiday-let listings) and render the licence on the detail page.
+- `/for-maklare` (the Swedish agency-acquisition page, plan §6 Phase 3) is
+  this phase's scope too; its Spanish sibling `/es/inmobiliarias` is §10
+  backlog — don't build it.
+- Test data is a committed script, `scripts/seed-dev-listings.ts`
+  (`npm run seed:dev`), per the plan's exit criteria — not manual inserts.
+  Phases 4 and 6 reuse it.
 - The legal/compliance fields are the differentiator the whole design doc
   is built around — do not bury them. `legal_status`/`charges_status` must
   render as two distinct lines ("seller says" vs. "portal verified"), not
@@ -35,10 +38,12 @@ Phase rules:
   `sin_lpo` legal_status row — before calling this done.
 - Re-runnable; minor issues → `KNOWN-ISSUES.md`; stop only per plan §4.4.
 
-Exit: the concrete checklist at the end of plan §6 Phase 3 — every public
-route builds and renders against seeded data including the landmine test
-rows, `verify:i18n` and `verify:facets` still green, `npm run build` green.
-PR merged green on `main`.
+Exit: the concrete checklist at the end of plan §6 Phase 3 — seeds clean
+(`seed:locations` + `seed:costs` + `seed:dev`), then `npm run build &&
+npm run start` and curl the plan's route list (home, an operation hub, a
+category page, a landmine-case `/bostad/[slug]`, `/for-maklare`, the
+wizard entry) — all 200 with no runtime error in the server log;
+`verify:i18n` and `verify:facets` still green. PR merged green on `main`.
 
 ## After this phase — hand off to Phase 4 (fresh session, same model)
 
