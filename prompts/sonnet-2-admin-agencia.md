@@ -28,11 +28,17 @@ Phase rules:
 - A `relocation`-kind agency must read distinctly from an `inmobiliaria`
   one everywhere its name surfaces publicly (seller card, agent/agency
   directory) — "represents the buyer's side," not blurred into "agency."
+- Verification is mechanical, not "looks right": create a local admin
+  with the existing `scripts/create-user.ts`, seed data with Phase 3's
+  `npm run seed:dev`, exercise the flip/override via authenticated HTTP or
+  by invoking the server action from a script, then curl the affected
+  public page and grep the rendered HTML for the change.
 - Re-runnable; minor issues → `KNOWN-ISSUES.md`; stop only per plan §4.4.
 
-Exit: the concrete checklist at the end of plan §6 Phase 4 — admin can flip
-`nota_simple_seen_at` and override FX with a visible immediate effect, a
-relocation-kind agency's public listing shows the distinct label,
+Exit: the concrete checklist at the end of plan §6 Phase 4 — the
+`nota_simple_seen_at` flip and FX override verified visible immediately
+(the in-process `revalidate*()` path, not the TTL), a relocation-kind
+agency's public listing shows the distinct label (curl + grep),
 `npm run build` green. PR merged green on `main`.
 
 ## After this phase — hand off to Phase 5 (fresh session, same model)

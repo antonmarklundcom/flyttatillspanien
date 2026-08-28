@@ -44,9 +44,12 @@ entry committed to §9), end with a closing report to Anton containing:
 1. The live URL(s) actually reached (real domain, or the interim Hostinger
    hostname if DNS is still propagating — say which).
 2. A numbered checklist of exactly what's still manual: cron job
-   registration (exact command lines), DNS propagation if pending, R2
+   registration (exact command lines), DNS propagation if pending,
+   creating the Hostinger mailbox and setting `SMTP_*`/`EMAIL_FROM` +
+   `CONTACT_EMAIL` (**launch blockers** — no OTP login and no lead mail
+   until set, per plan §1/§7), R2
    bucket creation for image storage (still blocked on the Cloudflare
-   account per plan §7), setting a real `CONTACT_EMAIL` mailbox,
+   account per plan §7),
    `ANTHROPIC_API_KEY` if translation output is wanted soon.
 3. A one-line pointer to `plan.md` §9 for the full six-phase build history.
 4. A suggestion, per the `phased-autonomous-build` skill's own closing

@@ -22,7 +22,7 @@ only referenced by section.**
 | 2 | Opus | `prompts/opus-2-core-logic.md` | §5.2 | Query layer, import/dedup, leads/auth/OTP, publish gate, verify:* scripts — everything Sonnet is forbidden to touch |
 | 3 | Sonnet | `prompts/sonnet-1-public-pages.md` | §6.1 | Home, category/hub pages, search bar, listing card, detail page, wizard — wired to the Phase 1–2 layer |
 | 4 | Sonnet | `prompts/sonnet-2-admin-agencia.md` | §6.2 | `/admin`, `/agencia`, `/publicar` panels: relocation-agency kind, identity verification UI, energy/legal-status editing, FX & acquisition-cost admin override |
-| 5 | Sonnet | `prompts/sonnet-3-seo-content-docs.md` | §6.3 | Sitemap, structured data, guide content seeding, and the CLAUDE.md/ARCHITECTURE.md/README.md/PLAN.md rewrite the design doc requires |
+| 5 | Sonnet | `prompts/sonnet-3-seo-content-docs.md` | §6.3 | Sitemap, structured data, guide content seeding, the editorial Swedish pass over `sv.ts` (Phase 1 ships draft-grade), and the CLAUDE.md/ARCHITECTURE.md/README.md/PLAN.md rewrite the design doc requires |
 | 6 | Sonnet | `prompts/sonnet-4-deploy.md` | §6.4 | Hostinger app + MySQL setup, env vars, domain, cron jobs, production migration, smoke test |
 
 Phases 1–2 are Opus because a wrong call in schema shape, the catastral
@@ -30,6 +30,15 @@ unique-index-over-nullable behaviour, the EUR-only price column, or the
 publish gate placement forces a rewrite of everything built on top. Phases
 3–6 are Sonnet: templated UI work, content, and infra wiring against a
 foundation that is already decided and must not change.
+
+> **Starting the chain (for Anton):** open a fresh window, model **Opus**,
+> permission mode set to auto-accept edits/commands (spawned child sessions
+> can never be MORE permissive than their parent — a restrictive Phase 1
+> session strands every later phase at permission prompts), and paste:
+> `Read prompts/opus-1-schema-config.md in this repo and execute it.`
+> Each finished phase spawns the next in its own fresh window via
+> `create_session`; no further human input is needed until Phase 6's
+> closing report (§7 lists what Phase 6 will ask for).
 
 ---
 
@@ -67,6 +76,24 @@ written as a design pass and its own final section is literally titled
 - **XML feed ingestion is v1.1**, not MVP. Intake stays CSV/XLSX through the
   existing `planImport`/`commitImport` planner. (Handoff → explicitly out of
   scope)
+- **`alquiler_vacacional` ships at MVP** (resolved at plan review,
+  2026-08-28): the enum member is live, and the `tourist_licence` field is
+  built into the wizard and the detail page in Phase 3 — the design doc's
+  "only if alquiler_vacacional ships" condition is met. Phase 3 does NOT
+  need to ask about this.
+- **OTP + transactional email go out over SMTP** (resolved at plan review,
+  2026-08-28 — the design doc flipped auth to email-first but never named a
+  transport; the inherited `crm.ts` only knows the WhatsApp webhook). MVP
+  transport: **nodemailer over SMTP against a Hostinger mailbox** (same
+  account the site deploys to; the `CONTACT_EMAIL` mailbox in §7 can be the
+  same one). Env vars: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`,
+  `EMAIL_FROM` — all documented in `.env.example` in Phase 2, all optional
+  in dev (console fallback, exactly like the current `DevNullCrm`), and the
+  `sendOtp` rule carries over verbatim: **never log or return a line that
+  claims delivery happened when it did not**. Swapping to a transactional
+  provider (Resend/Postmark) later is a config/adapter change, not
+  architecture — keep the transport behind the existing `crm.ts`-style
+  interface so the swap stays that way.
 
 If a phase session finds a decision in this file or the design doc that
 looks wrong once real code is in front of it, it still implements it as
@@ -132,6 +159,15 @@ Every phase prompt operates under these rules:
    and merge the PR when green; a red build is always the session's own
    work to fix. Never start a phase on top of an unmerged previous phase —
    check `git log`/open PRs first.
+   **One sanctioned exception:** Phase 1 — and ONLY Phase 1 — pushes with
+   `git push --no-verify`. The `.githooks/pre-push` gate runs typecheck +
+   build + all four verify scripts, and Phase 1's cut deliberately leaves
+   typecheck errors in Phase-2-owned files and stale verify fixtures
+   (Phase 2 updates them). `main` is therefore knowingly red between the
+   Phase 1 and Phase 2 merges; that is harmless because Hostinger is not
+   wired up until Phase 6 — nothing deploys a red `main`. Phase 2's exit
+   criteria (full typecheck, all verifies green) restore the gate, and
+   **no phase after 1 ever pushes with `--no-verify`**.
 3. Minor non-blocking issues → append to `KNOWN-ISSUES.md` (create it in
    Phase 1 if it doesn't exist), keep building.
 4. **Stop and ask ONLY for:**
@@ -192,6 +228,16 @@ Every phase prompt operates under these rules:
     Fresh sessions orient from `plan.md` + §9 + `KNOWN-ISSUES.md` ONLY — no
     replaying this conversation's history. Keep the log entries short so
     that stays cheap.
+11. **Recovery from a dead session** (usage ran out mid-phase, container
+    died, window closed): open a fresh window with that phase's model per
+    the phase table, and paste exactly
+    `Read prompts/<phase-file>.md in this repo and execute it.`
+    The prompt is re-runnable (§4.6) and continues from the first unmet
+    exit criterion. Find the current phase by reading §9's build log plus
+    the open PRs / `phase/*` branches — the newest phase without a §9
+    entry or a merged PR is the one to re-run. Nothing about a phase lives
+    only in a session's memory; if it did, that was a §4.10 violation, and
+    the re-run re-derives it from the branch state.
 
 ## 5. Opus phases
 
@@ -234,13 +280,17 @@ Concretely, this phase:
    file-header note about cron-written tables using TTL as the real
    invalidation mechanism (already true for `cron:cuotas`/`cron:medians` —
    extend the same paragraph, don't rewrite the reasoning).
-8. `src/i18n/`: rename `es.ts` → `sv.ts`, all namespaces `es*` → `sv*`,
-   every string translated to Swedish (not machine-placeholder text — real
-   Swedish, in the same voseo-equivalent editorial voice the design doc
-   asks the site to have). Delete `en.ts`. Update `index.ts`/`server.ts` so
-   `Dictionary`, `dict()`, `getDictionary()` all point at the single
+8. `src/i18n/`: the **structural** rename — `es.ts` → `sv.ts`, all
+   namespaces `es*` → `sv*`, delete `en.ts`, update `index.ts`/`server.ts`
+   so `Dictionary`, `dict()`, `getDictionary()` all point at the single
    dictionary; keep the `Widen<>` machinery even with one locale, since
    it's what makes `en.ts` a file-addition later rather than a refactor.
+   Strings become **working-draft Swedish**: correct language, correct
+   intent, no Spanish left behind, no empty strings — but this phase does
+   NOT owe the final editorial voice. `es.ts` is ~1,100 lines; the
+   full editorial pass is deliberately **Phase 5's scope** (the content
+   phase), so Phase 1 stays inside one session. Note in the §9 build-log
+   entry that the dictionary is draft-grade pending Phase 5.
 9. Scripts: delete `seed-financing.ts`/`seed:financing`,
    `recompute-cuotas.ts`/`cron:cuotas`; add `scripts/seed-acquisition-costs.ts`
    (`seed:costs`, idempotent upsert by region, 7 comunidades, rates marked
@@ -250,7 +300,13 @@ Concretely, this phase:
    design doc's "Seeded regions" table, setting `acquisition_region` on
    every node and starting `joinSlug` at municipio; invert
    `scripts/translate-listings.ts` to es→sv semantics (same cron-only, no
-   publish-hook rule).
+   publish-hook rule); update `scripts/compute-medians.ts` to `price_eur`
+   and `built_m2` — **the design doc's script table marks `cron:medians`
+   "unchanged", and on this one point it is wrong**: the script reads
+   `price_usd`/`area_m2`, both of which this phase deletes, and `built_m2`
+   is the only comparable area figure per design §3.1. This is a semantic
+   fix (wrong column = wrong number on every category page), not just a
+   compile fix.
 10. Cosmetic renames from the design doc's table: `propia_session` →
     `ftse_session`, the two `propia:*` localStorage keys → `ftse:*`,
     `package.json` name → `flyttatillspanien`, docker-compose DB name/user
@@ -262,15 +318,23 @@ Concretely, this phase:
   owns per §5.2 below; note exactly which files/errors remain in the §9
   build log so Phase 2 starts there).
 - `docker compose up -d && npm run db:migrate` applies clean against a
-  fresh local MySQL with zero errors.
+  fresh local MySQL with zero errors. (After this phase's docker-compose
+  rename the local `DATABASE_URL` is `mysql://ftse:ftse@127.0.0.1:3306/ftse`
+  — the `propia:propia@…/propia` string the inherited `CLAUDE.md` documents
+  is stale the moment the rename lands; don't trip over your own rename.)
 - `npm run db:status` reports no drift against the new `schema.ts`.
 - `npm run seed:locations && npm run seed:costs` both run successfully
-  against the local DB and produce the expected row counts (10 municipios
-  + the Marbella/Palma zonas, 7 acquisition_costs rows).
+  against the local DB and produce the expected row counts: **41
+  municipios** and **10 zonas** (6 under Marbella, 4 under Palma) per the
+  design doc's "Seeded regions" table (count the table, don't trust this
+  sentence if they disagree), plus the comunidad/provincia parent nodes,
+  and **7** `acquisition_costs` rows.
 - `npm run cron:fx --dry` (or equivalent manual invocation) either writes a
   real `fx_rates` row from the live ECB feed or fails gracefully with a
   clear message if network access is unavailable in this environment —
   either outcome is fine, a silent crash is not.
+- Pushed with `git push --no-verify` per the §4.2 exception — the ONLY
+  phase allowed to.
 
 ### Phase 2 — Core logic: query layer, import, auth, leads, verify (`prompts/opus-2-core-logic.md`)
 
@@ -306,6 +370,15 @@ Concretely:
    buyer, not the seller" per the design doc's §3.3 note. Do not build the
    agency directory /admin UI itself here — that is Phase 4; this phase is
    the data/logic layer those pages will call.
+   The email transport is **decided in §1**: nodemailer over SMTP
+   (`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`EMAIL_FROM`, all in
+   `.env.example`), behind the existing `crm.ts`-style interface, with the
+   dev-console fallback preserved and the never-fake-delivery rule intact.
+   While in `crm.ts`/`otp.ts`/`auth/password.ts`, also update their prose
+   comments — they narrate "WhatsApp OTP" as current fact, and Phase 5's
+   leftover-Paraguay grep only covers the four doc files, so a stale code
+   comment here survives as false documentation if this phase doesn't fix
+   it.
 5. `users.identity_doc_type`/`identity_ref_last4`/`identity_verified_at`:
    wire the column into whatever create/update user path exists, operator-
    settable only, never populated by self-report from the wizard.
@@ -315,6 +388,18 @@ Concretely:
    purpose exactly as `CLAUDE.md` (pre-rewrite, still readable in this
    phase for the *mechanism*, not the facts) describes it — pure vs.
    DB-requiring split unchanged.
+7. **Mechanical compile-fixes across pages and components are IN scope for
+   this phase** — rename-level only: `formatPrice` → `formatEur`, deleted
+   columns/fields (`cuota_gs`, `price_usd`, `area_m2`, `whatsapp` →
+   `phone`/`email`), deleted helpers, the dead `/financiamiento` surfaces
+   if Phase 1 left any reference standing. This is what makes this phase's
+   "repo-wide typecheck, zero errors" exit criterion reachable at all —
+   without it the page files still reference the old schema. The line:
+   make every file **compile and be truthful**, but do NOT redesign,
+   restyle, or restructure any page — UI substance is Phase 3, and a
+   too-eager rewrite here just gives Phase 3 merge conflicts with itself.
+   This phase restores the pre-push gate: it pushes green, never
+   `--no-verify`.
 
 **Exit criteria:**
 - `npm run typecheck` fully passes, zero errors, repo-wide.
@@ -348,17 +433,34 @@ acquisition-cost estimate block on the detail page (via
 `built_m2` as the only faceted/compared area figure with `usable_m2`
 display-only nearby. Wizard: energy_rating field with the `en_tramite`/
 `exento` options, referencia catastral input, legal_status/charges_status
-selects with `desconocido` as the honest default, no field asking a private
-seller to self-certify `nota_simple_seen_at` (operator-only, not on the
-form at all).
+selects with `desconocido` as the honest default, `tourist_licence` input
+shown for `alquiler_vacacional` (per the §1 decision — holiday lets ship
+at MVP, and the licence renders on the detail page too), no field asking a
+private seller to self-certify `nota_simple_seen_at` (operator-only, not
+on the form at all).
 
-**Exit:** every public route builds and renders without runtime error
-against seeded local data (`npm run seed:locations && npm run seed:costs`,
-plus a handful of manually inserted test listings covering each
-`propertyType`/`operation` and at least one `en_tramite` and one
-`legal_status: "sin_lpo"` row to prove the UI doesn't hide the landmine
-case); `verify:i18n` and `verify:facets` still green; `npm run build`
-green.
+Also this phase: **`/for-maklare`** — the Swedish "annonsera hos oss"
+agency-acquisition page the design doc's §1 gives as the reason a `.es`
+door is unnecessary. Strings through `sv.ts` like every other page. (Its
+Spanish-language sibling `/es/inmobiliarias` is §10 backlog, not this
+phase — it lives outside the dictionary system by design.)
+
+Test data is a **committed script**, not manual inserts:
+`scripts/seed-dev-listings.ts` (`npm run seed:dev`) inserting one
+published listing per `propertyType`/`operation` combination that has a
+card to render, including at least one `energy_rating: "en_tramite"` row
+and one `legal_status: "sin_lpo"` row (the landmine cases), at least one
+`alquiler_vacacional` row with a `tourist_licence`, and one listing owned
+by each lister type. Committed so this phase is re-runnable and Phases 4
+and 6 can reuse it for their own verification.
+
+**Exit (mechanical, not "looks right"):** `npm run seed:locations &&
+npm run seed:costs && npm run seed:dev` clean against local MySQL; then
+`npm run build && npm run start` and curl this route list — home, one
+operation hub, one category page (`/{affar}/{typ}/{ort}`), one
+`/bostad/[slug]` for a landmine-case listing, `/for-maklare`, the wizard
+entry — **all returning 200 with no runtime error in the server log**;
+`verify:i18n` and `verify:facets` still green.
 
 ### Phase 4 — Admin & agency panels (`prompts/sonnet-2-admin-agencia.md`)
 
@@ -372,11 +474,16 @@ settable only here, FX rate display + manual override
 distinctly. `/publicar` (FSBO): unchanged funnel shape, new field set from
 Phase 3's wizard work if not already wired there.
 
-**Exit:** an admin can flip `nota_simple_seen_at`, override the FX rate,
-and see the change reflected on a public page within the cache TTL (or
-immediately via the in-process `revalidate*()` call); a relocation-kind
-agency's listing renders the "represents the buyer" label on its public
-seller card; `npm run build` green.
+**Exit (mechanical):** create a local admin with the existing
+`scripts/create-user.ts` (it survives Phase 1 with the email-first column
+rename); against `npm run start` + the Phase 3 seed data
+(`npm run seed:dev`), exercise the `nota_simple_seen_at` flip and the FX
+override — via authenticated HTTP or by invoking the server action
+directly in a script — then curl the affected public page and confirm the
+change is visible immediately (the in-process `revalidate*()` path, not
+the TTL); a relocation-kind agency's listing renders the "represents the
+buyer" label on its public seller card (curl and grep the rendered HTML);
+`npm run build` green.
 
 ### Phase 5 — SEO, content & docs rewrite (`prompts/sonnet-3-seo-content-docs.md`)
 
@@ -389,6 +496,16 @@ short, factual, grounded only in DB data (medians/counts once they exist,
 otherwise landmark/region facts), matching the "no invented facts" rule
 carried from propia.node.
 
+**Also this phase: the editorial Swedish pass over the whole `sv.ts`
+dictionary.** Phase 1 delivered working-draft Swedish (correct meaning, no
+Spanish left, but not final voice — its §9 build-log entry says so). This
+phase reads every namespace end to end and rewrites for the site's
+editorial voice: plain, concrete, trust-building Swedish for a person
+making a six-figure purchase in a country whose rules they don't know —
+translate intent, never invent a fact the source copy doesn't state, keep
+brand-parameterised functions parameterised. This is real scope on par
+with the docs rewrite below, not a skim.
+
 **Also this phase: rewrite `CLAUDE.md`, `ARCHITECTURE.md`, `README.md`, and
 the upper-case `PLAN.md`** (the project's own living tracker, distinct from
 this file) to describe flyttatillspanien.se as it now exists — not
@@ -399,7 +516,10 @@ anywhere in those four files. Add the mortgage-calculator backlog item and
 the `D-mortgage` PLAN.md decision exactly as specified in the design doc's
 §4 "Where to flag it".
 
-**Exit:** `verify:seo` green; the four docs read as a self-consistent
+**Exit:** `verify:seo` green; `verify:i18n` green with **no draft-grade
+strings left** (every namespace read and finalized — if Phase 1's build
+log flagged specific namespaces as rough, those are the first stop); the
+four docs read as a self-consistent
 description of flyttatillspanien.se with no leftover propia.node facts
 (grep for `propia`, `Paraguay`, `Gs`, `.com.py`, `WhatsApp OTP` outside of
 this file, `docs/SPAIN-PORTAL-DESIGN.md`, and the acknowledged cosmetic-only
@@ -410,7 +530,10 @@ docs bug, fix it); `npm run build` green.
 
 Hostinger Node.js app + MySQL setup for flyttatillspanien.se, following the
 `nextjs-deploy-hostinger` skill's playbook. Production `.env` from
-`.env.example` (flag `CONTACT_EMAIL`, `ANTHROPIC_API_KEY`, `R2_*` as
+`.env.example` (flag `CONTACT_EMAIL`, `SMTP_*`/`EMAIL_FROM` (the §1 email
+transport — without these, production OTP login and lead mail silently
+don't send, so list them as **launch blockers**, not nice-to-haves),
+`ANTHROPIC_API_KEY`, `R2_*` as
 founder-provided — do not block on them, document exactly what's missing).
 Run `db:migrate` against production, then `db:status` to confirm zero
 drift, then `seed:locations` + `seed:costs` against production. Register
@@ -438,6 +561,8 @@ numbered launch checklist.
 | `flyttatillspanien.se` domain DNS access | Phase 6 | To point at the Hostinger app |
 | Production `DATABASE_URL` (Hostinger MySQL) | Phase 6 | Username ≠ database name — same Hostinger footgun `CLAUDE.md` records for propia.node; verify both independently |
 | `CONTACT_EMAIL` real mailbox | Phase 6 (launch blocker per design doc §3.7) | Site works without it (null-safe), but is not launch-credible without it |
+| SMTP credentials (`SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`EMAIL_FROM`) | Phase 6 (**launch blocker**: no OTP login, no lead mail without them); Phase 2 codes against them with a dev-console fallback | §1 decision: a Hostinger mailbox on the same account — can be the `CONTACT_EMAIL` mailbox. Create it in hPanel → Emails |
+| GitHub: sessions can merge their own PRs in this repo | Every phase | Already true today (this plan merged the same way); listed so the checklist is complete |
 | `ANTHROPIC_API_KEY` | Phase 1 (script exists, degrades gracefully without it), real use starts once real listings exist | `cron:translate` refuses to run and writes nothing without it |
 | Cloudflare R2 account + bucket | Not this build | Inherited backlog item; code path already exists upstream in the propia.node pattern, do not rebuild it |
 | ECB FX feed reachability from the Hostinger box | Phase 6, ongoing via `cron:fx` | No key needed, but confirm outbound HTTPS isn't blocked |
@@ -448,12 +573,18 @@ numbered launch checklist.
   second entry. Not before the domain is owned (propia.com.py lesson).
 - **D-mortgage** — lender partnership before a Spanish mortgage calculator
   ships. Recorded as its own decision in the rewritten `PLAN.md` (Phase 5).
-- **`alquiler_vacacional` at MVP** — the design doc includes it in the
-  operation enum and gates `tourist_licence` on it being live; confirm with
-  Anton before Phase 3 whether holiday-let listings actually launch at MVP
-  or the enum member ships unused for now (either is fine mechanically —
-  this only affects whether Phase 3 builds the tourist_licence field into
-  the wizard/detail page).
+- ~~`alquiler_vacacional` at MVP~~ — **resolved**, see §1: ships at MVP,
+  `tourist_licence` built in Phase 3. Kept here struck-through so a session
+  that remembers the old open question finds the answer, not a gap.
+- **Email provider swap** — §1 decides SMTP-on-Hostinger for MVP; whether
+  to move to a transactional provider (Resend/Postmark) for deliverability
+  once real volume exists is a founder call later. The transport sits
+  behind an interface so the swap is config-level.
+- **GDPR/privacy-policy legal review** — Phase 1/5 translate the inherited
+  privacy copy to Swedish and Phase 5 de-Paraguayifies it, but whether the
+  text is *adequate* for a Swedish consumer site under GDPR (lawful basis
+  for the identity-verification fields, retention wording) is a review by
+  Anton or a lawyer, not a build task.
 - **`registry_number` UI** — v1.1 per the design doc's MVP/Wait table; no
   consumer needed at MVP, column only.
 - **Full NIE/DNI capture** — founder decision + DPA, explicitly out of
@@ -482,3 +613,8 @@ Anything a phase session finds that is real but out of its scope goes here
 - Spanish mortgage calculator.
 - `basura_annual_eur`, `registry_number` UI — v1.1 per design doc §3.8.
 - Nota simple / escritura document storage — needs R2 + a retention policy.
+- `/es/inmobiliarias` — the single Spanish-language agency-acquisition
+  landing page (design doc §1), hand-written outside the dictionary
+  system, `noindex` optional. The Swedish `/for-maklare` ships in Phase 3;
+  this Spanish sibling waits until agency outreach actually starts.
+- Transactional email provider (Resend/Postmark) swap — see §8.

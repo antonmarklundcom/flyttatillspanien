@@ -20,21 +20,37 @@ Phase rules:
   true for this build. Do not rewrite those four docs yet — that's Phase 5.
 - Do the schema rewrite as ONE clean migration — there is no production
   data, this is not an incremental migration series.
-- The i18n translation work (es.ts → sv.ts) needs real Swedish, not
-  placeholder text — translate intent, matching the design doc's "the
-  editorial voice the site should have" standard, the same way the design
-  doc says `en.ts` on propia.node translates intent rather than the
-  Spanish sentence.
+- The i18n work (es.ts → sv.ts) is the STRUCTURAL rename plus
+  working-draft Swedish (plan §5.1 item 8): correct language and intent,
+  no Spanish left, no empty strings — but the final editorial voice is
+  Phase 5's scope, on purpose (the dictionary is ~1,100 lines and this
+  phase is already the biggest). Flag the draft status in your §9
+  build-log entry so Phase 5 knows.
 - `npm run typecheck` will likely still show errors in files Phase 2 owns
-  (query layer, import pipeline, leads/auth consumers) — that's expected.
+  (query layer, import pipeline, leads/auth consumers, pages still
+  reading deleted columns) — that's expected.
   Before merging, list exactly which remaining errors are Phase 2's to fix
   in your §9 build-log entry, so Phase 2 doesn't have to rediscover them.
+- Because of those known-remaining errors, `.githooks/pre-push` (typecheck
+  + build + the verify scripts) WILL fail on this phase's push. Push with
+  `git push --no-verify` — this is the sanctioned §4.2 exception, unique
+  to Phase 1: `main` is knowingly red until Phase 2 merges, and nothing
+  deploys it before Phase 6. Do not "fix" the redness by pulling Phase 2's
+  scope into this phase.
+- `scripts/compute-medians.ts` moves to `price_eur`/`built_m2` in this
+  phase's script pass — the design doc's script table says `cron:medians`
+  is "unchanged" and is wrong on that one point (plan §5.1 item 9).
+- After the docker-compose rename, the local `DATABASE_URL` is
+  `mysql://ftse:ftse@127.0.0.1:3306/ftse` — the `propia` string in the
+  inherited `CLAUDE.md` is stale the moment your own rename lands.
 - Re-runnable; minor issues → `KNOWN-ISSUES.md`; stop only per plan §4.4.
 
 Exit: the concrete checklist at the end of plan §5 Phase 1 — typecheck
 (modulo the documented Phase-2 exceptions), clean migration apply, zero
-`db:status` drift, both seed scripts run successfully, `cron:fx` either
-writes a real row or fails gracefully. PR merged green on `main`.
+`db:status` drift, both seed scripts run with the row counts the plan
+states (41 municipios + 10 zonas + 7 acquisition_costs rows), `cron:fx`
+either writes a real row or fails gracefully. PR merged on `main`
+(via `--no-verify`, per above — the only phase allowed to).
 
 ## After this phase — hand off to Phase 2 (fresh session)
 
@@ -43,7 +59,6 @@ checklist passed, pre-handoff audit done, build-log entry committed), spawn
 Phase 2 as a NEW session via `create_session`: inherit this session's
 environment and permission mode (never `plan` mode), `model` = Opus, prompt
 exactly `Read prompts/opus-2-core-logic.md in this repo and execute it.`
-If `create_session` is unavailable, stop and report — Phase 2 is also Opus,
-so continuing in the same window is fine as a fallback if the tool truly
-isn't there, but prefer the fresh session per the protocol's cheap-context
-reasoning.
+If `create_session` is unavailable: continue in the same window (Phase 2
+is also Opus), but start it as a fresh read of `plan.md` + §9 +
+`KNOWN-ISSUES.md`, not from this session's accumulated context.
