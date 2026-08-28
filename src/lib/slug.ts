@@ -2,9 +2,12 @@
  * Slug helper (shared by locations, listings, agencies, projects).
  *
  * Deterministic and ASCII-only so URLs are stable and diff-clean: strips
- * Spanish diacritics (Ñemby → nemby, Asunción → asuncion), lowercases, and
- * collapses everything else to single hyphens. Used at write time; slugs are
- * never recomputed for an existing row (that would break inbound SEO links).
+ * diacritics from both languages this site handles — Spanish and Catalan
+ * place names (Pollença → pollenca, Andalucía → andalucia, Jávea → javea) and
+ * Swedish text in agency and listing titles (å/ä → a, ö → o, which is the
+ * conventional Swedish transliteration) — lowercases, and collapses everything
+ * else to single hyphens. Used at write time; slugs are never recomputed for
+ * an existing row (that would break inbound SEO links).
  */
 export function slugify(input: string): string {
   return input

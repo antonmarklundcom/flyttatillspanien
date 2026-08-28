@@ -678,9 +678,26 @@ handful of keys whose Paraguayan concept disappeared (`publishWaPrefill`,
 (`publishEmailPrefill`, `investCostsCta`, `ctaEmail`, `acquisition*`,
 `detailBuilt`/`detailUsable`/`detailPlot`, `ctaBarContact`).
 The five `verify:*` scripts still carry Paraguayan fixtures and are Phase 2's
-per §5.2.6. `app/financiamiento/` is deleted; references to `/financiamiento`
-outside `site-nav.ts` (already cleaned) are Phase 2's to sweep.
-Local DB string is now `mysql://ftse:ftse@127.0.0.1:3306/ftse`.
+per §5.2.6. Deleted modules that Phase 2 still has live imports of:
+`src/lib/cuota.ts` (`bestCuota`, `FinancingProgram`) in `PublishWizard.tsx` and
+`publish-queries.ts`, and `financingPrograms` / `listFinancingPrograms` in
+`directory-queries.ts` and `publish-queries.ts`. `app/financiamiento/` is
+deleted; `/financiamiento` links outside `site-nav.ts` (already cleaned) are
+Phase 2's to sweep. Local DB string is now
+`mysql://ftse:ftse@127.0.0.1:3306/ftse`.
+
+**The trap for Phases 2–3: typecheck does not see content.** These files carry
+Paraguayan or Spanish copy, or Paraguayan URLs, and compile perfectly — they
+will ship silently if someone treats a green `tsc` as done. Phase 1 already
+cleared the config half of this class (`faq.ts`, `site-nav.ts`,
+`popular-searches.ts`); the rest are pages and components, so they belong to
+Phase 3 (and Phase 5's editorial pass), not to Phase 2:
+`app/{nosotros,contacto,terminos,privacidad,planes,para-inmobiliarias,como-funciona,datos,preguntas-frecuentes,guias,guias/[slug],agentes,inmobiliarias,proyectos,desarrolladoras}/page.tsx`,
+`app/api/mapa/route.ts`, and
+`src/components/{SiteFooter,LeadForm,NewsletterSignup,panel/PostForm}.tsx`.
+Phase 2 owns one of them by subject rather than by content: `src/lib/wa.ts`,
+`crm.ts`, `otp.ts` and `auth/password.ts` narrate WhatsApp-first delivery as
+current fact (§5.2.4 already calls this out).
 
 ## 10. Backlog
 
