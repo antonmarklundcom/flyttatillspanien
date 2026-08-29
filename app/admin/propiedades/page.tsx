@@ -9,8 +9,8 @@ import {
   listAllListings,
   type ListingStatusValue,
 } from "@/lib/listing-edit";
-import { esPanel, listingStatusLabel } from "@/i18n/es";
-import { formatPrice } from "@/lib/format";
+import { svPanel, listingStatusLabel } from "@/i18n/sv";
+import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { BulkCount, BulkSelectAll } from "@/components/panel/BulkSelect";
@@ -31,7 +31,7 @@ const OPERATION_LABEL: Record<string, string> = {
 };
 
 const FLASH: Record<string, string> = {
-  deleted: esPanel.listingDeleted,
+  deleted: svPanel.listingDeleted,
 };
 
 /** The whole table is one form, so the bulk bar can live above the rows. */
@@ -70,14 +70,14 @@ export default async function AdminListingsPage({
       <main className="panel site-main">
         {flash ? <p className="panel-flash">{flash}</p> : null}
 
-        <h2 className="panel-section__title">{esPanel.adminListingsTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminListingsTitle}</h2>
 
         <form action="/admin/propiedades" className="panel-form">
           {status !== "all" ? (
             <input type="hidden" name="status" value={status} />
           ) : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
-            <span className="auth-field__label">{esPanel.searchListingsLabel}</span>
+            <span className="auth-field__label">{svPanel.searchListingsLabel}</span>
             <input
               className="auth-field__input"
               name="q"
@@ -87,7 +87,7 @@ export default async function AdminListingsPage({
           </label>
           <div className="panel-form__field panel-form__field--action">
             <button className="panel-btn" type="submit">
-              {esPanel.searchSubmit}
+              {svPanel.searchSubmit}
             </button>
           </div>
         </form>
@@ -95,7 +95,7 @@ export default async function AdminListingsPage({
         <nav className="panel-chips" aria-label="Filtrar por estado">
           {chips.map((s) => {
             const href = `/admin/propiedades?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
-            const label = s === "all" ? esPanel.filterAll : listingStatusLabel[s];
+            const label = s === "all" ? svPanel.filterAll : listingStatusLabel[s];
             const count = counts[s] ?? 0;
             return (
               <Link
@@ -111,7 +111,7 @@ export default async function AdminListingsPage({
         </nav>
 
         {rows.length === 0 ? (
-          <p className="panel-empty">{esPanel.adminListingsEmpty}</p>
+          <p className="panel-empty">{svPanel.adminListingsEmpty}</p>
         ) : (
           <form action={bulkListingAction} id={BULK_FORM_ID}>
             {/* Preserve the current filter so the redirect lands back on the
@@ -166,7 +166,7 @@ export default async function AdminListingsPage({
                   <th>Tipo</th>
                   <th>Inmobiliaria</th>
                   <th>Precio</th>
-                  <th>{esPanel.statusLabel}</th>
+                  <th>{svPanel.statusLabel}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -192,10 +192,7 @@ export default async function AdminListingsPage({
                     <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
                     <td>{row.agencyName ?? "Particular"}</td>
                     <td>
-                      {formatPrice({
-                        priceAmount: row.priceAmount,
-                        priceCurrency: row.priceCurrency,
-                      })}
+                      {formatEur(row.priceEur)}
                     </td>
                     <td>
                       <span className={`panel-status panel-status--${row.status}`}>
@@ -208,7 +205,7 @@ export default async function AdminListingsPage({
                           className="panel-btn"
                           href={`/admin/propiedades/${row.id}`}
                         >
-                          {esPanel.editListing}
+                          {svPanel.editListing}
                         </Link>
                         {row.status === "published" ? (
                           <Link
@@ -216,7 +213,7 @@ export default async function AdminListingsPage({
                             href={listingUrl(row)}
                             target="_blank"
                           >
-                            {esPanel.viewListing}
+                            {svPanel.viewListing}
                           </Link>
                         ) : null}
                       </div>

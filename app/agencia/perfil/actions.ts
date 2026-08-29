@@ -34,7 +34,7 @@ export async function updateAgencyProfileAction(
   const ok = await updateAgencyProfile(agencyId, {
     name: String(formData.get("name") ?? ""),
     logoUrl: String(formData.get("logoUrl") ?? ""),
-    whatsapp: String(formData.get("whatsapp") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
     email: String(formData.get("email") ?? ""),
   });
   finish(ok ? "agency_saved" : "invalid");
@@ -48,7 +48,7 @@ export async function updateAgentProfileAction(
   const ok = await updateOwnAgentProfile(user.id, {
     name: String(formData.get("name") ?? ""),
     photoUrl: String(formData.get("photoUrl") ?? ""),
-    whatsapp: String(formData.get("whatsapp") ?? ""),
+    phone: String(formData.get("phone") ?? ""),
   });
   finish(ok ? "saved" : "invalid");
 }

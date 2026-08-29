@@ -1,5 +1,5 @@
 import type { PanelTab } from "@/components/panel/PanelBar";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 
 /**
  * The /agencia tabs, active one flagged.
@@ -16,31 +16,31 @@ export function agencyTabs(
   return [
     {
       href: "/agencia",
-      label: esPanel.agencyListingsTitle,
+      label: svPanel.agencyListingsTitle,
       active: active === "listings",
     },
     {
       href: "/agencia/importar",
-      label: esPanel.importTab,
+      label: svPanel.importTab,
       active: active === "import",
     },
     {
       href: "/agencia/leads",
-      label: esPanel.agencyLeadsTitle,
+      label: svPanel.agencyLeadsTitle,
       active: active === "leads",
     },
     ...(showTeam
       ? [
           {
             href: "/agencia/equipo",
-            label: esPanel.teamTab,
+            label: svPanel.teamTab,
             active: active === "team",
           },
         ]
       : []),
     {
       href: "/agencia/perfil",
-      label: esPanel.profileTab,
+      label: svPanel.profileTab,
       active: active === "profile",
     },
   ];

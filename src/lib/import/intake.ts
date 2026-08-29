@@ -27,30 +27,55 @@ export const TEMPLATE_COLUMNS = [
   "property_type",
   "title",
   "description_es",
-  "price_amount",
-  "price_currency",
+  "price_eur",
   "bedrooms",
   "bathrooms",
   "parking",
-  "area_m2",
-  "land_m2",
+  "built_m2",
+  "usable_m2",
+  "plot_m2",
+  "year_built",
   "property_state",
   "location_full_slug",
   "location_name",
   "address_text",
   "lat",
   "lng",
+  /* The Spain legal block. `referencia_catastral` is first because it is the
+     single highest-value cell in the file: it is the exact dedup key and the
+     strongest anti-fraud signal the portal has. */
+  "referencia_catastral",
+  "energy_rating",
+  "energy_emissions",
+  "energy_kwh_m2",
+  "energy_co2_m2",
+  "legal_status",
+  "charges_status",
+  "ibi_annual_eur",
+  "community_monthly_eur",
+  "is_vpo",
+  "land_classification",
+  "buildable_m2",
+  "tourist_licence",
   "contact_phone",
   "source_external_id",
   "source_url",
   "image_urls",
 ] as const;
 
+/**
+ * `energy_rating` is deliberately NOT required. A feed that has not got the
+ * certificate yet must still be importable — the row simply cannot be
+ * published until the rating arrives, which the publish gate enforces at the
+ * one transition where it matters (src/lib/publish-gate.ts). Making it
+ * required here would reject whole spreadsheets over a field the operator can
+ * fill in later.
+ */
 export const REQUIRED_COLUMNS = [
   "operation",
   "property_type",
   "title",
-  "price_amount",
+  "price_eur",
 ] as const;
 
 /**
@@ -61,9 +86,9 @@ export const REQUIRED_COLUMNS = [
 export const UPLOAD_SOURCES: readonly ListingSource[] = [
   "whiteglove",
   "import_agency_site",
-  "import_tulugar",
-  "import_infocasas",
-  "import_clasipar",
+  "import_idealista",
+  "import_fotocasa",
+  "import_kyero",
 ];
 
 export type IntakeKind = "csv" | "xlsx";
@@ -158,32 +183,52 @@ export function readIntake(
   };
 }
 
-/** The blank template, as the download route serves it. */
+/**
+ * The blank template, as the download route serves it.
+ *
+ * The example row is keyed by column NAME, not written out positionally. The
+ * positional version silently misaligned the moment a column was added in the
+ * middle — every value after the insertion point landed one cell to the left,
+ * which reads as a plausible spreadsheet and imports as nonsense. A column
+ * with no example here is simply blank, which is also the honest answer for
+ * the optional legal fields.
+ */
+const TEMPLATE_EXAMPLE: Partial<Record<(typeof TEMPLATE_COLUMNS)[number], string>> =
+  {
+    operation: "venta",
+    property_type: "villa",
+    title: "Villa con jardín en Nueva Andalucía",
+    description_es: "Villa reformada a diez minutos de Puerto Banús.",
+    price_eur: "485000",
+    bedrooms: "4",
+    bathrooms: "3",
+    parking: "2",
+    built_m2: "280",
+    usable_m2: "245",
+    plot_m2: "800",
+    year_built: "2004",
+    property_state: "segunda_mano",
+    // Preferred over location_name: an exact match needs no fuzzy resolution.
+    location_full_slug: "marbella/nueva-andalucia",
+    location_name: "Marbella",
+    address_text: "Calle Ejemplo 1",
+    // 20 characters, exactly. Anything else is not a cadastral reference and
+    // the importer treats it as absent (normalize.ts).
+    referencia_catastral: "9872023VH5797S0001WX",
+    // Required before the row can be published, not before it can be imported.
+    energy_rating: "D",
+    legal_status: "escritura_registrada",
+    charges_status: "libre_de_cargas",
+    ibi_annual_eur: "820",
+    community_monthly_eur: "145",
+    is_vpo: "no",
+    contact_phone: "+34 952 12 34 56",
+    source_external_id: "A-001",
+  };
+
 export function templateCsv(): string {
-  const example = [
-    "venta",
-    "casa",
-    "Casa en Villa Morra con patio",
-    "Casa reciclada a una cuadra de Avda. España.",
-    "185000",
-    "USD",
-    "3",
-    "2",
-    "2",
-    "180",
-    "360",
-    "usado",
-    "",
-    "Villa Morra",
-    "Dr. Morra casi Sucre",
-    "",
-    "",
-    "0981123456",
-    "A-001",
-    "",
-    "",
-  ];
-  return `${TEMPLATE_COLUMNS.join(",")}\n${example
+  const row = TEMPLATE_COLUMNS.map((c) => TEMPLATE_EXAMPLE[c] ?? "");
+  return `${TEMPLATE_COLUMNS.join(",")}\n${row
     .map((v) => (v.includes(",") ? `"${v}"` : v))
     .join(",")}\n`;
 }

@@ -51,9 +51,10 @@ export function SearchBar({
   locale?: Locale;
 }) {
   const t = getDictionary(locale).searchBar;
-  // Number formatting follows the locale, not the copy: "Hasta US$ 150.000"
-  // and "Up to US$ 150,000" differ in the separator, not just the words.
-  const numberLocale = locale === "en" ? "en-US" : "es-PY";
+  // Number formatting follows the locale, not the copy: "Upp till € 150 000"
+  // groups with U+00A0 in sv-SE where en-US uses a comma. Derived from the
+  // locale rather than hard-coded, so a second door needs no edit here.
+  const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
   const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
     { value: "venta", label: t.operationBuy },
     { value: "alquiler", label: t.operationRent },

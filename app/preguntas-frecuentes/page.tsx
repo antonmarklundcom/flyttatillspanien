@@ -67,7 +67,6 @@ export default async function FaqPage() {
       <Section width="narrow">
         <p className="mk-note">
           Más información: <Link href="/como-funciona">cómo funciona</Link>,{" "}
-          <Link href="/financiamiento">financiamiento y cuotas</Link>,{" "}
           <Link href="/para-inmobiliarias">para inmobiliarias</Link>.
         </p>
       </Section>

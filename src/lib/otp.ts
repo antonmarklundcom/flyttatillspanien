@@ -1,9 +1,16 @@
 /**
- * WhatsApp OTP core (ARCHITECTURE.md §2.7). Six-digit codes, 10-minute
+ * One-time-code core (ARCHITECTURE.md §2.7). Six-digit codes, 10-minute
  * expiry, a resend cooldown and an attempt cap — stored in `otp_codes`,
- * delivered by GHL through the CRM boundary (src/lib/crm.ts). This module
- * owns the rules; server actions only orchestrate (create → send, verify →
- * publish). Node runtime only (touches MySQL + node:crypto).
+ * delivered by email over SMTP through the messaging boundary
+ * (src/lib/crm.ts). This module owns the rules; server actions only
+ * orchestrate (create → send, verify → publish). Node runtime only (touches
+ * MySQL + node:crypto).
+ *
+ * **Email is the destination.** Sweden is email-first, so the code goes to the
+ * address that is also the account identity (`users.email`). `otp_codes.channel`
+ * carries `sms` as well, because the column has to be able to say which kind
+ * of destination a row holds and a future SMS fallback is a transport, not a
+ * schema change — nothing issues one today.
  */
 import "server-only";
 import { randomInt } from "node:crypto";
@@ -11,6 +18,22 @@ import { and, desc, eq, gt, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { otpCodes } from "@/db/schema";
 import { canonPhone } from "@/lib/import/normalize";
+
+export type OtpChannel = (typeof otpCodes.$inferSelect)["channel"];
+
+/**
+ * The stored form of a destination, so "Anna@Example.COM " and
+ * "anna@example.com" are one destination for the cooldown, the attempt cap and
+ * the lookup — otherwise a resend loop is a space away.
+ */
+export function canonDestination(
+  raw: string,
+  channel: OtpChannel = "email",
+): string {
+  return channel === "email"
+    ? raw.trim().toLowerCase().slice(0, 190)
+    : canonPhone(raw);
+}
 
 const TTL_MS = 10 * 60 * 1000; // 10-minute code lifetime
 const RESEND_COOLDOWN_MS = 60 * 1000; // one code per number per minute
@@ -22,23 +45,28 @@ function issuedAt(expiresAt: Date): number {
 }
 
 export type CreateOtpResult =
-  | { ok: true; code: string; whatsapp: string }
+  | { ok: true; code: string; destination: string }
   | { ok: false; cooldownMs: number };
 
 /**
- * Issue a fresh code for a number, honoring the resend cooldown. Returns the
- * plaintext code for the caller to hand to crm.sendOtp() — it is never
- * exposed to the client. Older unconsumed codes for the number are left to
- * expire; verifyOtp only ever reads the newest, so they cannot be reused.
+ * Issue a fresh code for a destination, honoring the resend cooldown. Returns
+ * the plaintext code for the caller to hand to `sendOtpEmail()` — it is never
+ * exposed to the client. Older unconsumed codes for the destination are left
+ * to expire; verifyOtp only ever reads the newest, so they cannot be reused.
  */
-export async function createOtp(rawWhatsapp: string): Promise<CreateOtpResult> {
-  const whatsapp = canonPhone(rawWhatsapp);
+export async function createOtp(
+  rawDestination: string,
+  channel: OtpChannel = "email",
+): Promise<CreateOtpResult> {
+  const destination = canonDestination(rawDestination, channel);
   const now = Date.now();
 
   const [latest] = await db
     .select({ expiresAt: otpCodes.expiresAt })
     .from(otpCodes)
-    .where(and(eq(otpCodes.whatsapp, whatsapp), isNull(otpCodes.consumedAt)))
+    .where(
+      and(eq(otpCodes.destination, destination), isNull(otpCodes.consumedAt)),
+    )
     .orderBy(desc(otpCodes.expiresAt))
     .limit(1);
 
@@ -51,11 +79,12 @@ export async function createOtp(rawWhatsapp: string): Promise<CreateOtpResult> {
 
   const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
   await db.insert(otpCodes).values({
-    whatsapp,
+    destination,
+    channel,
     code,
     expiresAt: new Date(now + TTL_MS),
   });
-  return { ok: true, code, whatsapp };
+  return { ok: true, code, destination };
 }
 
 export type VerifyOtpResult =
@@ -63,15 +92,16 @@ export type VerifyOtpResult =
   | { ok: false; reason: "expired" | "mismatch" | "too_many" };
 
 /**
- * Verify a code against the newest unconsumed, unexpired code for the number.
- * A correct code is consumed (single use); a wrong one increments attempts and
- * burns the code once MAX_ATTEMPTS is reached, forcing a resend.
+ * Verify a code against the newest unconsumed, unexpired code for the
+ * destination. A correct code is consumed (single use); a wrong one increments
+ * attempts and burns the code once MAX_ATTEMPTS is reached, forcing a resend.
  */
 export async function verifyOtp(
-  rawWhatsapp: string,
+  rawDestination: string,
   input: string,
+  channel: OtpChannel = "email",
 ): Promise<VerifyOtpResult> {
-  const whatsapp = canonPhone(rawWhatsapp);
+  const destination = canonDestination(rawDestination, channel);
   const code = input.replace(/\D/g, "");
   const now = new Date();
 
@@ -85,7 +115,7 @@ export async function verifyOtp(
     .from(otpCodes)
     .where(
       and(
-        eq(otpCodes.whatsapp, whatsapp),
+        eq(otpCodes.destination, destination),
         isNull(otpCodes.consumedAt),
         gt(otpCodes.expiresAt, now),
       ),

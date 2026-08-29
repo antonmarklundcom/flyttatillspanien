@@ -1,22 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
+import { sv } from "@/i18n/sv";
 import { waLink } from "@/lib/wa";
 
 /**
- * Full contact form for a listing (ARCHITECTURE.md §3 sticky WhatsApp
- * contact, extended to match the form-first pattern sellers expect).
- * Records the lead through /api/leads (MySQL first, then GHL) and then
- * hands the visitor a WhatsApp link with the same message — a lead is
- * captured even if the visitor never sends the WhatsApp message.
+ * Full contact form for a listing. Records the lead through /api/leads (MySQL
+ * first, then the CRM webhook) and then, when the listing carries a seller
+ * channel, offers to continue there — a lead is captured either way.
+ *
+ * **Email is the required field and the phone is optional** (design doc §3.7).
+ * A Swedish buyer fills in a form and expects an email reply; the WhatsApp
+ * continuation below is the SPANISH AGENCY's channel, offered as an extra,
+ * never as the thing the buyer has to use.
  *
  * Success is only claimed when the POST actually succeeded (res.ok) or the
- * seller is reachable by WhatsApp anyway; a total failure shows an error
- * with the WhatsApp fallback instead of a false "¡Mensaje enviado!". The
- * WhatsApp continuation is a rendered <a> the visitor taps, not a
- * post-await window.open — popup blockers (iOS Safari especially) eat
- * window.open calls that don't happen synchronously in the tap handler.
+ * seller is reachable another way; a total failure shows an error instead of
+ * a false success. The WhatsApp continuation is a rendered <a> the visitor
+ * taps, not a post-await window.open — popup blockers (iOS Safari especially)
+ * eat window.open calls that don't happen synchronously in the tap handler.
  *
  * Two layouts from the same component: "card" (stacked, for the sticky
  * sidebar) and "panel" (two-column, for the full-width bottom section).
@@ -57,7 +59,6 @@ export function ContactForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const whatsappTarget = phone.trim() || contactWhatsapp;
     setState("sending");
     let captured = false;
     try {
@@ -68,8 +69,8 @@ export function ContactForm({
           leadType,
           listingPublicId,
           name: name || undefined,
-          email: email || undefined,
-          whatsapp: whatsappTarget || "unknown",
+          email,
+          phone: phone.trim() || undefined,
           message: fullMessage,
           utm: readUtm(),
         }),
@@ -78,8 +79,8 @@ export function ContactForm({
     } catch {
       // Network failure — handled below; WhatsApp may still reach the seller.
     }
-    // Without a WhatsApp fallback a failed capture means nobody got the
-    // message — say so instead of lying with a success state.
+    // Without a seller channel to fall back to, a failed capture means nobody
+    // got the message — say so instead of lying with a success state.
     setState(captured || waHref ? "sent" : "error");
   }
 
@@ -100,6 +101,7 @@ export function ContactForm({
         <input
           className="contact-form__input"
           type="email"
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Ingresa tu email"
@@ -116,22 +118,24 @@ export function ContactForm({
         <span className="contact-form__label">Teléfono</span>
         <div className="contact-form__phone">
           <span className="contact-form__phone-prefix" aria-hidden>
-            🇵🇾 +595
+            🇸🇪 +46
           </span>
+          {/* Optional: the reply goes to the address above. Asking a buyer
+              for a number before anyone has anything to call them about is
+              what the email-first flip exists to stop. */}
           <input
             className="contact-form__input contact-form__input--phone"
             type="tel"
-            required
             minLength={6}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="981 234 567"
+            placeholder="70 123 45 67"
           />
         </div>
       </label>
 
       <div className="contact-form__chips">
-        {es.quickQuestions.map((q) => (
+        {sv.quickQuestions.map((q) => (
           <button
             key={q}
             type="button"

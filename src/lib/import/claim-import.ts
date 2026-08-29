@@ -15,12 +15,24 @@ import "server-only";
 import { and, eq, like, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { listings, listingSources, locations } from "@/db/schema";
-import { makePublicId, contentHash, dedupKey, toPriceUsd } from "./normalize";
+import {
+  makePublicId,
+  contentHash,
+  dedupKey,
+  normalizeCatastral,
+  toPriceEur,
+} from "./normalize";
 import { syncDisplayCoords } from "@/lib/geo";
 import { slugify } from "@/lib/slug";
-import { USD_TO_PYG } from "@/lib/publish-queries";
 import type { ParsedListing } from "./from-url";
-import type { Operation, PropertyType, RawListing } from "./types";
+import type {
+  ChargesStatus,
+  EnergyRating,
+  LegalStatus,
+  Operation,
+  PropertyType,
+  RawListing,
+} from "./types";
 
 /** Which importer bucket a host belongs to — provenance, not per-site parsing. */
 export function sourceForHost(sourceUrl: string): (typeof listingSources.$inferInsert)["source"] {
@@ -30,9 +42,9 @@ export function sourceForHost(sourceUrl: string): (typeof listingSources.$inferI
   } catch {
     return "import_agency_site";
   }
-  if (host.includes("infocasas")) return "import_infocasas";
-  if (host.includes("clasipar")) return "import_clasipar";
-  if (host.includes("tulugar")) return "import_tulugar";
+  if (host.includes("idealista")) return "import_idealista";
+  if (host.includes("fotocasa")) return "import_fotocasa";
+  if (host.includes("kyero")) return "import_kyero";
   return "import_agency_site";
 }
 
@@ -40,7 +52,7 @@ export function sourceForHost(sourceUrl: string): (typeof listingSources.$inferI
  * Best-effort match of the page's free-text location to a `locations` row.
  *
  * Deliberately conservative: it returns a *suggestion*, and the form makes the
- * agent confirm it. Auto-assigning a barrio from a fuzzy string match would put
+ * agent confirm it. Auto-assigning a zona from a fuzzy string match would put
  * listings on the wrong SEO page, which is worse than asking.
  */
 export async function suggestLocation(
@@ -56,9 +68,15 @@ export async function suggestLocation(
     .from(locations);
 
   const normalized = slugify(haystack);
-  // Prefer the deepest match: a barrio is more useful than its city, and a
-  // page naming both should land on the barrio.
-  const byDepth = { barrio: 3, ciudad: 2, departamento: 1, pais: 0 } as const;
+  // Prefer the deepest match: a zona is more useful than its municipio, and a
+  // page naming both should land on the zona.
+  const byDepth = {
+    zona: 4,
+    municipio: 3,
+    provincia: 2,
+    comunidad: 1,
+    pais: 0,
+  } as const;
   let best: { id: number; depth: number; length: number } | null = null;
 
   for (const row of rows) {
@@ -74,6 +92,16 @@ export async function suggestLocation(
   return best?.id ?? null;
 }
 
+/** Which listing, if any, already holds this catastral reference. */
+async function catastralHolder(catastral: string): Promise<number | null> {
+  const [row] = await db
+    .select({ id: listings.id })
+    .from(listings)
+    .where(eq(listings.referenciaCatastral, catastral))
+    .limit(1);
+  return row?.id ?? null;
+}
+
 export interface ClaimInput {
   parsed: ParsedListing;
   /** Confirmed by the agent in the form, never inferred. */
@@ -81,14 +109,24 @@ export interface ClaimInput {
   propertyType: PropertyType;
   title: string;
   descriptionEs: string | null;
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
+  priceEur: number;
   bedrooms: number | null;
   bathrooms: number | null;
   parking: number | null;
-  areaM2: number | null;
-  landM2: number | null;
+  builtM2: number | null;
+  usableM2: number | null;
+  plotM2: number | null;
   locationId: number;
+  /**
+   * The Spain legal block, as the claiming agent states it. `energy_rating` is
+   * optional here for the same reason it is optional in the CSV: this creates
+   * a DRAFT, and the gate that needs the rating is the one on publishing.
+   */
+  referenciaCatastral: string | null;
+  energyRating: EnergyRating | null;
+  legalStatus: LegalStatus | null;
+  chargesStatus: ChargesStatus | null;
+  touristLicence: string | null;
   /** Who is claiming it. */
   userId: number;
   agencyId: number | null;
@@ -101,31 +139,56 @@ export interface ClaimInput {
  * function has no parameter that could make it anything else.
  */
 export async function createClaimedDraft(input: ClaimInput): Promise<number> {
-  const priceUsd = toPriceUsd(input.priceAmount, input.priceCurrency, USD_TO_PYG);
+  const priceEur = toPriceEur(input.priceEur);
   const publicId = makePublicId();
+
+  /**
+   * A catastral reference already held by another listing is a real-world
+   * conflict — two accounts claiming one physical property — and `uq_catastral`
+   * would refuse the insert outright. Dropping the reference here keeps the
+   * claim as a draft the reviewer can judge, with the conflict written on the
+   * row, instead of failing the agent's submission with a duplicate-key error
+   * and losing everything they typed.
+   */
+  const catastral = normalizeCatastral(input.referenciaCatastral);
+  const catastralHeldBy = catastral ? await catastralHolder(catastral) : null;
+  const claimedCatastral = catastralHeldBy == null ? catastral : null;
+  const conflictNote =
+    catastralHeldBy != null
+      ? ` — ATENCIÓN: la referencia catastral ${catastral} ya pertenece al aviso #${catastralHeldBy}`
+      : "";
 
   await db.insert(listings).values({
     publicId,
-    slug: slugify(input.title) || "propiedad",
+    slug: slugify(input.title) || "bostad",
     status: "draft",
     operation: input.operation,
     propertyType: input.propertyType,
     title: input.title.slice(0, 180),
     descriptionEs: input.descriptionEs,
-    priceAmount: String(input.priceAmount),
-    priceCurrency: input.priceCurrency,
-    priceUsd: String(priceUsd),
+    priceEur: String(priceEur),
     bedrooms: input.bedrooms,
     bathrooms: input.bathrooms,
     parking: input.parking,
-    areaM2: input.areaM2 != null ? String(input.areaM2) : null,
-    landM2: input.landM2 != null ? String(input.landM2) : null,
+    builtM2: input.builtM2 != null ? String(input.builtM2) : null,
+    usableM2: input.usableM2 != null ? String(input.usableM2) : null,
+    plotM2: input.plotM2 != null ? String(input.plotM2) : null,
     locationId: input.locationId,
+    referenciaCatastral: claimedCatastral,
+    energyRating: input.energyRating,
+    legalStatus: input.legalStatus ?? "desconocido",
+    chargesStatus: input.chargesStatus ?? "desconocido",
+    touristLicence:
+      input.operation === "alquiler_vacacional" ? input.touristLicence : null,
     agencyId: input.agencyId,
     ownerUserId: input.userId,
     isVerified: false,
     // What the reviewer needs to know, on the row itself.
-    reviewNotes: `Importado por el usuario desde ${input.parsed.sourceUrl.slice(0, 200)} (declaró ser el titular)`,
+    reviewNotes:
+      `Importado por el usuario desde ${input.parsed.sourceUrl.slice(0, 200)} (declaró ser el titular)${conflictNote}`.slice(
+        0,
+        280,
+      ),
   });
 
   const [created] = await db
@@ -147,13 +210,18 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
     descriptionEs: input.descriptionEs ?? undefined,
     operation: input.operation,
     propertyType: input.propertyType,
-    priceAmount: input.priceAmount,
-    priceCurrency: input.priceCurrency,
+    priceEur,
     bedrooms: input.bedrooms ?? undefined,
     bathrooms: input.bathrooms ?? undefined,
     parking: input.parking ?? undefined,
-    areaM2: input.areaM2 ?? undefined,
-    landM2: input.landM2 ?? undefined,
+    builtM2: input.builtM2 ?? undefined,
+    usableM2: input.usableM2 ?? undefined,
+    plotM2: input.plotM2 ?? undefined,
+    referenciaCatastral: input.referenciaCatastral ?? undefined,
+    energyRating: input.energyRating ?? undefined,
+    legalStatus: input.legalStatus ?? undefined,
+    chargesStatus: input.chargesStatus ?? undefined,
+    touristLicence: input.touristLicence ?? undefined,
     locationName: input.parsed.locationText ?? undefined,
     imageUrls: input.parsed.imageUrls,
   };
@@ -166,12 +234,20 @@ export async function createClaimedDraft(input: ClaimInput): Promise<number> {
     source: sourceForHost(input.parsed.sourceUrl),
     scopeAgencyId,
     sourceUrl: input.parsed.sourceUrl.slice(0, 600),
-    contentHash: contentHash(raw, priceUsd),
-    // NULL when the claimed page carried no phone — the claim flow never sets
-    // one, so this is the normal case. A claim is already identified by its
-    // source URL (findExistingClaim), which is a far stronger signal than the
-    // fuzzy key, so nothing is lost by not having one.
-    dedupKey: dedupKey(raw, priceUsd, input.locationId, scopeAgencyId),
+    contentHash: contentHash(raw, priceEur),
+    /**
+     * NULL when the claimed page carried no phone — the claim flow never sets
+     * one, so this is the normal case. A claim is already identified by its
+     * source URL (findExistingClaim), which is a far stronger signal than the
+     * fuzzy key, so nothing is lost by not having one.
+     *
+     * Also NULL whenever the row carries a catastral reference, matching the
+     * planner: a property with an exact identity must not additionally carry a
+     * bucketed key that a later, reference-less row could match against.
+     */
+    dedupKey: claimedCatastral
+      ? null
+      : dedupKey(raw, priceEur, input.locationId, scopeAgencyId),
     firstSeenAt: now,
     lastSeenAt: now,
   });

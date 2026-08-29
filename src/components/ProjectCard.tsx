@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatUsd } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import type { ProjectCard as Card } from "@/lib/queries";
 
 const STAGE_LABEL: Record<string, string> = {
@@ -44,8 +44,8 @@ export function ProjectCard({ card }: { card: Card }) {
           Proyecto{card.developerName ? ` · ${card.developerName}` : ""}
         </div>
         <div className="project-card__name">{card.name}</div>
-        {card.minPriceUsd != null && (
-          <div className="project-card__price">Desde {formatUsd(card.minPriceUsd)}</div>
+        {card.minPriceEur != null && (
+          <div className="project-card__price">Desde {formatEur(card.minPriceEur)}</div>
         )}
         <div className="project-card__meta">
           {card.availableUnits > 0 && (

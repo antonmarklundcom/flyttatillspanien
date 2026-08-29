@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { roleLabel, type UserRole } from "@/lib/auth/roles";
 import { logoutAction } from "@/lib/auth/actions";
 
@@ -48,12 +48,12 @@ export function PanelBar({
             <span className="panel-bar__role">{roleLabel(role)}</span>
             <form action={logoutAction}>
               <button className="panel-btn" type="submit">
-                {esPanel.logout}
+                {svPanel.logout}
               </button>
             </form>
           </div>
         </div>
-        <nav className="panel-tabs" aria-label={esPanel.navMain}>
+        <nav className="panel-tabs" aria-label={svPanel.navMain}>
           {tabs
             .filter((t) => (t.group ?? "main") === "main")
             .map((t) => (
@@ -64,8 +64,8 @@ export function PanelBar({
           /* A second row rather than a disclosure: a panel with no client JS
              cannot restore an open/closed state, and a menu that hides where
              you are is worse than one that is merely quieter. */
-          <nav className="panel-tabs panel-tabs--manage" aria-label={esPanel.navManage}>
-            <span className="panel-tabs__label">{esPanel.navManage}</span>
+          <nav className="panel-tabs panel-tabs--manage" aria-label={svPanel.navManage}>
+            <span className="panel-tabs__label">{svPanel.navManage}</span>
             {manage.map((t) => (
               <PanelTabLink key={t.href} tab={t} />
             ))}

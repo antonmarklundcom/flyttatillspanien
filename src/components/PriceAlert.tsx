@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
+import { sv } from "@/i18n/sv";
 
 /**
  * "Avisame si baja" price alert. There's no alerting engine yet, so this is
  * honest about what it does: it captures the request as a lead (leadType
  * buyer/renter, message flags the price alert) so the team can follow up
- * manually — the same channel every other inquiry uses. When a real alert
+ * manually — the same channel every other inquiry ussv. When a real alert
  * engine ships it reads these same leads.
  */
 export function PriceAlert({
@@ -55,7 +55,7 @@ export function PriceAlert({
   if (!open) {
     return (
       <button className="price-alert" onClick={() => setOpen(true)}>
-        🔔 {es.priceAlert}
+        🔔 {sv.priceAlert}
       </button>
     );
   }

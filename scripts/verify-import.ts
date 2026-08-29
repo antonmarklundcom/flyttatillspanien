@@ -1,14 +1,22 @@
 /**
- * Verify the import pipeline's two load-bearing promises:
+ * Verify the import pipeline's load-bearing promises:
  *
  *   1. Re-running the same file changes nothing (the M2 gate).
  *   2. Rows that are merely *similar* are never merged into one listing.
+ *   3. A row carrying a `referencia_catastral` is matched on it EXACTLY, and
+ *      a row without one falls back to the fuzzy key completely unchanged.
  *
- * (2) is the one that used to be false. `dedup_key` is bucketed to 5k USD and
+ * (2) is the one that used to be false. `dedup_key` is bucketed to 5 000 € and
  * 10 m² so a re-listed flat still collapses, and the contact phone was the only
  * thing keeping those buckets from describing every unit in a building. A
  * spreadsheet with a blank phone column therefore folded twenty flats into one
  * and reported success. Types cannot catch that; only running it can.
+ *
+ * (3) is the Spain addition, and **both of its paths are exercised below** —
+ * one fixture that dedups on the cadastral reference and one that dedups on
+ * the phone bucket. Testing only the exact path would leave the fuzzy one, the
+ * one that is actually dangerous, uncovered; testing only the fuzzy path would
+ * not notice the exact one silently never firing.
  *
  * Two halves:
  *
@@ -22,9 +30,16 @@
  * Refuses a non-local DATABASE_URL: it creates and deletes listings.
  */
 import { inArray, like } from "drizzle-orm";
-import { canonPhone, contentHash, dedupKey, toPriceUsd } from "../src/lib/import/normalize";
+import {
+  canonPhone,
+  contentHash,
+  dedupKey,
+  normalizeCatastral,
+  toPriceEur,
+} from "../src/lib/import/normalize";
 import { parseCsvRecords, recordToRaw } from "../src/lib/import/csv";
 import { readIntake } from "../src/lib/import/intake";
+import { canPublish } from "../src/lib/publish-gate";
 import type { RawListing } from "../src/lib/import/types";
 
 let failures = 0;
@@ -46,90 +61,164 @@ function raw(over: Partial<RawListing> = {}): RawListing {
   return {
     source: "whiteglove",
     operation: "venta",
-    propertyType: "departamento",
-    title: "Depto en Villa Morra",
-    priceAmount: 85000,
-    priceCurrency: "USD",
-    areaM2: 60,
-    locationName: "Villa Morra",
+    propertyType: "apartamento",
+    title: "Piso en Nueva Andalucía",
+    priceEur: 285000,
+    builtM2: 60,
+    locationName: "Marbella",
     ...over,
   };
 }
 
+/** A syntactically valid 20-character cadastral reference. */
+const RC_A = "9872023VH5797S0001WX";
+const RC_B = "1234567VH5797S0001WX";
+
 function pureChecks() {
   console.log("\nhashing");
 
-  const noPhone = dedupKey(raw(), 85000, 7);
+  const noPhone = dedupKey(raw(), 285000, 7);
   check("no contact phone → no dedup key", noPhone === null, String(noPhone));
 
-  const a = dedupKey(raw({ contactPhone: "0981123456" }), 85000, 7);
-  const b = dedupKey(raw({ contactPhone: "+595 981 123-456" }), 85000, 7);
+  const a = dedupKey(raw({ contactPhone: "952123456" }), 285000, 7);
+  const b = dedupKey(raw({ contactPhone: "+34 952 12 34 56" }), 285000, 7);
   check("phone formatting does not change the key", a !== null && a === b);
 
   // The bug, stated as a test: two different flats, same building, no phone.
-  const flat1 = dedupKey(raw({ title: "Depto 3A" }), 85000, 7);
-  const flat2 = dedupKey(raw({ title: "Depto 7B" }), 86000, 7);
+  const flat1 = dedupKey(raw({ title: "Piso 3A" }), 285000, 7);
+  const flat2 = dedupKey(raw({ title: "Piso 7B" }), 286000, 7);
   check(
     "two phone-less flats in one building do not collide",
     flat1 === null && flat2 === null,
   );
 
   // With a phone they still collapse — the bucketing is intentional.
-  const same1 = dedupKey(raw({ contactPhone: "0981123456" }), 85000, 7);
-  const same2 = dedupKey(raw({ contactPhone: "0981123456" }), 86000, 7);
+  const same1 = dedupKey(raw({ contactPhone: "952123456" }), 285000, 7);
+  const same2 = dedupKey(raw({ contactPhone: "952123456" }), 286000, 7);
   check("same property re-listed 1k higher still collapses", same1 === same2);
 
-  const scoped1 = dedupKey(raw({ contactPhone: "0981123456" }), 85000, 7, 1);
-  const scoped2 = dedupKey(raw({ contactPhone: "0981123456" }), 85000, 7, 2);
+  const scoped1 = dedupKey(raw({ contactPhone: "952123456" }), 285000, 7, 1);
+  const scoped2 = dedupKey(raw({ contactPhone: "952123456" }), 285000, 7, 2);
   check("different agencies get different keys", scoped1 !== scoped2);
   check("unscoped differs from scoped", scoped1 !== same1);
 
-  check("595 country code is stripped", canonPhone("+595981123456") === "981123456");
-  check("leading zero is stripped", canonPhone("0981 123-456") === "981123456");
+  check("+34 is stripped", canonPhone("+34 952 12 34 56") === "952123456");
+  check("00 34 is stripped too", canonPhone("0034952123456") === "952123456");
+  check(
+    "Sweden's trunk 0 is stripped, at home and abroad",
+    canonPhone("070-123 45 67") === "701234567" &&
+      canonPhone("+46 70 123 45 67") === "701234567",
+  );
+  check(
+    "a Spanish national number keeps all nine digits",
+    canonPhone("952 12 34 56") === "952123456",
+  );
 
-  const h1 = contentHash(raw(), 85000);
-  const h2 = contentHash(raw(), 85000);
-  const h3 = contentHash(raw({ priceAmount: 90000 }), 90000);
+  console.log("\nreferencia catastral");
+
+  check(
+    "spaces and case are normalized away",
+    normalizeCatastral(" 9872023vh5797s0001wx ") === RC_A,
+    String(normalizeCatastral(" 9872023vh5797s0001wx ")),
+  );
+  /**
+   * The important half. A 19-character value is NOT a cadastral reference, and
+   * handing it to the EXACT path would turn a typo into a strong claim that
+   * two properties are the same one. It must fall through to the fuzzy path.
+   */
+  check(
+    "a value that is not 20 characters is not a reference",
+    normalizeCatastral("9872023VH5797S0001W") === null &&
+      normalizeCatastral("9872023VH5797S0001WXY") === null &&
+      normalizeCatastral("") === null &&
+      normalizeCatastral(undefined) === null,
+  );
+
+  console.log("\npublish gate");
+
+  check(
+    "a row with no energy rating cannot be published",
+    !canPublish(raw()),
+  );
+  check(
+    "en_tramite and exento are answers, not silence",
+    canPublish(raw({ energyRating: "en_tramite" })) &&
+      canPublish(raw({ energyRating: "exento" })) &&
+      canPublish(raw({ energyRating: "D" })),
+  );
+
+  console.log("\ncontent hash");
+
+  const h1 = contentHash(raw(), 285000);
+  const h2 = contentHash(raw(), 285000);
+  const h3 = contentHash(raw({ priceEur: 290000 }), 290000);
   check("content hash is stable", h1 === h2);
   check("content hash moves with the price", h1 !== h3);
+  /**
+   * A seller obtaining the energy certificate, or an agency correcting
+   * `legal_status` from `desconocido` to `sin_lpo`, has changed what the
+   * advertisement says about the property. If the hash ignored the legal
+   * block, the most consequential corrections on the portal would arrive as
+   * "unchanged" and never reach the row.
+   */
+  check(
+    "content hash moves with the legal block",
+    contentHash(raw({ energyRating: "D" }), 285000) !== h1 &&
+      contentHash(raw({ legalStatus: "sin_lpo" }), 285000) !== h1 &&
+      contentHash(raw({ referenciaCatastral: RC_A }), 285000) !== h1,
+  );
 
-  check("PYG converts to USD", toPriceUsd(730_000_000, "PYG", 7300) === 100_000);
+  check("the euro price keeps its cents", toPriceEur(285_000.4) === 285_000.4);
 
   console.log("\nparsing");
 
   const csv =
-    "operation,property_type,title,price_amount,price_currency,location_name\n" +
-    'venta,casa,"Casa ""La Loma"", con patio",185000,USD,Luque\n' +
-    "alquiler,departamento,Depto céntrico,2500000,PYG,Asunción\n";
+    "operation,property_type,title,price_eur,location_name,energy_rating,legal_status\n" +
+    'venta,villa,"Villa ""La Loma"", con jardín",485000,Marbella,D,escritura_registrada\n' +
+    "alquiler,apartamento,Piso céntrico,1500,Málaga,,\n";
   const recs = parseCsvRecords(csv);
   check("csv row count", recs.length === 2, String(recs.length));
   check(
     "escaped quotes and embedded commas survive",
-    recs[0].title === 'Casa "La Loma", con patio',
+    recs[0].title === 'Villa "La Loma", con jardín',
     recs[0].title,
   );
 
-  const parsed = recordToRaw(recs[1], "whiteglove");
-  check("currency passes through", parsed.priceCurrency === "PYG");
+  const parsed = recordToRaw(recs[0], "whiteglove");
+  check("the legal block reads through", parsed.energyRating === "D");
+  check(
+    "an empty legal cell is absence, not a value",
+    recordToRaw(recs[1], "whiteglove").energyRating === undefined,
+  );
+  /**
+   * A stated-but-unrecognised value is a different fact from an absent one: a
+   * feed spelling `legal_status` as "sin licencia" is telling us something,
+   * and storing the `desconocido` default instead would turn a stated problem
+   * into "nobody said".
+   */
+  let badEnum = false;
+  try {
+    recordToRaw({ ...recs[0], legal_status: "sin licencia" }, "whiteglove");
+  } catch {
+    badEnum = true;
+  }
+  check("an unrecognised enum value is rejected, not defaulted", badEnum);
 
-  // es-PY thousands separators — `85.000` is 85 000, not a JS decimal (F3).
+  // es-ES thousands separators — `285.000` is 285 000, not a JS decimal (F3).
   const dotted = recordToRaw(
-    { ...recs[0], price_amount: "85.000", area_m2: "1.200" },
+    { ...recs[0], price_eur: "285.000", built_m2: "1.200" },
     "whiteglove",
   );
-  check("'85.000' parses as 85000, not 85", dotted.priceAmount === 85000, String(dotted.priceAmount));
-  check("'1.200' m² parses as 1200, not 1.2", dotted.areaM2 === 1200, String(dotted.areaM2));
-  const grouped = recordToRaw(
-    { ...recs[0], price_amount: "1.250.000", price_currency: "PYG" },
-    "whiteglove",
-  );
-  check("'1.250.000' parses as 1250000", grouped.priceAmount === 1_250_000, String(grouped.priceAmount));
-  const enUs = recordToRaw({ ...recs[0], price_amount: "185,000" }, "whiteglove");
-  check("'185,000' parses as 185000", enUs.priceAmount === 185_000, String(enUs.priceAmount));
+  check("'285.000' parses as 285000, not 285", dotted.priceEur === 285000, String(dotted.priceEur));
+  check("'1.200' m² parses as 1200, not 1.2", dotted.builtM2 === 1200, String(dotted.builtM2));
+  const grouped = recordToRaw({ ...recs[0], price_eur: "1.250.000" }, "whiteglove");
+  check("'1.250.000' parses as 1250000", grouped.priceEur === 1_250_000, String(grouped.priceEur));
+  const enUs = recordToRaw({ ...recs[0], price_eur: "185,000" }, "whiteglove");
+  check("'185,000' parses as 185000", enUs.priceEur === 185_000, String(enUs.priceEur));
 
   let threw = false;
   try {
-    recordToRaw({ ...recs[0], price_amount: "0" }, "whiteglove");
+    recordToRaw({ ...recs[0], price_eur: "0" }, "whiteglove");
   } catch {
     threw = true;
   }
@@ -142,7 +231,7 @@ function pureChecks() {
   check("no unknown columns reported", intake.unknownColumns.length === 0);
 
   const missing = readIntake(
-    Buffer.from("title,price_amount\nCasa,100\n", "utf8"),
+    Buffer.from("title,price_eur\nVilla,100\n", "utf8"),
     "x.csv",
     "whiteglove",
   );
@@ -212,11 +301,10 @@ async function dbChecks() {
     source: "whiteglove",
     sourceExternalId: String(n),
     operation: "venta",
-    propertyType: "departamento",
-    title: `${MARKER} Depto ${n}`,
-    priceAmount: 85000,
-    priceCurrency: "USD",
-    areaM2: 60,
+    propertyType: "apartamento",
+    title: `${MARKER} Flat ${n}`,
+    priceEur: 285000,
+    builtM2: 60,
     locationName: loc.name,
   }));
 
@@ -242,7 +330,7 @@ async function dbChecks() {
   const owned = await db
     .select({ id: listings.id, agencyId: listings.agencyId })
     .from(listings)
-    .where(like(listings.title, `${MARKER} Depto%`));
+    .where(like(listings.title, `${MARKER} Flat%`));
   check(
     "imported listings belong to the agency",
     owned.length === 3 && owned.every((l) => l.agencyId === agencyA),
@@ -258,16 +346,202 @@ async function dbChecks() {
     `created=${reportB.created} updated=${reportB.updated}`,
   );
 
+  /* ---------------------------------------------------------------- */
+  /* The two dedup paths, both exercised.                               */
+  /* ---------------------------------------------------------------- */
+
+  /**
+   * The EXACT path. Two rows for one physical property, from two different
+   * sources (so the external-id branch cannot claim them), carrying the same
+   * cadastral reference written two different ways. Nothing else about them
+   * matches: different title, different price bucket, no phone at all — so a
+   * merge here can only have come from the reference.
+   */
+  const catastralA: RawListing = {
+    source: "whiteglove",
+    sourceExternalId: "rc-1",
+    operation: "venta",
+    propertyType: "villa",
+    title: `${MARKER} Villa con RC`,
+    priceEur: 495000,
+    builtM2: 210,
+    referenciaCatastral: RC_A,
+    locationName: loc.name,
+  };
+  const catastralB: RawListing = {
+    ...catastralA,
+    source: "import_idealista",
+    sourceExternalId: "rc-2",
+    title: `${MARKER} Villa con RC (otro portal)`,
+    priceEur: 519000, // a different 5 000 € bucket
+    builtM2: 245, // a different 10 m² bucket
+    referenciaCatastral: ` ${RC_A.toLowerCase()} `,
+  };
+
+  const planRc1 = reportFromCommitted(
+    await commitImport(
+      db,
+      await planImport(db, [catastralA], { agencyId: agencyA }),
+      { agencyId: agencyA },
+    ),
+  );
+  check("a row with a cadastral reference creates a listing", planRc1.created === 1);
+
+  const planRc2 = reportFromCommitted(
+    await commitImport(
+      db,
+      await planImport(db, [catastralB], { agencyId: agencyA }),
+      { agencyId: agencyA },
+    ),
+  );
+  check(
+    "a second source with the same referencia catastral dedups onto it",
+    planRc2.deduped === 1 && planRc2.created === 0,
+    `deduped=${planRc2.deduped} created=${planRc2.created}`,
+  );
+
+  const rcRows = await db
+    .select({ id: listings.id, rc: listings.referenciaCatastral })
+    .from(listings)
+    .where(like(listings.title, `${MARKER} Villa con RC%`));
+  check(
+    "…as one listing, holding the normalized reference",
+    rcRows.length === 1 && rcRows[0].rc === RC_A,
+    JSON.stringify(rcRows),
+  );
+
+  /**
+   * The FUZZY path, unchanged. Same physical flat re-listed by the same agent
+   * at a slightly different price, no cadastral reference anywhere — so the
+   * bucketed phone key is the only thing that can match it, and it must still
+   * do so. This is the fallback the exact path skips, not a replacement for it.
+   */
+  const phoneA: RawListing = {
+    source: "whiteglove",
+    sourceExternalId: "ph-1",
+    operation: "venta",
+    propertyType: "apartamento",
+    title: `${MARKER} Piso sin RC`,
+    priceEur: 312000,
+    builtM2: 95,
+    contactPhone: "+34 952 99 88 77",
+    locationName: loc.name,
+  };
+  const phoneB: RawListing = {
+    ...phoneA,
+    source: "import_fotocasa",
+    sourceExternalId: "ph-2",
+    title: `${MARKER} Piso sin RC (otro portal)`,
+    priceEur: 311000, // same 5 000 € bucket (both round to 310 000)
+    builtM2: 96, // same 10 m² bucket
+    contactPhone: "0034952998877", // same number, written differently
+  };
+
+  const planPh1 = reportFromCommitted(
+    await commitImport(
+      db,
+      await planImport(db, [phoneA], { agencyId: agencyA }),
+      { agencyId: agencyA },
+    ),
+  );
+  check("a row with no cadastral reference creates a listing", planPh1.created === 1);
+
+  const planPh2 = reportFromCommitted(
+    await commitImport(
+      db,
+      await planImport(db, [phoneB], { agencyId: agencyA }),
+      { agencyId: agencyA },
+    ),
+  );
+  check(
+    "the phone-bucket fallback still dedups when there is no reference",
+    planPh2.deduped === 1 && planPh2.created === 0,
+    `deduped=${planPh2.deduped} created=${planPh2.created}`,
+  );
+
+  /**
+   * And the rule that makes the two paths safe together: a row carrying a
+   * reference must not ALSO leave a bucketed key on its provenance row, or a
+   * later reference-less row could match the fuzzy key of a property the fuzzy
+   * path was explicitly skipped for.
+   */
+  const rcSources = await db
+    .select({ dedupKey: listingSources.dedupKey })
+    .from(listingSources)
+    .where(inArray(listingSources.listingId, rcRows.map((r) => r.id)));
+  check(
+    "a catastral row carries no fuzzy key alongside its exact one",
+    rcSources.length > 0 && rcSources.every((r) => r.dedupKey === null),
+    JSON.stringify(rcSources),
+  );
+
+  /* ---------------------------------------------------------------- */
+  /* The publish gate, at the one transition that matters.             */
+  /* ---------------------------------------------------------------- */
+
+  const gated: RawListing = {
+    source: "whiteglove",
+    sourceExternalId: "gate-1",
+    operation: "venta",
+    propertyType: "villa",
+    title: `${MARKER} Villa sin energia`,
+    priceEur: 400000,
+    builtM2: 180,
+    locationName: loc.name,
+  };
+  const gatedReport = reportFromCommitted(
+    await commitImport(
+      db,
+      await planImport(db, [gated], { agencyId: agencyA }),
+      { agencyId: agencyA, publish: true },
+    ),
+  );
+  const [gatedRow] = await db
+    .select({ status: listings.status })
+    .from(listings)
+    .where(like(listings.title, `${MARKER} Villa sin energia%`));
+  check(
+    "publish:true does not publish a row with no energy rating",
+    gatedRow?.status === "pending_review",
+    String(gatedRow?.status),
+  );
+  check(
+    "…and the report says so rather than reporting a clean import",
+    gatedReport.errors.some((e) => e.reason.includes("Energiklass")),
+    JSON.stringify(gatedReport.errors),
+  );
+
+  const publishable: RawListing = {
+    ...gated,
+    sourceExternalId: "gate-2",
+    title: `${MARKER} Villa con energia`,
+    energyRating: "en_tramite",
+  };
+  await commitImport(
+    db,
+    await planImport(db, [publishable], { agencyId: agencyA }),
+    { agencyId: agencyA, publish: true },
+  );
+  const [publishedRow] = await db
+    .select({ status: listings.status })
+    .from(listings)
+    .where(like(listings.title, `${MARKER} Villa con energia%`));
+  check(
+    "…while `en_tramite` is an answer and publishes",
+    publishedRow?.status === "published",
+    String(publishedRow?.status),
+  );
+
   // A price change is an update, and the old price is captured for rollback.
-  const changed = flats.map((f) => ({ ...f, priceAmount: 99000 }));
+  const changed = flats.map((f) => ({ ...f, priceEur: 299000 }));
   const planC = await planImport(db, changed, { agencyId: agencyA });
   const committedC = await commitImport(db, planC, { agencyId: agencyA });
   const reportC = reportFromCommitted(committedC);
   check("a changed price updates, not duplicates", reportC.updated === 3);
   check(
     "the previous price is snapshotted",
-    committedC.every((r) => (r.previous as { priceUsd?: string })?.priceUsd === "85000.00"),
-    JSON.stringify(committedC.map((r) => (r.previous as { priceUsd?: string })?.priceUsd)),
+    committedC.every((r) => (r.previous as { priceEur?: string })?.priceEur === "285000.00"),
+    JSON.stringify(committedC.map((r) => (r.previous as { priceEur?: string })?.priceEur)),
   );
 
   // Rollback: restore the updates, delete what agency B created.
@@ -287,13 +561,13 @@ async function dbChecks() {
   check("rollback reports success", rollback.ok, rollback.note);
 
   const afterRollback = await db
-    .select({ priceUsd: listings.priceUsd })
+    .select({ priceEur: listings.priceEur })
     .from(listings)
-    .where(like(listings.title, `${MARKER} Depto%`));
+    .where(like(listings.title, `${MARKER} Flat%`));
   check(
     "rollback restored the old prices",
-    afterRollback.every((l) => l.priceUsd === "85000.00"),
-    JSON.stringify(afterRollback.map((l) => l.priceUsd)),
+    afterRollback.every((l) => l.priceEur === "285000.00"),
+    JSON.stringify(afterRollback.map((l) => l.priceEur)),
   );
 
   const second = await rollbackImportJob(jobId);

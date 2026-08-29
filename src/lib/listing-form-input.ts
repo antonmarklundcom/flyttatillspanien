@@ -9,8 +9,18 @@
 import type { ListingEditInput, ListingStatusValue } from "@/lib/listing-edit";
 import { ADMIN_STATUSES } from "@/lib/listing-edit";
 import {
+  CHARGES_STATUSES,
+  ENERGY_EMISSIONS,
+  ENERGY_RATINGS,
+  LAND_CLASSIFICATIONS,
+  LEGAL_STATUSES,
   OPERATIONS,
   PROPERTY_TYPES,
+  type ChargesStatus,
+  type EnergyEmissions,
+  type EnergyRating,
+  type LandClassification,
+  type LegalStatus,
   type Operation,
   type PropertyType,
 } from "@/lib/import/types";
@@ -35,6 +45,22 @@ function optNum(v: FormDataEntryValue | null): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
+/**
+ * A select whose value must be one of a fixed set, or null.
+ *
+ * Blank and unrecognised both become null rather than throwing: this is a
+ * form, the browser only ever submits the options rendered, and an
+ * unrecognised value means a hand-crafted POST that should change nothing
+ * rather than fail loudly and hint at what the column accepts.
+ */
+function optEnum<T extends string>(
+  v: FormDataEntryValue | null,
+  allowed: readonly T[],
+): T | null {
+  const s = str(v);
+  return (allowed as readonly string[]).includes(s) ? (s as T) : null;
+}
+
 export type ListingFormResult =
   | { ok: true; id: number; input: ListingEditInput }
   | { ok: false; id: number };
@@ -46,7 +72,7 @@ export function readListingForm(formData: FormData): ListingFormResult {
   const title = str(formData.get("title"));
   const operation = str(formData.get("operation")) as Operation;
   const propertyType = str(formData.get("propertyType")) as PropertyType;
-  const priceAmount = Number(str(formData.get("priceAmount")));
+  const priceEur = Number(str(formData.get("priceEur")));
   const locationId = Number(str(formData.get("locationId")));
   const status = str(formData.get("status")) as ListingStatusValue;
 
@@ -55,8 +81,8 @@ export function readListingForm(formData: FormData): ListingFormResult {
     title.length >= 8 &&
     OPERATIONS.includes(operation) &&
     PROPERTY_TYPES.includes(propertyType) &&
-    Number.isFinite(priceAmount) &&
-    priceAmount > 0 &&
+    Number.isFinite(priceEur) &&
+    priceEur > 0 &&
     Number.isInteger(locationId) &&
     locationId > 0 &&
     ADMIN_STATUSES.includes(status);
@@ -71,17 +97,53 @@ export function readListingForm(formData: FormData): ListingFormResult {
       descriptionEs: str(formData.get("descriptionEs")) || null,
       operation,
       propertyType,
-      priceAmount,
-      priceCurrency: str(formData.get("priceCurrency")) === "PYG" ? "PYG" : "USD",
+      priceEur,
       bedrooms: optInt(formData.get("bedrooms")),
       bathrooms: optInt(formData.get("bathrooms")),
       parking: optInt(formData.get("parking")),
-      areaM2: optNum(formData.get("areaM2")),
-      landM2: optNum(formData.get("landM2")),
+      builtM2: optNum(formData.get("builtM2")),
+      usableM2: optNum(formData.get("usableM2")),
+      plotM2: optNum(formData.get("plotM2")),
+      yearBuilt: optInt(formData.get("yearBuilt")),
       locationId,
       videoUrl: str(formData.get("videoUrl")).slice(0, 500) || null,
-      foreignExposure: formData.get("foreignExposure") === "1",
       status,
+      /* The Spain legal block. */
+      referenciaCatastral: str(formData.get("referenciaCatastral")) || null,
+      energyRating: optEnum<EnergyRating>(
+        formData.get("energyRating"),
+        ENERGY_RATINGS,
+      ),
+      energyEmissions: optEnum<EnergyEmissions>(
+        formData.get("energyEmissions"),
+        ENERGY_EMISSIONS,
+      ),
+      // `desconocido` rather than null when the form says nothing: the columns
+      // are NOT NULL and their default is the honest "nobody told us", which
+      // is exactly what an empty select means.
+      legalStatus:
+        optEnum<LegalStatus>(formData.get("legalStatus"), LEGAL_STATUSES) ??
+        "desconocido",
+      chargesStatus:
+        optEnum<ChargesStatus>(
+          formData.get("chargesStatus"),
+          CHARGES_STATUSES,
+        ) ?? "desconocido",
+      ibiAnnualEur: optNum(formData.get("ibiAnnualEur")),
+      communityMonthlyEur: optNum(formData.get("communityMonthlyEur")),
+      isVpo: formData.get("isVpo") === "1",
+      landClassification: optEnum<LandClassification>(
+        formData.get("landClassification"),
+        LAND_CLASSIFICATIONS,
+      ),
+      buildableM2: optNum(formData.get("buildableM2")),
+      touristLicence: str(formData.get("touristLicence")).slice(0, 40) || null,
+      /**
+       * `nota_simple_seen_at` is deliberately NOT read from this form.
+       * `updateListing()` ignores it outside the admin scope anyway, but the
+       * portal's own attestation has no business being parseable out of a
+       * shared form at all — /admin sets it through its own action.
+       */
     },
   };
 }

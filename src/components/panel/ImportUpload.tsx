@@ -14,7 +14,7 @@
  * re-parses the bytes rather than replaying a decision the client sent back.
  */
 import { useRef, useState } from "react";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import type { AgencyRow } from "@/lib/panel-queries";
 import type {
   CommitResult,
@@ -323,7 +323,7 @@ export function ImportUpload({
                 : `Importar ${report.created + report.updated + report.deduped} filas`}
             </button>
           </div>
-          <p className="panel-card__meta">{esPanel.importRollbackHint}</p>
+          <p className="panel-card__meta">{svPanel.importRollbackHint}</p>
         </article>
       ) : null}
     </>

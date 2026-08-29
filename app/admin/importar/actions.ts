@@ -260,6 +260,7 @@ export async function commitImportAction(
         listingId: null,
         title: null,
         error: e.reason,
+        note: null,
         previous: null,
       })),
     ]);

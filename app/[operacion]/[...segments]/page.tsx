@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { tokens } from "@/design/tokens";
 import Link from "next/link";
-import { esPrecios } from "@/i18n/es";
+import { svPrecios } from "@/i18n/sv";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import { brandName } from "@/lib/brand-server";
@@ -34,7 +34,7 @@ import {
   parseTypePlural,
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
-import { formatUsd } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import {
   bestMedianFor,
   getCityPrices as cityPricesFor,
@@ -530,26 +530,26 @@ export default async function CategoryPage({ params, searchParams }: Params) {
         <aside className="precios-cta">
           <span>
             {contextCell
-              ? esPrecios.contextMedian({
+              ? svPrecios.contextMedian({
                   typeLabel: t.typeLabel[contextCell.propertyType],
                   operationLabel:
-                    esPrecios.contextOperationLabel[contextCell.operation] ??
+                    svPrecios.contextOperationLabel[contextCell.operation] ??
                     contextCell.operation,
                   city: r.city.name,
                   median:
-                    contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd)
+                    contextCell.medianPriceEur != null
+                      ? formatEur(contextCell.medianPriceEur)
                       : "—",
                   perM2:
-                    contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd)
+                    contextCell.medianPriceM2Eur != null
+                      ? formatEur(contextCell.medianPriceM2Eur)
                       : null,
                   sample: contextCell.sampleSize,
                 })
-              : esPrecios.relatedPrices(r.city.name)}
+              : svPrecios.relatedPrices(r.city.name)}
           </span>
           <Link className="panel-btn" href={`/precios/${r.city.slug}`}>
-            {esPrecios.relatedPricesCta}
+            {svPrecios.relatedPricesCta}
           </Link>
         </aside>
       )}

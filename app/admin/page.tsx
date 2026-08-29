@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
-import { esPanel } from "@/i18n/es";
-import { formatPrice } from "@/lib/format";
+import { svPanel } from "@/i18n/sv";
+import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
 import { approveAction, rejectAction } from "./actions";
+import { publishBlockReason } from "@/lib/publish-gate";
 
 export const metadata: Metadata = {
   title: `Cola de revisión`,
@@ -37,10 +38,10 @@ export default async function AdminReviewPage() {
         tabs={adminTabs("review", queue.length, undefined, recentLeads)}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esPanel.adminReviewTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminReviewTitle}</h2>
 
         {queue.length === 0 ? (
-          <p className="panel-empty">{esPanel.adminReviewEmpty}</p>
+          <p className="panel-empty">{svPanel.adminReviewEmpty}</p>
         ) : (
           queue.map((row) => (
             <article className="panel-card" key={row.id}>
@@ -56,25 +57,34 @@ export default async function AdminReviewPage() {
                   </div>
                 </div>
                 <span className="panel-card__price">
-                  {formatPrice({
-                    priceAmount: row.priceAmount,
-                    priceCurrency: row.priceCurrency,
-                  })}
+                  {formatEur(row.priceEur)}
                 </span>
               </div>
 
               <div className="panel-card__body">
+                {/* The publish gate, said out loud. `approveAction` refuses a
+                    row that fails it either way (publish-gate.ts); showing the
+                    reason here is what stops the refusal reading as a bug. */}
+                {publishBlockReason(row) && (
+                  <p className="panel-card__warning" role="note">
+                    {publishBlockReason(row)}
+                  </p>
+                )}
                 <div className="panel-actions">
                   <form action={approveAction}>
                     <input type="hidden" name="listingId" value={row.id} />
-                    <button className="panel-btn panel-btn--primary" type="submit">
-                      {esPanel.approve}
+                    <button
+                      className="panel-btn panel-btn--primary"
+                      type="submit"
+                      disabled={Boolean(publishBlockReason(row))}
+                    >
+                      {svPanel.approve}
                     </button>
                   </form>
 
                   <details>
                     <summary className="panel-btn panel-btn--danger">
-                      {esPanel.reject}
+                      {svPanel.reject}
                     </summary>
                     <form action={rejectAction} className="panel-reject">
                       <input type="hidden" name="listingId" value={row.id} />
@@ -82,13 +92,13 @@ export default async function AdminReviewPage() {
                         className="auth-field__label"
                         htmlFor={`reason-${row.id}`}
                       >
-                        {esPanel.rejectReasonLabel}
+                        {svPanel.rejectReasonLabel}
                       </label>
                       <textarea
                         id={`reason-${row.id}`}
                         name="reason"
                         className="panel-reject__textarea"
-                        placeholder={esPanel.rejectReasonPlaceholder}
+                        placeholder={svPanel.rejectReasonPlaceholder}
                         required
                       />
                       <div>
@@ -96,7 +106,7 @@ export default async function AdminReviewPage() {
                           className="panel-btn panel-btn--danger"
                           type="submit"
                         >
-                          {esPanel.reject}
+                          {svPanel.reject}
                         </button>
                       </div>
                     </form>

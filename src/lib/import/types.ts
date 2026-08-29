@@ -61,6 +61,13 @@ export type PropertyState =
   | "en_construccion"
   | "segunda_mano";
 
+export const PROPERTY_STATES: readonly PropertyState[] = [
+  "obra_nueva",
+  "sobre_plano",
+  "en_construccion",
+  "segunda_mano",
+];
+
 export type EnergyRating =
   | "A"
   | "B"
@@ -82,6 +89,23 @@ export const ENERGY_RATINGS: readonly EnergyRating[] = [
   "G",
   "en_tramite",
   "exento",
+];
+
+/**
+ * The emissions scale has no `en_tramite`/`exento`: those two are answers
+ * about the *certificate*, and a certificate that does not exist yet has no
+ * emissions letter to report.
+ */
+export type EnergyEmissions = Exclude<EnergyRating, "en_tramite" | "exento">;
+
+export const ENERGY_EMISSIONS: readonly EnergyEmissions[] = [
+  "A",
+  "B",
+  "C",
+  "D",
+  "E",
+  "F",
+  "G",
 ];
 
 export type LegalStatus =

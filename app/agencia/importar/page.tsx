@@ -3,7 +3,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { ImportByUrl } from "@/components/panel/ImportByUrl";
 import { canManageTeam, requireAgencyContext } from "@/lib/auth/guards";
 import { listPublishLocations } from "@/lib/publish-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { agencyTabs } from "../tabs";
 import { confirmImportAction, readListingUrlAction } from "./actions";
 
@@ -15,9 +15,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  ownership: { text: esPanel.importOwnershipRequired, error: true },
-  invalid: { text: esPanel.profileInvalid, error: true },
-  duplicate: { text: esPanel.importDuplicateFlash, error: true },
+  ownership: { text: svPanel.importOwnershipRequired, error: true },
+  invalid: { text: svPanel.profileInvalid, error: true },
+  duplicate: { text: svPanel.importDuplicateFlash, error: true },
 };
 
 export default async function ImportPage({
@@ -41,9 +41,9 @@ export default async function ImportPage({
         tabs={agencyTabs("import", canManageTeam(ctx))}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esPanel.importTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.importTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 14, marginTop: 0 }}>
-          {esPanel.importSubtitle}
+          {svPanel.importSubtitle}
         </p>
 
         {flash ? (

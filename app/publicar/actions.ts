@@ -11,15 +11,21 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { agents, listings, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth/guards";
-import { alertOperator, getCrm, isMessagingConfigured } from "@/lib/crm";
-import { canonPhone } from "@/lib/import/normalize";
+import { alertOperator, isMessagingConfigured, sendOtpEmail } from "@/lib/crm";
 import {
+  CHARGES_STATUSES,
+  ENERGY_RATINGS,
+  LEGAL_STATUSES,
   OPERATIONS,
   PROPERTY_TYPES,
+  type ChargesStatus,
+  type EnergyRating,
+  type LegalStatus,
   type Operation,
   type PropertyType,
 } from "@/lib/import/types";
-import { esPanel } from "@/i18n/es";
+import { servedTitle } from "@/lib/listing-copy";
+import { svPanel } from "@/i18n/sv";
 import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
@@ -41,17 +47,44 @@ export interface DraftPayload {
   propertyType?: string;
   title?: string;
   descriptionEs?: string;
-  priceAmount?: number;
-  priceCurrency?: string;
+  priceEur?: number;
   bedrooms?: number | null;
   bathrooms?: number | null;
   parking?: number | null;
-  areaM2?: number | null;
-  landM2?: number | null;
+  builtM2?: number | null;
+  usableM2?: number | null;
+  plotM2?: number | null;
   locationId?: number;
   projectId?: number | null;
   videoUrl?: string;
-  foreignExposure?: boolean;
+  /* The Spain legal block the wizard collects. */
+  referenciaCatastral?: string;
+  energyRating?: string;
+  legalStatus?: string;
+  chargesStatus?: string;
+  touristLicence?: string;
+}
+
+/**
+ * A client-supplied value narrowed to a known enum member, or null.
+ *
+ * Silently null rather than an error: this is a wizard field, and an
+ * unrecognised value means a hand-built payload that should change nothing.
+ * The two NOT NULL columns fall back to `desconocido` at the query layer,
+ * which is the honest reading of "the lister did not say".
+ */
+function enumOrNull<T extends string>(
+  value: unknown,
+  allowed: readonly T[],
+): T | null {
+  const v = String(value ?? "").trim();
+  return (allowed as readonly string[]).includes(v) ? (v as T) : null;
+}
+
+/** A positive number from the client, or null. */
+function posNumOrNull(v: unknown): number | null {
+  const n = Number(v);
+  return v != null && Number.isFinite(n) && n > 0 ? n : null;
 }
 
 function posIntOrNull(v: unknown): number | null {
@@ -76,15 +109,14 @@ export async function saveDraftAction(
   const operation = payload.operation as Operation;
   const propertyType = payload.propertyType as PropertyType;
   const title = String(payload.title ?? "").trim();
-  const priceAmount = Number(payload.priceAmount);
-  const priceCurrency = payload.priceCurrency === "PYG" ? "PYG" : "USD";
+  const priceEur = Number(payload.priceEur);
   const locationId = Number(payload.locationId);
 
   if (!OPERATIONS.includes(operation)) return { ok: false, error: "operation" };
   if (!PROPERTY_TYPES.includes(propertyType))
     return { ok: false, error: "propertyType" };
   if (title.length < 8) return { ok: false, error: "title" };
-  if (!Number.isFinite(priceAmount) || priceAmount <= 0)
+  if (!Number.isFinite(priceEur) || priceEur <= 0)
     return { ok: false, error: "price" };
   if (!Number.isInteger(locationId) || locationId <= 0)
     return { ok: false, error: "location" };
@@ -99,23 +131,50 @@ export async function saveDraftAction(
       propertyType,
       title,
       descriptionEs: String(payload.descriptionEs ?? "").trim() || null,
-      priceAmount,
-      priceCurrency,
+      priceEur,
       bedrooms: posIntOrNull(payload.bedrooms),
       bathrooms: posIntOrNull(payload.bathrooms),
       parking: posIntOrNull(payload.parking),
-      areaM2:
-        payload.areaM2 != null && Number(payload.areaM2) > 0
-          ? Number(payload.areaM2)
-          : null,
-      landM2:
-        payload.landM2 != null && Number(payload.landM2) > 0
-          ? Number(payload.landM2)
-          : null,
+      builtM2: posNumOrNull(payload.builtM2),
+      usableM2: posNumOrNull(payload.usableM2),
+      plotM2: posNumOrNull(payload.plotM2),
       locationId,
       projectId: posIntOrNull(payload.projectId) || null,
       videoUrl: String(payload.videoUrl ?? "").trim().slice(0, 500) || null,
-      foreignExposure: payload.foreignExposure !== false,
+      /**
+       * Only forwarded when the wizard actually carried the key. A field the
+       * form did not ask about must not be written as "the seller cleared
+       * it" — see draftFields() in publish-queries.ts.
+       */
+      ...("referenciaCatastral" in payload && {
+        referenciaCatastral:
+          String(payload.referenciaCatastral ?? "").trim() || null,
+      }),
+      ...("energyRating" in payload && {
+        energyRating: enumOrNull<EnergyRating>(
+          payload.energyRating,
+          ENERGY_RATINGS,
+        ),
+      }),
+      ...("legalStatus" in payload && {
+        legalStatus:
+          enumOrNull<LegalStatus>(payload.legalStatus, LEGAL_STATUSES) ??
+          "desconocido",
+      }),
+      ...("chargesStatus" in payload && {
+        chargesStatus:
+          enumOrNull<ChargesStatus>(payload.chargesStatus, CHARGES_STATUSES) ??
+          "desconocido",
+      }),
+      ...("touristLicence" in payload && {
+        touristLicence: String(payload.touristLicence ?? "").trim() || null,
+      }),
+      /**
+       * `nota_simple_seen_at` is not in `DraftPayload` and must never be: it
+       * is the portal's attestation that a charges search was sighted, and a
+       * lister setting it about their own property is the one thing it must
+       * not be able to mean.
+       */
     },
   });
 
@@ -127,30 +186,33 @@ export type RequestOtpResult =
   | { ok: true }
   | {
       ok: false;
-      error: "invalid_number" | "cooldown" | "undeliverable";
+      error: "invalid_email" | "cooldown" | "undeliverable";
       cooldownMs?: number;
     };
 
 /**
- * Issue and deliver a WhatsApp OTP for the publisher's number. Only reachable
- * when a messaging provider exists — see publishDraftAction for the path that
- * runs when none does.
+ * Issue and deliver a login code to the publisher's own email address.
+ *
+ * The address is NOT taken from the client. It is the account's — the session
+ * already identifies the publisher, and letting the wizard name a destination
+ * would turn this into an open mail relay that sends a six-digit code to any
+ * address a script asks for.
+ *
+ * Only reachable when mail can actually be delivered — see publishDraftAction
+ * for the path that runs when it cannot.
  */
-export async function requestOtpAction(
-  rawWhatsapp: string,
-): Promise<RequestOtpResult> {
-  await requireUser("/publicar");
-  const whatsapp = canonPhone(rawWhatsapp);
-  if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
+export async function requestOtpAction(): Promise<RequestOtpResult> {
+  const user = await requireUser("/publicar");
+  const email = user.email.trim();
 
   if (!isMessagingConfigured()) return { ok: false, error: "undeliverable" };
 
-  const created = await createOtp(whatsapp);
+  const created = await createOtp(email);
   if (!created.ok)
     return { ok: false, error: "cooldown", cooldownMs: created.cooldownMs };
 
-  // A provider that fails to deliver must not look like a sent code.
-  const sent = await getCrm().sendOtp(whatsapp, created.code);
+  // A transport that failed to deliver must not look like a sent code.
+  const sent = await sendOtpEmail(email, created.code);
   if (!sent.ok) return { ok: false, error: "undeliverable" };
   return { ok: true };
 }
@@ -169,14 +231,21 @@ async function alertReviewSubmitted(
   verified: boolean,
 ): Promise<void> {
   const [row] = await db
-    .select({ title: listings.title })
+    .select({
+      title: listings.title,
+      titleSv: listings.titleSv,
+      sourceLang: listings.sourceLang,
+    })
     .from(listings)
     .where(eq(listings.id, draftId))
     .limit(1);
   await alertOperator({
     kind: "review_submitted",
-    title: esPanel.alertReviewTitle,
-    detail: esPanel.alertReviewDetail(row?.title ?? String(draftId), verified),
+    title: svPanel.alertReviewTitle,
+    detail: svPanel.alertReviewDetail(
+      row ? servedTitle(row) : String(draftId),
+      verified,
+    ),
     url: `${await siteOrigin()}/admin`,
   });
 }
@@ -185,37 +254,38 @@ export type PublishResult =
   | { ok: true }
   | {
       ok: false;
-      error: "invalid_number" | "otp" | "too_many" | "not_found" | "otp_required";
+      error: "invalid_email" | "otp" | "too_many" | "not_found" | "otp_required";
     };
 
 /**
- * Verify the OTP and submit the draft for review (draft → pending_review). On
- * success the publisher's WhatsApp is recorded and stamped verified, and the
- * listing carries the verified-publisher flag (the ✓ badge basis).
+ * Verify the code and submit the draft for review (draft → pending_review). On
+ * success the publisher's email is stamped verified and the listing carries
+ * the verified-publisher flag (the ✓ badge basis).
  *
- * Requires a messaging provider by definition — a code cannot be verified if it
+ * Requires a mail transport by definition — a code cannot be verified if it
  * could never be sent. Without one the wizard calls publishDraftAction instead.
  */
 export async function verifyAndPublishAction(params: {
   draftId: number;
-  whatsapp: string;
   code: string;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
   if (!isMessagingConfigured()) return { ok: false, error: "otp_required" };
 
-  const whatsapp = canonPhone(params.whatsapp);
-  if (whatsapp.length < 9) return { ok: false, error: "invalid_number" };
+  // Same address the code was sent to, and for the same reason: the session
+  // decides who this is, never the payload.
+  const email = user.email.trim();
 
-  const verified = await verifyOtp(whatsapp, params.code);
+  const verified = await verifyOtp(email, params.code);
   if (!verified.ok) {
     return { ok: false, error: verified.reason === "too_many" ? "too_many" : "otp" };
   }
 
-  // Record the verified WhatsApp on the user (idempotent; unique in schema).
+  // The address is already on the row (it is the account identity); what this
+  // proves is that the person holding the session can read that inbox.
   await db
     .update(users)
-    .set({ whatsapp, whatsappVerifiedAt: new Date() })
+    .set({ emailVerifiedAt: new Date() })
     .where(eq(users.id, user.id));
 
   const affected = await submitDraftForReview({
@@ -229,31 +299,33 @@ export async function verifyAndPublishAction(params: {
 }
 
 /**
- * Publish without phone verification, for the case where no messaging provider
- * is configured and an OTP could never arrive.
+ * Publish without email verification, for the case where no mail transport is
+ * configured and a code could never arrive.
  *
  * This is not a weaker door than it looks. /publicar already requires a login,
  * and since /registro exists that login is a real account with a password; the
  * draft is scoped to `owner_user_id`, so a publisher can only submit their own.
  * The listing still lands in `pending_review` and a human approves it. What is
- * genuinely missing is proof the *phone number* is real, so the row is NOT
+ * genuinely missing is proof the person holds the *inbox*, so the row is NOT
  * flagged verified — the ✓ badge stays something you grant deliberately.
  *
- * The guard is server-side: if messaging IS configured, this refuses and the
- * OTP path is the only way through. A client cannot opt out of verification.
+ * The guard is server-side: if mail IS configured, this refuses and the code
+ * path is the only way through. A client cannot opt out of verification.
  */
 export async function publishDraftAction(params: {
   draftId: number;
-  whatsapp?: string;
+  /** Optional callback number — the lister stays reachable, unverified. */
+  phone?: string;
 }): Promise<PublishResult> {
   const user = await requireUser("/publicar");
   if (isMessagingConfigured()) return { ok: false, error: "otp_required" };
 
-  // Keep the number if given — the agency still needs to be reachable — but
-  // record it as unverified.
-  const whatsapp = params.whatsapp ? canonPhone(params.whatsapp) : "";
-  if (whatsapp.length >= 9) {
-    await db.update(users).set({ whatsapp }).where(eq(users.id, user.id));
+  const phone = params.phone?.trim();
+  if (phone) {
+    await db
+      .update(users)
+      .set({ phone: phone.slice(0, 30) })
+      .where(eq(users.id, user.id));
   }
 
   const affected = await submitDraftForReview({

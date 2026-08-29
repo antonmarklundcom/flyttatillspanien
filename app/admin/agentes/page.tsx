@@ -8,7 +8,7 @@ import {
   type AdminAgentRow,
   type AgencyAdminCount,
 } from "@/lib/team-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../tabs";
 import { moveAgentAction } from "./actions";
 
@@ -20,17 +20,17 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  agent_moved: { text: esPanel.adminAgentMoved },
-  last_admin: { text: esPanel.adminAgentLastAdminError, error: true },
-  protected: { text: esPanel.adminAgentProtectedError, error: true },
-  invalid: { text: esPanel.profileInvalid, error: true },
+  agent_moved: { text: svPanel.adminAgentMoved },
+  last_admin: { text: svPanel.adminAgentLastAdminError, error: true },
+  protected: { text: svPanel.adminAgentProtectedError, error: true },
+  invalid: { text: svPanel.profileInvalid, error: true },
 };
 
 function roleName(role: string | null): string {
-  if (role === "agency_admin") return esPanel.teamRoleAdmin;
-  if (role === "agent") return esPanel.teamRoleAgent;
-  if (role === "admin") return esPanel.teamRoleSuperAdmin;
-  return esPanel.teamRoleNoLogin;
+  if (role === "agency_admin") return svPanel.teamRoleAdmin;
+  if (role === "agent") return svPanel.teamRoleAgent;
+  if (role === "admin") return svPanel.teamRoleSuperAdmin;
+  return svPanel.teamRoleNoLogin;
 }
 
 /**
@@ -71,21 +71,21 @@ export default async function AdminAgentsPage({
           </p>
         ) : null}
 
-        <h2 className="panel-section__title">{esPanel.adminAgentsTitle}</h2>
-        <p className="panel-card__meta">{esPanel.adminAgentsHint}</p>
+        <h2 className="panel-section__title">{svPanel.adminAgentsTitle}</h2>
+        <p className="panel-card__meta">{svPanel.adminAgentsHint}</p>
 
         {/* Never silently invent a responsable when an agent is moved in —
             name the agencies that have none and let the founder decide. */}
         {orphanAgencies.length > 0 ? (
           <p className="auth-error">
-            {esPanel.adminAgenciesWithoutAdmin(
+            {svPanel.adminAgenciesWithoutAdmin(
               orphanAgencies.map((a) => a.name).join(", "),
             )}
           </p>
         ) : null}
 
         {agents.length === 0 ? (
-          <p className="panel-empty">{esPanel.adminAgentsEmpty}</p>
+          <p className="panel-empty">{svPanel.adminAgentsEmpty}</p>
         ) : (
           agents.map((agent) => (
             <AgentCard key={agent.agentId} agent={agent} agencies={agencies} />
@@ -113,56 +113,56 @@ function AgentCard({
         <div>
           <h3 className="panel-card__title">{agent.name}</h3>
           <div className="panel-card__meta">
-            <span>{agent.email ?? esPanel.teamRoleNoLogin}</span>
-            <span>{agent.agencyName ?? esPanel.agencyNone}</span>
+            <span>{agent.email ?? svPanel.teamRoleNoLogin}</span>
+            <span>{agent.agencyName ?? svPanel.agencyNone}</span>
             <span>{roleName(agent.role)}</span>
-            {agent.whatsapp ? <span>{agent.whatsapp}</span> : null}
+            {agent.phone ? <span>{agent.phone}</span> : null}
           </div>
         </div>
       </div>
 
       <div className="panel-card__body">
         {isSuperAdmin ? (
-          <p className="panel-card__meta">{esPanel.adminAgentProtectedHint}</p>
+          <p className="panel-card__meta">{svPanel.adminAgentProtectedHint}</p>
         ) : (
           <form action={moveAgentAction} className="panel-form">
             <input type="hidden" name="agentId" value={agent.agentId} />
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.agencyLabel}</span>
+              <span className="auth-field__label">{svPanel.agencyLabel}</span>
               <select
                 className="panel-select"
                 name="agencyId"
                 defaultValue={agent.agencyId ? String(agent.agencyId) : ""}
               >
-                <option value="">{esPanel.agencyNone}</option>
+                <option value="">{svPanel.agencyNone}</option>
                 {agencies.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.adminCount === 0
-                      ? esPanel.adminAgencyNoAdminOption(a.name)
+                      ? svPanel.adminAgencyNoAdminOption(a.name)
                       : a.name}
                   </option>
                 ))}
               </select>
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.teamRoleLabel}</span>
+              <span className="auth-field__label">{svPanel.teamRoleLabel}</span>
               <select
                 className="panel-select"
                 name="role"
                 defaultValue={agent.role === "agency_admin" ? "agency_admin" : "agent"}
               >
-                <option value="agent">{esPanel.teamRoleAgent}</option>
-                <option value="agency_admin">{esPanel.teamRoleAdmin}</option>
+                <option value="agent">{svPanel.teamRoleAgent}</option>
+                <option value="agency_admin">{svPanel.teamRoleAdmin}</option>
               </select>
             </label>
             <div className="panel-form__field panel-form__field--action">
               <button className="panel-btn panel-btn--primary" type="submit">
-                {esPanel.adminAgentMove}
+                {svPanel.adminAgentMove}
               </button>
             </div>
             {agent.userId == null ? (
               <p className="panel-card__meta" style={{ flexBasis: "100%" }}>
-                {esPanel.adminAgentNoLoginHint}
+                {svPanel.adminAgentNoLoginHint}
               </p>
             ) : null}
           </form>

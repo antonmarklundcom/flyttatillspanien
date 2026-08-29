@@ -54,6 +54,42 @@ Format: `- [phase found] area — what, and what would fix it.`
   so a stale comment anywhere else survives as false documentation unless the
   phase that touches the file fixes it.
 
+- [2] The importer's operator-facing skip reasons are a mix of English
+  ("unresolved location '…'") and inherited Spanish ("precio de venta
+  sospechosamente bajo"), while everything else the operator reads is Swedish.
+  They are produced in `src/lib/import/upsert.ts` and surface in the import
+  report. Moving them into `sv.ts` is the fix; Phase 2 corrected the one that
+  was factually wrong (it quoted US$) and left the language to whichever phase
+  is already editing that copy. `PUBLISH_BLOCK_MESSAGE` is the shape to follow.
+
+- [2] `/admin` and `/agencia` still carry inline Spanish labels
+  (`LEAD_TYPE_LABEL`, `ROUTED_LABEL`, `OPERATION_OPTIONS`, the panel's inline
+  Spanish `listingStatusLabel` neighbours, `/datos`'s prose and its
+  `toLocaleString("es-PY")` calls). Phase 2 changed only what stopped
+  compiling or stated something false; the panels are Phase 4's and the
+  editorial pass is Phase 5's. They compile and they are not wrong about the
+  data — they are just in the wrong language.
+
+- [2] `scripts/check-migrations.ts` still probes for "migration 0009" by name
+  when it reports on the `leads.routed_to` owner lane. Phase 1 regenerated the
+  twelve inherited migrations as a single `0000_spain_schema.sql`, so the
+  sentence names a file that does not exist. The check itself reads
+  `information_schema` and is correct; only its narration is stale.
+
+- [2] `npm audit` reports four high-severity advisories, all in transitive
+  dependencies of `next` (`postcss`, `sharp`) rather than anything this repo
+  imports directly, and `package.json` already pins an override for `postcss`.
+  Resolving them means moving Next itself, which is not a change to make in the
+  middle of a phased build with no staging environment.
+
+- [2] `src/lib/import/from-url.ts` reads a price only when the page says euros,
+  and leaves it blank with a note otherwise. That is deliberate — inventing an
+  exchange rate on a scrape is worse than an empty field — but it means the
+  English-language Spanish portals that quote in £ or $ hand the agent a form
+  with no price in it. If claim-by-link ever becomes a volume path, reading the
+  page's own currency and asking the agent to confirm a converted figure is the
+  upgrade, not silently converting.
+
 - [1] Local development pulls `mysql:8.4` from Docker Hub. In this build
   environment the Hub blob CDN (`production.cloudfront.docker.com`) is blocked by
   the outbound proxy, and the image had to come from `mirror.gcr.io/library/mysql:8.4`

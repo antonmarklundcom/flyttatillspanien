@@ -10,7 +10,7 @@
  * checkbox is required before anything is written.
  */
 import { useState } from "react";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PublishLocation } from "@/lib/publish-queries";
 import type { ParsedListing } from "@/lib/import/from-url";
@@ -23,15 +23,15 @@ const OPERATION_OPTIONS = [
 ] as const;
 
 const ERROR_TEXT: Record<string, string> = {
-  bad_url: esPanel.importErrorBadUrl,
-  blocked_host: esPanel.importErrorBlocked,
-  unreachable: esPanel.importErrorUnreachable,
-  http_error: esPanel.importErrorUnreachable,
-  not_html: esPanel.importErrorNotHtml,
-  too_large: esPanel.importErrorTooLarge,
-  too_many_redirects: esPanel.importErrorUnreachable,
-  rate_limited: esPanel.importErrorRateLimited,
-  generic: esPanel.importErrorGeneric,
+  bad_url: svPanel.importErrorBadUrl,
+  blocked_host: svPanel.importErrorBlocked,
+  unreachable: svPanel.importErrorUnreachable,
+  http_error: svPanel.importErrorUnreachable,
+  not_html: svPanel.importErrorNotHtml,
+  too_large: svPanel.importErrorTooLarge,
+  too_many_redirects: svPanel.importErrorUnreachable,
+  rate_limited: svPanel.importErrorRateLimited,
+  generic: svPanel.importErrorGeneric,
 };
 
 export function ImportByUrl({
@@ -79,7 +79,7 @@ export function ImportByUrl({
     <>
       <div className="panel-card">
         <label className="panel-form__field" style={{ flexBasis: "100%" }}>
-          <span className="auth-field__label">{esPanel.importUrlLabel}</span>
+          <span className="auth-field__label">{svPanel.importUrlLabel}</span>
           <input
             className="auth-field__input"
             type="url"
@@ -96,7 +96,7 @@ export function ImportByUrl({
             onClick={() => void read()}
             disabled={busy || url.trim().length === 0}
           >
-            {busy ? esPanel.importReading : esPanel.importFetch}
+            {busy ? svPanel.importReading : svPanel.importFetch}
           </button>
         </div>
         {error && (
@@ -105,22 +105,22 @@ export function ImportByUrl({
           </p>
         )}
         <p style={{ color: "#55655F", fontSize: 12.5, marginTop: 14 }}>
-          {esPanel.importLegalNote}
+          {svPanel.importLegalNote}
         </p>
       </div>
 
       {parsed && (
         <form action={confirmAction} className="panel-card" style={{ marginTop: "1.5rem" }}>
           <h2 style={{ fontSize: 18, margin: "0 0 .25rem" }}>
-            {esPanel.importReviewTitle}
+            {svPanel.importReviewTitle}
           </h2>
           <p style={{ color: "#55655F", fontSize: 13, margin: "0 0 1rem" }}>
-            {esPanel.importReviewHint}
+            {svPanel.importReviewHint}
           </p>
 
           {duplicate && (
             <p className="panel-flash panel-flash--error">
-              {esPanel.importDuplicate} “{duplicate.title}”
+              {svPanel.importDuplicate} “{duplicate.title}”
             </p>
           )}
 
@@ -141,7 +141,7 @@ export function ImportByUrl({
 
           <div className="panel-form">
             <label className="panel-form__field" style={{ flexBasis: "100%" }}>
-              <span className="auth-field__label">{esPanel.listingTitleLabel}</span>
+              <span className="auth-field__label">{svPanel.listingTitleLabel}</span>
               <input
                 className="auth-field__input"
                 name="title"
@@ -153,7 +153,7 @@ export function ImportByUrl({
 
             <label className="panel-form__field" style={{ flexBasis: "100%" }}>
               <span className="auth-field__label">
-                {esPanel.listingDescriptionLabel}
+                {svPanel.listingDescriptionLabel}
               </span>
               <textarea
                 className="panel-reject__textarea"
@@ -164,7 +164,7 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingOperationLabel}</span>
+              <span className="auth-field__label">{svPanel.listingOperationLabel}</span>
               <select
                 className="panel-select"
                 name="operation"
@@ -181,7 +181,7 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingTypeLabel}</span>
+              <span className="auth-field__label">{svPanel.listingTypeLabel}</span>
               <select
                 className="panel-select"
                 name="propertyType"
@@ -198,32 +198,23 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingPriceLabel}</span>
+              <span className="auth-field__label">{svPanel.listingPriceLabel}</span>
+              {/* No currency select: EUR is the only stored price. A page
+                  quoting £ or $ leaves this blank with a note rather than
+                  converting — see from-url.ts. */}
               <input
                 className="auth-field__input"
-                name="priceAmount"
+                name="priceEur"
                 type="number"
                 min={1}
                 step={1}
-                defaultValue={parsed.priceAmount ?? ""}
+                defaultValue={parsed.priceEur ?? ""}
                 required
               />
             </label>
 
-            <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingCurrencyLabel}</span>
-              <select
-                className="panel-select"
-                name="priceCurrency"
-                defaultValue={parsed.priceCurrency ?? "USD"}
-              >
-                <option value="USD">USD</option>
-                <option value="PYG">Gs</option>
-              </select>
-            </label>
-
             <label className="panel-form__field" style={{ flexBasis: "100%" }}>
-              <span className="auth-field__label">{esPanel.importLocationLabel}</span>
+              <span className="auth-field__label">{svPanel.importLocationLabel}</span>
               <select
                 className="panel-select"
                 name="locationId"
@@ -240,7 +231,7 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingBedroomsLabel}</span>
+              <span className="auth-field__label">{svPanel.listingBedroomsLabel}</span>
               <input
                 className="auth-field__input"
                 name="bedrooms"
@@ -251,7 +242,7 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingBathroomsLabel}</span>
+              <span className="auth-field__label">{svPanel.listingBathroomsLabel}</span>
               <input
                 className="auth-field__input"
                 name="bathrooms"
@@ -262,7 +253,7 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingParkingLabel}</span>
+              <span className="auth-field__label">{svPanel.listingParkingLabel}</span>
               <input
                 className="auth-field__input"
                 name="parking"
@@ -273,44 +264,87 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingAreaLabel}</span>
+              <span className="auth-field__label">{svPanel.listingBuiltLabel}</span>
               <input
                 className="auth-field__input"
-                name="areaM2"
+                name="builtM2"
                 type="number"
                 min={0}
                 step="0.01"
-                defaultValue={parsed.areaM2 ?? ""}
+                defaultValue={parsed.builtM2 ?? ""}
               />
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.listingLandLabel}</span>
+              <span className="auth-field__label">
+                {svPanel.listingUsableLabel}
+              </span>
               <input
                 className="auth-field__input"
-                name="landM2"
+                name="usableM2"
                 type="number"
                 min={0}
                 step="0.01"
-                defaultValue={parsed.landM2 ?? ""}
               />
+            </label>
+
+            <label className="panel-form__field">
+              <span className="auth-field__label">{svPanel.listingPlotLabel}</span>
+              <input
+                className="auth-field__input"
+                name="plotM2"
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={parsed.plotM2 ?? ""}
+              />
+            </label>
+
+            <label className="panel-form__field" style={{ flexBasis: "260px" }}>
+              <span className="auth-field__label">{svPanel.catastralLabel}</span>
+              <input
+                className="auth-field__input"
+                name="referenciaCatastral"
+                type="text"
+                maxLength={40}
+              />
+              <span className="auth-field__hint">{svPanel.catastralHint}</span>
+            </label>
+
+            <label className="panel-form__field">
+              <span className="auth-field__label">
+                {svPanel.energyRatingLabel}
+              </span>
+              <select className="panel-select" name="energyRating" defaultValue="">
+                <option value="">—</option>
+                {["A", "B", "C", "D", "E", "F", "G", "en_tramite", "exento"].map(
+                  (o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ),
+                )}
+              </select>
+              <span className="auth-field__hint">
+                {svPanel.energyRatingHint}
+              </span>
             </label>
           </div>
 
           <p style={{ color: "#55655F", fontSize: 12.5, marginTop: 4 }}>
-            {esPanel.importPhotosNote}
+            {svPanel.importPhotosNote}
           </p>
 
           {/* The attestation. Required, unchecked by default, and re-checked
               server-side — the claim is the legal basis for the import. */}
           <label className="auth-choice__option" style={{ marginTop: 14 }}>
             <input type="checkbox" name="ownership" value="1" required />
-            <span style={{ fontSize: 13.5 }}>{esPanel.importOwnershipLabel}</span>
+            <span style={{ fontSize: 13.5 }}>{svPanel.importOwnershipLabel}</span>
           </label>
 
           <div style={{ marginTop: 16 }}>
             <button className="panel-btn panel-btn--primary" type="submit">
-              {esPanel.importCreate}
+              {svPanel.importCreate}
             </button>
           </div>
         </form>

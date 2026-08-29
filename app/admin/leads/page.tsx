@@ -9,7 +9,7 @@ import {
   listAllLeads,
   type AdminLeadRow,
 } from "@/lib/panel-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
@@ -32,7 +32,7 @@ const LEAD_TYPES = [
 ] as const;
 
 const LEAD_TYPE_LABEL: Record<string, string> = {
-  all: esPanel.filterAll,
+  all: svPanel.filterAll,
   buyer: "Compra",
   renter: "Alquiler",
   seller: "Venta",
@@ -50,8 +50,13 @@ const ROUTED_LABEL: Record<string, string> = {
   developer: "Desarrolladora",
 };
 
-function waReplyHref(whatsapp: string): string {
-  return waLink(whatsapp) ?? `https://wa.me/${whatsapp.replace(/\D/g, "")}`;
+/**
+ * Reply to a lead, by email. Sweden is email-first and `leads.email` is the
+ * required column now, so the reply button opens a compose window rather than
+ * a chat: `leads.phone` is optional and most rows will not carry one.
+ */
+function replyHref(email: string): string {
+  return `mailto:${encodeURIComponent(email)}`;
 }
 
 /**
@@ -60,17 +65,14 @@ function waReplyHref(whatsapp: string): string {
  * founder's to answer directly.
  */
 function forwardHref(lead: AdminLeadRow) {
-  if (!lead.ownerWhatsapp) return null;
-  const href = waLink(
-    lead.ownerWhatsapp,
-    esPanel.forwardLeadMessage({
-      listingTitle: lead.listingTitle,
-      name: lead.name,
-      whatsapp: lead.whatsapp,
-      message: lead.message,
-    }),
-  );
-  if (!href) return null;
+  if (!lead.ownerEmail) return null;
+  const body = svPanel.forwardLeadMessage({
+    listingTitle: lead.listingTitle,
+    name: lead.name,
+    email: lead.email,
+    message: lead.message,
+  });
+  const href = `mailto:${encodeURIComponent(lead.ownerEmail)}?body=${encodeURIComponent(body)}`;
   return (
     <a
       className="panel-btn"
@@ -78,7 +80,7 @@ function forwardHref(lead: AdminLeadRow) {
       target="_blank"
       rel="noopener noreferrer"
     >
-      {esPanel.forwardLead}
+      {svPanel.forwardLead}
     </a>
   );
 }
@@ -122,14 +124,14 @@ export default async function AdminLeadsPage({
         tabs={adminTabs("leads", reviewCount, undefined, recentLeads)}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">{esPanel.adminLeadsTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminLeadsTitle}</h2>
         <p style={{ color: "#55655F", fontSize: 13, marginTop: 0 }}>
-          {esPanel.adminLeadsHint}
+          {svPanel.adminLeadsHint}
         </p>
         {/* Says what the tab badge is counting — a bare number next to
             "Consultas" would read as the all-time total. */}
         {recentLeads > 0 ? (
-          <p className="panel-note">{esPanel.adminLeadsRecent(recentLeads)}</p>
+          <p className="panel-note">{svPanel.adminLeadsRecent(recentLeads)}</p>
         ) : null}
 
         <nav className="panel-chips">
@@ -159,7 +161,7 @@ export default async function AdminLeadsPage({
           ) : null}
           <label className="panel-form__field" style={{ flexBasis: "280px" }}>
             <span className="auth-field__label">
-              {esPanel.adminLeadsSearchLabel}
+              {svPanel.adminLeadsSearchLabel}
             </span>
             <input
               className="auth-field__input"
@@ -170,13 +172,13 @@ export default async function AdminLeadsPage({
           </label>
           <div className="panel-form__field panel-form__field--action">
             <button className="panel-btn" type="submit">
-              {esPanel.searchSubmit}
+              {svPanel.searchSubmit}
             </button>
           </div>
         </form>
 
         {rows.length === 0 ? (
-          <p className="panel-empty">{esPanel.adminLeadsEmpty}</p>
+          <p className="panel-empty">{svPanel.adminLeadsEmpty}</p>
         ) : (
           rows.map((lead) => (
             <article className="panel-card" key={lead.id}>
@@ -190,14 +192,14 @@ export default async function AdminLeadsPage({
                       {LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}
                     </span>
                     <span>{formatWhen(lead.createdAt)}</span>
-                    <span>{lead.whatsapp}</span>
-                    {lead.email ? <span>{lead.email}</span> : null}
+                    <span>{lead.email}</span>
+                    {lead.phone ? <span>{lead.phone}</span> : null}
                     {/* Who owns the follow-up: an agency, a particular
                         seller who has no panel yet, or you. */}
                     <span>
                       {lead.agencyName ??
-                        (lead.ownerWhatsapp
-                          ? `${esPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerWhatsapp}`
+                        (lead.ownerEmail
+                          ? `${svPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerEmail}`
                           : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
@@ -220,11 +222,11 @@ export default async function AdminLeadsPage({
                 <div className="panel-card__actions">
                   <a
                     className="panel-btn panel-btn--whatsapp"
-                    href={waReplyHref(lead.whatsapp)}
+                    href={replyHref(lead.email)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    {esPanel.contactLead}
+                    {svPanel.contactLead}
                   </a>
                   {/* A particular seller has no inbox of their own (PLAN.md
                       D8), so the lead only reaches them if it is forwarded. */}

@@ -21,7 +21,12 @@ const TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 export interface SessionUser {
   id: number;
   name: string | null;
-  email: string | null;
+  /**
+   * NOT NULL since the email-first flip (§3.7): it is the account identity,
+   * the login, and where a one-time code is sent. Callers may rely on it
+   * being present rather than guarding every use.
+   */
+  email: string;
   role: UserRole;
 }
 

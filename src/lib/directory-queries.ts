@@ -13,7 +13,6 @@ import {
   agencies,
   agents,
   developers,
-  financingPrograms,
   listings,
   locations,
   projects,
@@ -29,7 +28,9 @@ export interface AgencyDirectoryRow {
   slug: string;
   logoUrl: string | null;
   isVerified: boolean;
-  plan: "free" | "destacado" | "partner";
+  plan: (typeof agencies.$inferSelect)["plan"];
+  /** So a directory card can label a relocation partner rather than blur it. */
+  kind: (typeof agencies.$inferSelect)["kind"];
   listingCount: number;
   agentCount: number;
   /** Cities where this agency has published inventory, most listings first. */
@@ -50,6 +51,7 @@ async function listAgenciesForDirectoryUncached(): Promise<AgencyDirectoryRow[]>
       logoUrl: agencies.logoUrl,
       isVerified: agencies.isVerified,
       plan: agencies.plan,
+      kind: agencies.kind,
       listingCount: sql<number>`COUNT(DISTINCT ${listings.id})`,
     })
     .from(agencies)
@@ -67,15 +69,16 @@ async function listAgenciesForDirectoryUncached(): Promise<AgencyDirectoryRow[]>
       agencies.logoUrl,
       agencies.isVerified,
       agencies.plan,
+      agencies.kind,
     )
     .orderBy(desc(sql`COUNT(DISTINCT ${listings.id})`));
 
   if (rows.length === 0) return [];
 
   // City spread + team size, one query each rather than N per agency.
-  // Listings hang off either a ciudad or one of its barrios, so the location
-  // names are rolled up to ciudad level in memory — a directory card saying
-  // "Recoleta · Villa Morra" instead of "Asunción" reads as noise.
+  // Listings hang off either a municipio or one of its zonas, so the location
+  // names are rolled up to municipio level in memory — a directory card saying
+  // "Nueva Andalucía · Puerto Banús" instead of "Marbella" reads as noise.
   const [locRows, listingLocRows, agentRows] = await Promise.all([
     db
       .select({
@@ -104,9 +107,9 @@ async function listAgenciesForDirectoryUncached(): Promise<AgencyDirectoryRow[]>
   const cityNameOf = (locationId: number): string | null => {
     const loc = locById.get(locationId);
     if (!loc) return null;
-    if (loc.level === "ciudad") return loc.name;
+    if (loc.level === "municipio") return loc.name;
     const parent = loc.parentId != null ? locById.get(loc.parentId) : undefined;
-    return parent?.level === "ciudad" ? parent.name : null;
+    return parent?.level === "municipio" ? parent.name : null;
   };
 
   // Rank cities by how much inventory the agency has there, keep the top 3.
@@ -169,17 +172,6 @@ async function listAllProjectsUncached(limit = 60): Promise<ProjectCard[]> {
     .orderBy(desc(projects.id))
     .limit(limit);
   return projectCardsFrom(rows);
-}
-
-export type FinancingProgramRow = typeof financingPrograms.$inferSelect;
-
-/** Active financing programs, cheapest rate first — /financiamiento. */
-async function listFinancingProgramsUncached(): Promise<FinancingProgramRow[]> {
-  return db
-    .select()
-    .from(financingPrograms)
-    .where(eq(financingPrograms.active, true))
-    .orderBy(asc(financingPrograms.annualRate));
 }
 
 export interface DeveloperDirectoryRow {
@@ -361,9 +353,9 @@ async function listAgentsForDirectoryUncached(): Promise<AgentDirectoryRow[]> {
     const loc = locById.get(r.locationId);
     if (!loc) continue;
     const city =
-      loc.level === "ciudad"
+      loc.level === "municipio"
         ? loc.name
-        : loc.parentId != null && locById.get(loc.parentId)?.level === "ciudad"
+        : loc.parentId != null && locById.get(loc.parentId)?.level === "municipio"
           ? locById.get(loc.parentId)!.name
           : null;
     if (!city) continue;
@@ -435,9 +427,9 @@ export async function getOperationHubData(
     const loc = locById.get(r.locationId);
     if (!loc) continue;
     const city =
-      loc.level === "ciudad"
+      loc.level === "municipio"
         ? loc
-        : loc.parentId != null && locById.get(loc.parentId)?.level === "ciudad"
+        : loc.parentId != null && locById.get(loc.parentId)?.level === "municipio"
           ? locById.get(loc.parentId)!
           : null;
     if (!city) continue;
@@ -561,24 +553,3 @@ export const getPortalStats = unstable_cache(
   ["directory:portal-stats"],
   DIRECTORY_CACHE,
 );
-
-const cachedFinancingPrograms = unstable_cache(
-  listFinancingProgramsUncached,
-  ["directory:financing-programs"],
-  { revalidate: CACHE_TTL.directory, tags: [CACHE_TAGS.directory] },
-);
-
-/**
- * Active financing programs, cheapest rate first — /financiamiento.
- *
- * `updatedAt` is re-wrapped because the cache serializes it to a string while
- * the row type still says `Date | null`. Nothing renders it today; the wrap
- * is so that the first thing that does is not quietly wrong.
- */
-export async function listFinancingPrograms(): Promise<FinancingProgramRow[]> {
-  const rows = await cachedFinancingPrograms();
-  return rows.map((r) => ({
-    ...r,
-    updatedAt: r.updatedAt == null ? null : new Date(r.updatedAt),
-  }));
-}

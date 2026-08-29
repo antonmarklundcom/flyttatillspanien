@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
@@ -23,13 +23,13 @@ export async function generateMetadata(): Promise<Metadata> {
 export const dynamic = "force-dynamic";
 
 const ERRORS: Record<string, string> = {
-  name: esPanel.registerErrorName,
-  email: esPanel.registerErrorEmail,
-  email_taken: esPanel.registerErrorEmailTaken,
-  password: esPanel.registerErrorPassword,
-  agency_name: esPanel.registerErrorAgencyName,
-  invite: esPanel.registerErrorInvite,
-  generic: esPanel.registerErrorGeneric,
+  name: svPanel.registerErrorName,
+  email: svPanel.registerErrorEmail,
+  email_taken: svPanel.registerErrorEmailTaken,
+  password: svPanel.registerErrorPassword,
+  agency_name: svPanel.registerErrorAgencyName,
+  invite: svPanel.registerErrorInvite,
+  generic: svPanel.registerErrorGeneric,
 };
 
 export default async function RegisterPage({
@@ -63,24 +63,24 @@ export default async function RegisterPage({
     <main className="site-main">
       <div className="auth-wrap">
         <div className="auth-card">
-          <h1 className="auth-card__title">{esPanel.registerTitle}</h1>
-          <p className="auth-card__subtitle">{esPanel.registerSubtitle}</p>
+          <h1 className="auth-card__title">{svPanel.registerTitle}</h1>
+          <p className="auth-card__subtitle">{svPanel.registerSubtitle}</p>
 
           {error ? (
             <p className="auth-error">{ERRORS[error] ?? ERRORS.generic}</p>
           ) : null}
 
           {inviteFailed ? (
-            <p className="auth-error">{esPanel.registerErrorInvite}</p>
+            <p className="auth-error">{svPanel.registerErrorInvite}</p>
           ) : null}
 
           {invitation ? (
             <p className="auth-note">
-              {esPanel.registerInviteNote(
+              {svPanel.registerInviteNote(
                 invitation.agencyName,
                 invitation.role === "agency_admin"
-                  ? esPanel.teamRoleAdmin
-                  : esPanel.teamRoleAgent,
+                  ? svPanel.teamRoleAdmin
+                  : svPanel.teamRoleAgent,
               )}
             </p>
           ) : null}
@@ -94,7 +94,7 @@ export default async function RegisterPage({
 
             <fieldset className="auth-choice">
               <legend className="auth-field__label">
-                {esPanel.registerKindLabel}
+                {svPanel.registerKindLabel}
               </legend>
               {invitation ? (
                 <label className="auth-choice__option">
@@ -104,7 +104,7 @@ export default async function RegisterPage({
                     value="invite"
                     defaultChecked={isInvite}
                   />
-                  <span>{esPanel.registerKindInvite(invitation.agencyName)}</span>
+                  <span>{svPanel.registerKindInvite(invitation.agencyName)}</span>
                 </label>
               ) : null}
               <label className="auth-choice__option">
@@ -114,7 +114,7 @@ export default async function RegisterPage({
                   value="agency"
                   defaultChecked={isAgency}
                 />
-                <span>{esPanel.registerKindAgency}</span>
+                <span>{svPanel.registerKindAgency}</span>
               </label>
               <label className="auth-choice__option">
                 <input
@@ -123,7 +123,7 @@ export default async function RegisterPage({
                   value="independent"
                   defaultChecked={!isAgency && !isInvite}
                 />
-                <span>{esPanel.registerKindIndependent}</span>
+                <span>{svPanel.registerKindIndependent}</span>
               </label>
             </fieldset>
 
@@ -131,7 +131,7 @@ export default async function RegisterPage({
                 the server ignores it for that account type. */}
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="agencyName">
-                {esPanel.registerAgencyNameLabel}
+                {svPanel.registerAgencyNameLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -145,7 +145,7 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="name">
-                {esPanel.registerYourNameLabel}
+                {svPanel.registerYourNameLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -160,7 +160,7 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="email">
-                {esPanel.emailLabel}
+                {svPanel.emailLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -175,12 +175,12 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="whatsapp">
-                {esPanel.registerWhatsappLabel}
+                {svPanel.registerPhoneLabel}
               </label>
               <input
                 className="auth-field__input"
                 id="whatsapp"
-                name="whatsapp"
+                name="phone"
                 type="tel"
                 inputMode="tel"
                 placeholder="0981 123 456"
@@ -191,7 +191,7 @@ export default async function RegisterPage({
 
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="password">
-                {esPanel.registerPasswordLabel}
+                {svPanel.registerPasswordLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -202,17 +202,17 @@ export default async function RegisterPage({
                 autoComplete="new-password"
                 required
               />
-              <p className="auth-field__hint">{esPanel.registerPasswordHint}</p>
+              <p className="auth-field__hint">{svPanel.registerPasswordHint}</p>
             </div>
 
             <button className="auth-submit" type="submit">
-              {esPanel.registerSubmit}
+              {svPanel.registerSubmit}
             </button>
           </form>
 
-          <p className="auth-note">{esPanel.registerPendingNote}</p>
+          <p className="auth-note">{svPanel.registerPendingNote}</p>
           <p className="auth-alt">
-            <Link href="/login">{esPanel.registerToLogin}</Link>
+            <Link href="/login">{svPanel.registerToLogin}</Link>
           </p>
         </div>
       </div>

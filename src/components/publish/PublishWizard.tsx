@@ -2,7 +2,7 @@
 
 /**
  * 3-step publish wizard (ARCHITECTURE.md §3, M5). Detalles → Ubicación →
- * Precio & publicación, then WhatsApp OTP at publish. Autosave is two-layer:
+ * Precio & publicación, then an emailed code at publish. Autosave is two-layer:
  * localStorage on every change (instant, survives a reload) and a server draft
  * (a status='draft' listings row) written when a step is completed, so a draft
  * also survives a device change and shows up in the panel. All identity,
@@ -10,9 +10,7 @@
  * actions.ts — this component only collects and previews.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { bestCuota, type FinancingProgram } from "@/lib/cuota";
-import { formatCuota } from "@/lib/format";
-import { esPublish } from "@/i18n/es";
+import { svPanel, svPublish } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -33,7 +31,7 @@ import type { ListingImageRow } from "@/lib/listing-images";
 const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
   { value: "venta", label: "Venta" },
   { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_temporal", label: "Alquiler temporal" },
+  { value: "alquiler_vacacional", label: "Alquiler vacacional" },
 ];
 
 /** Terrenos have no rooms; every other type does. */
@@ -50,14 +48,14 @@ interface WizardState {
   bedrooms: string;
   bathrooms: string;
   parking: string;
-  areaM2: string;
-  landM2: string;
+  builtM2: string;
+  usableM2: string;
+  plotM2: string;
   locationId: number;
   projectId: number | null;
-  priceCurrency: "USD" | "PYG";
-  priceAmount: string;
+  /** EUR — the only stored price, so there is no currency to pick. */
+  priceEur: string;
   videoUrl: string;
-  foreignExposure: boolean;
 }
 
 export interface InitialDraft extends Partial<WizardState> {
@@ -71,7 +69,10 @@ export interface InitialDraft extends Partial<WizardState> {
  * to a draft in progress on this device.
  */
 export type PublishPrefill = Partial<
-  Pick<WizardState, "operation" | "propertyType" | "areaM2" | "landM2" | "locationId">
+  Pick<
+    WizardState,
+    "operation" | "propertyType" | "builtM2" | "plotM2" | "locationId"
+  >
 >;
 
 const EMPTY: WizardState = {
@@ -83,14 +84,13 @@ const EMPTY: WizardState = {
   bedrooms: "",
   bathrooms: "",
   parking: "",
-  areaM2: "",
-  landM2: "",
+  builtM2: "",
+  usableM2: "",
+  plotM2: "",
   locationId: 0,
   projectId: null,
-  priceCurrency: "USD",
-  priceAmount: "",
+  priceEur: "",
   videoUrl: "",
-  foreignExposure: true,
 };
 
 const LS_KEY = "ftse:publish-draft";
@@ -98,8 +98,7 @@ const LS_KEY = "ftse:publish-draft";
 export function PublishWizard({
   locations,
   projects,
-  programs,
-  usdToPyg,
+  accountEmail,
   initialDraft,
   initialPhotos,
   prefill,
@@ -108,14 +107,14 @@ export function PublishWizard({
 }: {
   locations: PublishLocation[];
   projects: NearbyProject[];
-  programs: FinancingProgram[];
-  usdToPyg: number;
+  /** The signed-in account's address — where the code is sent. Display only. */
+  accountEmail: string;
   initialDraft: InitialDraft | null;
   initialPhotos?: ListingImageRow[];
   /** Seed values from /tasacion. See PublishPrefill. */
   prefill?: PublishPrefill | null;
   /**
-   * Whether a WhatsApp code can actually be delivered. False → publish
+   * Whether an emailed code can actually be delivered. False → publish
    * directly; the server enforces the same rule, this only shapes the UI.
    */
   otpEnabled: boolean;
@@ -140,7 +139,13 @@ export function PublishWizard({
 
   // OTP sub-state (step 3 → publish).
   const [otpSent, setOtpSent] = useState(false);
-  const [whatsapp, setWhatsapp] = useState("");
+  /**
+   * An optional callback number. NOT the code's destination: the code goes to
+   * the account's own address, decided server-side from the session, because a
+   * client-named destination would make this an open relay that mails a
+   * six-digit code anywhere a script asks.
+   */
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [otpBusy, setOtpBusy] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
@@ -202,18 +207,6 @@ export function PublishWizard({
     return state.projectId ? byId.get(state.projectId) ?? "" : "";
   }, [projects, state.projectId]);
 
-  // Cuota preview (venta only), computed client-side from the same engine the
-  // nightly cron uses. Converts the entered price to Gs first.
-  const cuotaPreview = useMemo(() => {
-    if (state.operation !== "venta") return null;
-    const amount = Number(state.priceAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return null;
-    const priceGs = state.priceCurrency === "PYG" ? amount : amount * usdToPyg;
-    const best = bestCuota(priceGs, programs);
-    if (!best) return null;
-    return { text: formatCuota(best.monthlyGs), programName: best.programName };
-  }, [state.operation, state.priceAmount, state.priceCurrency, usdToPyg, programs]);
-
   const payload = useCallback(
     (): DraftPayload => ({
       draftId: state.draftId,
@@ -221,17 +214,22 @@ export function PublishWizard({
       propertyType: state.propertyType || undefined,
       title: state.title,
       descriptionEs: state.descriptionEs,
-      priceAmount: Number(state.priceAmount) || 0,
-      priceCurrency: state.priceCurrency,
+      priceEur: Number(state.priceEur) || 0,
       bedrooms: hasRooms(state.propertyType) ? numOrNull(state.bedrooms) : null,
       bathrooms: hasRooms(state.propertyType) ? numOrNull(state.bathrooms) : null,
       parking: numOrNull(state.parking),
-      areaM2: numOrNull(state.areaM2),
-      landM2: numOrNull(state.landM2),
+      builtM2: numOrNull(state.builtM2),
+      usableM2: numOrNull(state.usableM2),
+      plotM2: numOrNull(state.plotM2),
       locationId: state.locationId,
       projectId: state.projectId,
       videoUrl: state.videoUrl,
-      foreignExposure: state.foreignExposure,
+      /**
+       * The Spain legal block is deliberately absent from this payload until
+       * Phase 3 adds its inputs. The server treats an omitted key as "this
+       * form did not ask" rather than "the seller cleared it", so a rating an
+       * operator filled in from /admin survives a save here.
+       */
     }),
     [state],
   );
@@ -256,17 +254,17 @@ export function PublishWizard({
         if (!res.ok) {
           setPhotoError(
             res.error === "not_configured"
-              ? esPublish.photosStorageOff
+              ? svPublish.photosStorageOff
               : res.error === "too_many"
-                ? esPublish.photosTooMany
-                : esPublish.photosFailed,
+                ? svPublish.photosTooMany
+                : svPublish.photosFailed,
           );
           return;
         }
         setPhotos(res.images);
-        if (res.rejected.length > 0) setPhotoError(esPublish.photosFailed);
+        if (res.rejected.length > 0) setPhotoError(svPublish.photosFailed);
       } catch {
-        setPhotoError(esPublish.photosFailed);
+        setPhotoError(svPublish.photosFailed);
       } finally {
         setPhotoBusy(false);
       }
@@ -282,7 +280,7 @@ export function PublishWizard({
         const res = await deleteDraftPhotoAction(state.draftId, imageId);
         if (res.ok) setPhotos(res.images);
       } catch {
-        setPhotoError(esPublish.photosFailed);
+        setPhotoError(svPublish.photosFailed);
       } finally {
         setPhotoBusy(false);
       }
@@ -297,13 +295,13 @@ export function PublishWizard({
     try {
       const res = await saveDraftAction(payload());
       if (!res.ok) {
-        setStepError(esPublish.errors[res.error] ?? esPublish.errors.generic);
+        setStepError(svPublish.errors[res.error] ?? svPublish.errors.generic);
         return null;
       }
       if (res.draftId !== state.draftId) set("draftId", res.draftId);
       return res.draftId;
     } catch {
-      setStepError(esPublish.errors.generic);
+      setStepError(svPublish.errors.generic);
       return null;
     } finally {
       setSaving(false);
@@ -313,12 +311,12 @@ export function PublishWizard({
   const validateStep = useCallback(
     (i: number): string | null => {
       if (i === 0) {
-        if (!state.operation) return esPublish.errors.operation;
-        if (!state.propertyType) return esPublish.errors.propertyType;
-        if (state.title.trim().length < 8) return esPublish.errors.title;
+        if (!state.operation) return svPublish.errors.operation;
+        if (!state.propertyType) return svPublish.errors.propertyType;
+        if (state.title.trim().length < 8) return svPublish.errors.title;
       }
-      if (i === 1 && !state.locationId) return esPublish.errors.location;
-      if (i === 2 && !(Number(state.priceAmount) > 0)) return esPublish.errors.price;
+      if (i === 1 && !state.locationId) return svPublish.errors.location;
+      if (i === 2 && !(Number(state.priceEur) > 0)) return svPublish.errors.price;
       return null;
     },
     [state],
@@ -348,24 +346,24 @@ export function PublishWizard({
       // Make sure the latest edits are on the draft before we verify & publish.
       const saved = await persist();
       if (saved === null) return;
-      const res = await requestOtpAction(whatsapp);
+      const res = await requestOtpAction();
       if (!res.ok) {
         if (res.error === "cooldown") {
           setCooldown(Math.ceil((res.cooldownMs ?? 60000) / 1000));
           setOtpSent(true);
         } else {
-          setOtpError(esPublish.errors.invalidNumber);
+          setOtpError(svPublish.errors.invalidNumber);
         }
         return;
       }
       setOtpSent(true);
       setCooldown(60);
     } catch {
-      setOtpError(esPublish.errors.generic);
+      setOtpError(svPublish.errors.generic);
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp]);
+  }, [persist]);
 
   /** Publish with no code, when none can be delivered (otpEnabled === false). */
   const publishDirect = useCallback(async () => {
@@ -374,9 +372,9 @@ export function PublishWizard({
     try {
       const saved = await persist();
       if (saved === null) return;
-      const res = await publishDraftAction({ draftId: saved, whatsapp });
+      const res = await publishDraftAction({ draftId: saved, phone });
       if (!res.ok) {
-        setOtpError(esPublish.errors.generic);
+        setOtpError(svPublish.errors.generic);
         return;
       }
       try {
@@ -386,11 +384,11 @@ export function PublishWizard({
       }
       setDone(true);
     } catch {
-      setOtpError(esPublish.errors.generic);
+      setOtpError(svPublish.errors.generic);
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp]);
+  }, [persist, phone]);
 
   const verifyAndPublish = useCallback(async () => {
     if (!state.draftId) return;
@@ -399,16 +397,15 @@ export function PublishWizard({
     try {
       const res = await verifyAndPublishAction({
         draftId: state.draftId,
-        whatsapp,
         code,
       });
       if (!res.ok) {
         setOtpError(
           res.error === "too_many"
-            ? esPublish.errors.otpTooMany
+            ? svPublish.errors.otpTooMany
             : res.error === "otp"
-              ? esPublish.errors.otpMismatch
-              : esPublish.errors.generic,
+              ? svPublish.errors.otpMismatch
+              : svPublish.errors.generic,
         );
         return;
       }
@@ -419,20 +416,20 @@ export function PublishWizard({
       }
       setDone(true);
     } catch {
-      setOtpError(esPublish.errors.generic);
+      setOtpError(svPublish.errors.generic);
     } finally {
       setOtpBusy(false);
     }
-  }, [state.draftId, whatsapp, code]);
+  }, [state.draftId, code]);
 
   if (done) {
     return (
       <div className="wizard-done">
         <div className="wizard-done__check">✓</div>
-        <h2 className="wizard-done__title">{esPublish.doneTitle}</h2>
-        <p className="wizard-done__body">{esPublish.doneBody}</p>
+        <h2 className="wizard-done__title">{svPublish.doneTitle}</h2>
+        <p className="wizard-done__body">{svPublish.doneBody}</p>
         <a className="panel-btn panel-btn--primary" href={homeHref}>
-          {esPublish.doneCta}
+          {svPublish.doneCta}
         </a>
       </div>
     );
@@ -443,7 +440,7 @@ export function PublishWizard({
   return (
     <div className="wizard">
       <ol className="wizard-steps" aria-label="Pasos">
-        {esPublish.stepLabels.map((label, i) => (
+        {svPublish.stepLabels.map((label, i) => (
           <li
             key={label}
             className={`wizard-step${i === step ? " wizard-step--active" : ""}${
@@ -459,14 +456,14 @@ export function PublishWizard({
       {/* Say why fields arrived filled in — an unexplained pre-filled form
           reads as someone else's data, not as a shortcut. */}
       {prefilled && step === 0 && (
-        <p className="wizard-prefill">{esPublish.prefillNote}</p>
+        <p className="wizard-prefill">{svPublish.prefillNote}</p>
       )}
 
       {/* Step 1 — Detalles */}
       {step === 0 && (
         <div className="wizard-panel">
           <div className="wizard-field">
-            <label className="wizard-label">{esPublish.operationLabel}</label>
+            <label className="wizard-label">{svPublish.operationLabel}</label>
             <div className="wizard-chips">
               {OPERATION_OPTIONS.map((o) => (
                 <button
@@ -483,7 +480,7 @@ export function PublishWizard({
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="ptype">
-              {esPublish.propertyTypeLabel}
+              {svPublish.propertyTypeLabel}
             </label>
             <select
               id="ptype"
@@ -502,28 +499,28 @@ export function PublishWizard({
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="title">
-              {esPublish.titleLabel}
+              {svPublish.titleLabel}
             </label>
             <input
               id="title"
               className="wizard-input"
               value={state.title}
               maxLength={180}
-              placeholder={esPublish.titlePlaceholder}
+              placeholder={svPublish.titlePlaceholder}
               onChange={(e) => set("title", e.target.value)}
             />
           </div>
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="desc">
-              {esPublish.descriptionLabel}
+              {svPublish.descriptionLabel}
             </label>
             <textarea
               id="desc"
               className="wizard-input wizard-textarea"
               value={state.descriptionEs}
               rows={5}
-              placeholder={esPublish.descriptionPlaceholder}
+              placeholder={svPublish.descriptionPlaceholder}
               onChange={(e) => set("descriptionEs", e.target.value)}
             />
           </div>
@@ -531,13 +528,14 @@ export function PublishWizard({
           <div className="wizard-grid">
             {rooms && (
               <>
-                <NumField label={esPublish.bedroomsLabel} value={state.bedrooms} onChange={(v) => set("bedrooms", v)} />
-                <NumField label={esPublish.bathroomsLabel} value={state.bathrooms} onChange={(v) => set("bathrooms", v)} />
-                <NumField label={esPublish.parkingLabel} value={state.parking} onChange={(v) => set("parking", v)} />
-                <NumField label={esPublish.areaLabel} value={state.areaM2} onChange={(v) => set("areaM2", v)} />
+                <NumField label={svPublish.bedroomsLabel} value={state.bedrooms} onChange={(v) => set("bedrooms", v)} />
+                <NumField label={svPublish.bathroomsLabel} value={state.bathrooms} onChange={(v) => set("bathrooms", v)} />
+                <NumField label={svPublish.parkingLabel} value={state.parking} onChange={(v) => set("parking", v)} />
+                <NumField label={svPublish.builtLabel} value={state.builtM2} onChange={(v) => set("builtM2", v)} />
+                <NumField label={svPublish.usableLabel} value={state.usableM2} onChange={(v) => set("usableM2", v)} />
               </>
             )}
-            <NumField label={esPublish.landLabel} value={state.landM2} onChange={(v) => set("landM2", v)} />
+            <NumField label={svPublish.plotLabel} value={state.plotM2} onChange={(v) => set("plotM2", v)} />
           </div>
         </div>
       )}
@@ -547,14 +545,14 @@ export function PublishWizard({
         <div className="wizard-panel">
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="loc">
-              {esPublish.locationLabel}
+              {svPublish.locationLabel}
             </label>
             <input
               id="loc"
               className="wizard-input"
               list="loc-list"
               defaultValue={locationLabel}
-              placeholder={esPublish.locationPlaceholder}
+              placeholder={svPublish.locationPlaceholder}
               onChange={(e) => {
                 const hit = locations.find((l) => l.label === e.target.value);
                 set("locationId", hit ? hit.id : 0);
@@ -565,20 +563,20 @@ export function PublishWizard({
                 <option key={l.id} value={l.label} />
               ))}
             </datalist>
-            <p className="wizard-hint">{esPublish.locationHint}</p>
+            <p className="wizard-hint">{svPublish.locationHint}</p>
           </div>
 
           {projects.length > 0 && (
             <div className="wizard-field">
               <label className="wizard-label" htmlFor="proj">
-                {esPublish.projectLabel}
+                {svPublish.projectLabel}
               </label>
               <input
                 id="proj"
                 className="wizard-input"
                 list="proj-list"
                 defaultValue={projectName}
-                placeholder={esPublish.projectPlaceholder}
+                placeholder={svPublish.projectPlaceholder}
                 onChange={(e) => {
                   const hit = projects.find((p) => p.name === e.target.value);
                   set("projectId", hit ? hit.id : null);
@@ -589,7 +587,7 @@ export function PublishWizard({
                   <option key={p.id} value={p.name} />
                 ))}
               </datalist>
-              <p className="wizard-hint">{esPublish.projectHint}</p>
+              <p className="wizard-hint">{svPublish.projectHint}</p>
             </div>
           )}
         </div>
@@ -599,34 +597,27 @@ export function PublishWizard({
       {step === 2 && (
         <div className="wizard-panel">
           <div className="wizard-field">
-            <label className="wizard-label">{esPublish.priceLabel}</label>
+            <label className="wizard-label">{svPublish.priceLabel}</label>
+            {/* No currency select: EUR is the only stored price, and the
+                kronor figure is computed at render from a dated ECB rate. */}
             <div className="wizard-price">
-              <select
-                className="wizard-input wizard-currency"
-                value={state.priceCurrency}
-                onChange={(e) => set("priceCurrency", e.target.value as "USD" | "PYG")}
-              >
-                <option value="USD">US$</option>
-                <option value="PYG">Gs</option>
-              </select>
+              <span className="wizard-currency" aria-hidden>
+                €
+              </span>
               <input
                 className="wizard-input"
                 inputMode="numeric"
-                value={state.priceAmount}
+                value={state.priceEur}
                 placeholder="0"
-                onChange={(e) => set("priceAmount", e.target.value.replace(/[^\d.]/g, ""))}
+                onChange={(e) => set("priceEur", e.target.value.replace(/[^\d.]/g, ""))}
               />
             </div>
-            {cuotaPreview && (
-              <p className="wizard-cuota">
-                🏦 {cuotaPreview.text} {esPublish.cuotaWith} {cuotaPreview.programName}
-              </p>
-            )}
+            <p className="wizard-hint">{svPublish.priceHint}</p>
           </div>
 
           <div className="wizard-field">
             <label className="wizard-label" htmlFor="video">
-              {esPublish.videoLabel}
+              {svPublish.videoLabel}
             </label>
             <input
               id="video"
@@ -638,11 +629,11 @@ export function PublishWizard({
           </div>
 
           <div className="wizard-field">
-            <span className="wizard-label">{esPublish.photosTitle}</span>
-            <p className="wizard-hint">{esPublish.photosHint}</p>
+            <span className="wizard-label">{svPublish.photosTitle}</span>
+            <p className="wizard-hint">{svPublish.photosHint}</p>
 
             {state.draftId == null ? (
-              <p className="wizard-hint">{esPublish.photosDraftFirst}</p>
+              <p className="wizard-hint">{svPublish.photosDraftFirst}</p>
             ) : (
               <>
                 <input
@@ -656,10 +647,10 @@ export function PublishWizard({
                     // Let the same file be picked again after a failure.
                     e.target.value = "";
                   }}
-                  aria-label={esPublish.photosPickLabel}
+                  aria-label={svPublish.photosPickLabel}
                 />
                 {photoBusy && (
-                  <p className="wizard-hint">{esPublish.photosUploading}</p>
+                  <p className="wizard-hint">{svPublish.photosUploading}</p>
                 )}
                 {photoError && <p className="auth-error">{photoError}</p>}
 
@@ -680,7 +671,7 @@ export function PublishWizard({
                           onClick={() => void removePhoto(photo.id)}
                           disabled={photoBusy}
                         >
-                          {esPublish.photosDelete}
+                          {svPublish.photosDelete}
                         </button>
                       </li>
                     ))}
@@ -690,42 +681,42 @@ export function PublishWizard({
             )}
           </div>
 
-          <label className="wizard-toggle">
-            <input
-              type="checkbox"
-              checked={state.foreignExposure}
-              onChange={(e) => set("foreignExposure", e.target.checked)}
-            />
-            <span>{esPublish.foreignExposureLabel}</span>
-          </label>
-
           {/* OTP-at-publish — only when a code can actually reach them. */}
           <div className="wizard-otp">
             <h3 className="wizard-otp__title">
-              {otpEnabled ? esPublish.otpTitle : esPublish.publishTitle}
+              {otpEnabled ? svPublish.otpTitle : svPublish.publishTitle}
             </h3>
             <p className="wizard-hint">
-              {otpEnabled ? esPublish.otpSubtitle : esPublish.publishSubtitle}
+              {otpEnabled ? svPublish.otpSubtitle : svPublish.publishSubtitle}
             </p>
+            {/* The destination is shown, not asked for: it is the address
+                this account logs in with, and the server sends there whatever
+                the form says. */}
             <div className="wizard-field">
-              <label className="wizard-label" htmlFor="wa">
-                {esPublish.whatsappLabel}
-              </label>
-              <input
-                id="wa"
-                className="wizard-input"
-                inputMode="tel"
-                value={whatsapp}
-                placeholder="0981 123 456"
-                onChange={(e) => setWhatsapp(e.target.value)}
-                disabled={otpEnabled && otpSent}
-              />
+              <span className="wizard-label">{svPublish.emailLabel}</span>
+              <p className="wizard-hint">{accountEmail}</p>
             </div>
+
+            {!otpEnabled && (
+              <div className="wizard-field">
+                <label className="wizard-label" htmlFor="phone">
+                  {svPanel.profilePhoneLabel}
+                </label>
+                <input
+                  id="phone"
+                  className="wizard-input"
+                  inputMode="tel"
+                  value={phone}
+                  placeholder="+46 70 123 45 67"
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            )}
 
             {otpEnabled && otpSent && (
               <div className="wizard-field">
                 <label className="wizard-label" htmlFor="code">
-                  {esPublish.codeLabel}
+                  {svPublish.codeLabel}
                 </label>
                 <input
                   id="code"
@@ -747,18 +738,18 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--primary"
                   onClick={publishDirect}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || Number(state.priceEur) <= 0}
                 >
-                  {otpBusy ? esPublish.publishing : esPublish.publish}
+                  {otpBusy ? svPublish.publishing : svPublish.publish}
                 </button>
               ) : !otpSent ? (
                 <button
                   type="button"
-                  className="panel-btn panel-btn--whatsapp"
+                  className="panel-btn panel-btn--primary"
                   onClick={sendCode}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || Number(state.priceEur) <= 0}
                 >
-                  {otpBusy ? esPublish.sending : esPublish.sendCode}
+                  {otpBusy ? svPublish.sending : svPublish.sendCode}
                 </button>
               ) : (
                 <>
@@ -768,7 +759,7 @@ export function PublishWizard({
                     onClick={verifyAndPublish}
                     disabled={otpBusy || code.length !== 6}
                   >
-                    {otpBusy ? esPublish.publishing : esPublish.publish}
+                    {otpBusy ? svPublish.publishing : svPublish.publish}
                   </button>
                   <button
                     type="button"
@@ -776,7 +767,7 @@ export function PublishWizard({
                     onClick={sendCode}
                     disabled={otpBusy || cooldown > 0}
                   >
-                    {cooldown > 0 ? `${esPublish.resendIn} ${cooldown}s` : esPublish.resend}
+                    {cooldown > 0 ? `${svPublish.resendIn} ${cooldown}s` : svPublish.resend}
                   </button>
                 </>
               )}
@@ -792,7 +783,7 @@ export function PublishWizard({
         <div className="wizard-nav">
           {step > 0 ? (
             <button type="button" className="panel-btn" onClick={goBack}>
-              {esPublish.back}
+              {svPublish.back}
             </button>
           ) : (
             <span />
@@ -803,16 +794,16 @@ export function PublishWizard({
             onClick={goNext}
             disabled={saving}
           >
-            {saving ? esPublish.saving : esPublish.next}
+            {saving ? svPublish.saving : svPublish.next}
           </button>
         </div>
       )}
       {step === 2 && (
         <div className="wizard-nav">
           <button type="button" className="panel-btn" onClick={goBack}>
-            {esPublish.back}
+            {svPublish.back}
           </button>
-          <span className="wizard-hint">{saving ? esPublish.saving : ""}</span>
+          <span className="wizard-hint">{saving ? svPublish.saving : ""}</span>
         </div>
       )}
     </div>

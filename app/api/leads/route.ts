@@ -1,7 +1,12 @@
 /**
  * Lead capture (ARCHITECTURE.md §5). Order matters: record in MySQL first
- * (source of truth for the money report), THEN push to GHL through the
- * crm.ts boundary. A GHL failure never loses the lead — it's already stored.
+ * (source of truth for the money report), THEN push to the CRM through the
+ * crm.ts boundary. A CRM failure never loses the lead — it's already stored.
+ *
+ * **Email is required and the phone is optional**, the inverse of the shape
+ * this endpoint was born with. A Swedish buyer fills in a form and expects an
+ * email reply; being asked to WhatsApp a stranger about a €400 000 purchase
+ * reads as unserious (design doc §3.7).
  */
 import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
@@ -10,8 +15,9 @@ import { db } from "@/db";
 import { leads, listings } from "@/db/schema";
 import { alertOperator, getCrm, type LeadPayload } from "@/lib/crm";
 import { listingUrl } from "@/lib/urls";
+import { servedTitle } from "@/lib/listing-copy";
 import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { clientIpFrom } from "@/lib/client-ip";
 import { allowRequest } from "@/lib/rate-limit";
 import { rawHostFrom } from "@/lib/host";
@@ -28,8 +34,8 @@ const bodySchema = z.object({
   ]),
   listingPublicId: z.string().length(10).optional(),
   name: z.string().max(140).optional(),
-  whatsapp: z.string().min(6).max(30),
-  email: z.string().email().max(190).optional(),
+  email: z.string().email().max(190),
+  phone: z.string().min(6).max(30).optional(),
   message: z.string().max(2000).optional(),
   utm: z.record(z.string()).optional(),
 });
@@ -133,8 +139,8 @@ export async function POST(req: NextRequest) {
     listingId: listing?.id,
     projectId: listing?.projectId,
     name: parsed.name,
-    whatsapp: parsed.whatsapp,
     email: parsed.email,
+    phone: parsed.phone,
     message: parsed.message,
     utm: parsed.utm,
     routedTo,
@@ -146,17 +152,17 @@ export async function POST(req: NextRequest) {
     leadType: parsed.leadType,
     vertical,
     name: parsed.name,
-    whatsapp: parsed.whatsapp,
     email: parsed.email,
+    phone: parsed.phone,
     message: parsed.message,
     utm: parsed.utm,
     routedTo,
     listing: listing
       ? {
           publicId: listing.publicId,
-          title: listing.title,
+          title: servedTitle(listing),
           url: `${await listingCanonicalOrigin()}${listingUrl(listing)}`,
-          priceUsd: Number(listing.priceUsd),
+          priceEur: Number(listing.priceEur),
           operation: listing.operation,
         }
       : undefined,
@@ -173,12 +179,12 @@ export async function POST(req: NextRequest) {
   after(() =>
     alertOperator({
       kind: "new_lead",
-      title: esPanel.alertNewLeadTitle,
-      detail: esPanel.alertNewLeadDetail({
+      title: svPanel.alertNewLeadTitle,
+      detail: svPanel.alertNewLeadDetail({
         leadType: parsed.leadType,
         name: parsed.name ?? null,
-        whatsapp: parsed.whatsapp,
-        listingTitle: listing?.title ?? null,
+        email: parsed.email,
+        listingTitle: listing ? servedTitle(listing) : null,
       }),
       url: adminUrl,
     }),

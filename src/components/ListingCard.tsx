@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { formatPrice, formatCuota, imageThumbUrl } from "@/lib/format";
+import { formatEur, imageThumbUrl } from "@/lib/format";
+import { servedTitle } from "@/lib/listing-copy";
 import { listingUrl } from "@/lib/urls";
 import { isPlaceholderPhoto } from "@/lib/photos";
 import type { ListingCard as Card } from "@/lib/queries";
@@ -20,13 +21,15 @@ import { dict } from "@/i18n/server";
 export async function ListingCard({ card }: { card: Card }) {
   const t = (await dict()).card;
   // Thumb, not the full 1600px original: a category page renders ~20 of these
-  // on Paraguayan mobile data. Falls back to the stored key for imported rows
-  // that have no derivative yet (see imageThumbUrl).
+  // on a phone. Falls back to the stored key for imported rows that have no
+  // derivative yet (see imageThumbUrl).
   const cover = isPlaceholderPhoto(card.coverKey)
     ? null
     : imageThumbUrl(card.coverKey);
-  const cuota = formatCuota(card.cuotaGs);
-  const area = card.areaM2 ?? card.landM2;
+  // `built_m2` is the compared figure; `plot_m2` only stands in for the types
+  // with no building on them (design doc §3.1).
+  const area = card.builtM2 ?? card.plotM2;
+  const title = servedTitle(card);
   // new Date() re-wrap: cards that crossed an unstable_cache boundary carry
   // featuredUntil as an ISO string, and string > Date is silently false.
   const isFeatured =
@@ -45,7 +48,7 @@ export async function ListingCard({ card }: { card: Card }) {
       <img
         className="ds-photo-card__img"
         src={cover ?? "/img/listing-fallback.webp"}
-        alt={card.title}
+        alt={title}
         loading="lazy"
         decoding="async"
       />
@@ -54,8 +57,8 @@ export async function ListingCard({ card }: { card: Card }) {
       <span className="ds-photo-card__chip">
         {t.operationBadge[card.operation]}
       </span>
-      {/* No "Verificado" here: listings.is_verified means "publisher's
-          WhatsApp passed the (currently disabled) OTP", which is not the
+      {/* No "Verifierad" here: listings.is_verified means "the publisher
+          proved they can read the account's inbox", which is not the
           admin-granted verified badge the profile pages show (audit F57).
           The card stays silent rather than showing a flag with two meanings. */}
       {isFeatured && (
@@ -71,9 +74,9 @@ export async function ListingCard({ card }: { card: Card }) {
         {/* No location line: ListingCard carries locationId, not a name, and
             resolving it here would add a query per grid. The title already
             names the barrio in practice. */}
-        <div className="listing-card__title">{card.title}</div>
-        <div className="ds-photo-card__price">{formatPrice(card)}</div>
-        {(specs.length > 0 || cuota) && (
+        <div className="listing-card__title">{title}</div>
+        <div className="ds-photo-card__price">{formatEur(card.priceEur)}</div>
+        {specs.length > 0 && (
           <div className="listing-card__specs">
             {specs.map((s) => (
               <span className="listing-card__spec" key={s}>
@@ -81,11 +84,6 @@ export async function ListingCard({ card }: { card: Card }) {
                 {s}
               </span>
             ))}
-            {cuota && (
-              <span className="listing-card__spec listing-card__spec--cuota">
-                {cuota}
-              </span>
-            )}
           </div>
         )}
       </div>

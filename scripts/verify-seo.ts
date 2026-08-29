@@ -2,12 +2,22 @@
  * Verify the hreflang layer and the vertical table's SEO invariants — pure,
  * no database, no network.
  *
- * `src/lib/alternates.ts` emits nothing today (both enabled doors are Spanish),
- * so a check that only exercised the live vertical table would prove the one
- * thing that needs no proving. What has to be right is the behaviour on **flip
- * day** — the release that turns `realestateinparaguay.com` English and makes
- * `inmobiliaria.com.py` primary (PLAN.md D6). That configuration does not exist
- * yet, so the check builds it and runs the real rule against it.
+ * `src/lib/alternates.ts` emits nothing today: there is exactly one door
+ * (`flyttatillspanien.se`, `locale: "sv"`), and a language map needs two
+ * locales. A check that only exercised the live table would therefore prove
+ * the one thing that needs no proving. What has to be right is the behaviour
+ * on the day an **English door** is bought and enabled (plan §8) — the release
+ * that makes this a two-locale site. That configuration does not exist yet, so
+ * the check builds it and runs the real rule against it.
+ *
+ * **Why the synthetic door needs a cast.** `VerticalConfig.locale` is
+ * `"sv"` and `copy` is `"relocation"` — one member each, deliberately, because
+ * `en.ts` is deleted until the domain is owned. A second-locale door is
+ * therefore not expressible in the current types, which is precisely the state
+ * this check exists to survive: the machinery (`Widen<>`, `alternatesFor`,
+ * `servedDoors`) must already be correct on the day those unions widen, or the
+ * widening turns into a refactor. The casts below are the check saying so out
+ * loud, and they are the only place in the repo that does this.
  *
  * Run: npm run verify:seo   (also part of npm run verify:local)
  */
@@ -32,14 +42,16 @@ function check(label: string, ok: boolean, detail = "") {
 
 console.log("\nhreflang: the live table (pre-flip)");
 
+console.log("\nhreflang: the live table (one door)");
+
 check(
-  "no language alternates while every enabled door is Spanish",
+  "no language alternates while there is a single served locale",
   languageAlternates({ path: "/", scope: "site" }) === undefined,
   JSON.stringify(languageAlternates({ path: "/", scope: "site" })),
 );
 check(
   "…and none on listing detail either",
-  languageAlternates({ path: "/propiedad/casa-abc1234567", scope: "listing" }) ===
+  languageAlternates({ path: "/bostad/villa-abc1234567", scope: "listing" }) ===
     undefined,
 );
 check(
@@ -47,50 +59,55 @@ check(
   servedDoors(CANONICAL_HOST).some((d) => d.host === CANONICAL_HOST),
 );
 check(
-  "disabled feeders are not served doors",
-  !servedDoors(CANONICAL_HOST).some((d) => d.host === "terreno.com.py"),
+  "a host with no entry is not a served door",
+  !servedDoors(CANONICAL_HOST).some((d) => d.host === "example.invalid"),
 );
 
-console.log("\nhreflang: the post-flip table (PLAN.md D6)");
+console.log("\nhreflang: the day an English door exists (plan §8)");
 
-/** The two hosts exactly as the D6 checklist leaves them. */
-const FLIP_PRIMARY = "inmobiliaria.com.py";
+/**
+ * The Swedish door as it is today, plus the English one as it would be. The
+ * English host is a placeholder: the domain is not owned (plan §8), and
+ * nothing but this check may name it — a `verticals.ts` entry for a domain
+ * nobody owns is how broken canonicals ship sitewide.
+ */
+const FLIP_PRIMARY = CANONICAL_HOST;
+const EN_HOST = "flyttatillspanien.example";
 const flipDoors: Door[] = [
   {
-    host: "inmobiliaria.com.py",
-    config: {
-      ...VERTICALS["inmobiliaria.com.py"],
-      locale: "es",
-      ownsListingDetail: true,
-    },
+    host: CANONICAL_HOST,
+    config: { ...VERTICALS[CANONICAL_HOST], ownsListingDetail: true },
   },
   {
-    host: "realestateinparaguay.com",
+    host: EN_HOST,
     config: {
-      ...VERTICALS["realestateinparaguay.com"],
+      ...VERTICALS[CANONICAL_HOST],
+      key: "en",
+      brand: "Move to Spain",
+      // See the file header: a second locale is not expressible in the
+      // current unions, and proving the machinery survives them widening is
+      // the whole point of this fixture.
       locale: "en",
-      copy: "foreign",
-      filters: { foreign_exposure: true },
       ownsListingDetail: true,
-    },
+    } as unknown as (typeof VERTICALS)[typeof CANONICAL_HOST],
   },
 ];
 
 const home = alternatesFor(flipDoors, FLIP_PRIMARY, { path: "/", scope: "site" });
 check("two locales produce a language map", home !== undefined);
 check(
-  "Spanish points at the primary",
-  home?.["es"] === "https://inmobiliaria.com.py/",
-  home?.["es"],
+  "Swedish points at the primary",
+  home?.["sv"] === `https://${CANONICAL_HOST}/`,
+  home?.["sv"],
 );
 check(
   "English points at the English door",
-  home?.["en"] === "https://realestateinparaguay.com/",
+  home?.["en"] === `https://${EN_HOST}/`,
   home?.["en"],
 );
 check(
   "x-default is the primary, the same host every unowned door canonicalises to",
-  home?.["x-default"] === "https://inmobiliaria.com.py/",
+  home?.["x-default"] === `https://${CANONICAL_HOST}/`,
   home?.["x-default"],
 );
 check(
@@ -100,41 +117,42 @@ check(
 );
 
 const cat = alternatesFor(flipDoors, FLIP_PRIMARY, {
-  path: "/venta/asuncion/casas",
+  path: "/kopa/marbella/villor",
   scope: "site",
 });
 check(
   "the path is carried onto every door",
-  cat?.["es"] === "https://inmobiliaria.com.py/venta/asuncion/casas" &&
-    cat?.["en"] === "https://realestateinparaguay.com/venta/asuncion/casas",
+  cat?.["sv"] === `https://${CANONICAL_HOST}/kopa/marbella/villor` &&
+    cat?.["en"] === `https://${EN_HOST}/kopa/marbella/villor`,
 );
 
 const listing = alternatesFor(flipDoors, FLIP_PRIMARY, {
-  path: "/propiedad/casa-abc1234567",
+  path: "/bostad/villa-abc1234567",
   scope: "listing",
 });
 check(
   "detail pages pair once both doors own their own",
-  listing?.["en"] === "https://realestateinparaguay.com/propiedad/casa-abc1234567",
+  listing?.["en"] === `https://${EN_HOST}/bostad/villa-abc1234567`,
 );
 
 /**
- * The state between now and flip day: `inmobiliaria.com.py` is primary and
- * English is live, but the English door still canonicalises its detail pages
- * back. Then it is not a language version of them and must not be listed —
- * the same rule that keeps a feeder's URLs out of the sitemap.
+ * The half-way state: the English door is live, but it still canonicalises its
+ * detail pages back to the Swedish ones (which is what a door serving the same
+ * rows in a machine translation should do until its own copy is real). Then it
+ * is not a language version of them and must not be listed — the same rule
+ * that keeps an unowned page type out of the sitemap.
  */
 const halfFlipped: Door[] = [
   flipDoors[0],
   {
-    host: "realestateinparaguay.com",
+    host: EN_HOST,
     config: { ...flipDoors[1].config, ownsListingDetail: false },
   },
 ];
 check(
   "a door that canonicalises its detail pages away is not a language version",
   alternatesFor(halfFlipped, FLIP_PRIMARY, {
-    path: "/propiedad/casa-abc1234567",
+    path: "/bostad/villa-abc1234567",
     scope: "listing",
   }) === undefined,
 );
@@ -146,46 +164,47 @@ check(
 
 console.log("\nhreflang: ambiguity and overrides");
 
-/** Two Spanish doors plus one English: the Spanish slot must be the primary. */
+/** Two Swedish doors plus one English: the Swedish slot must be the primary. */
 const threeDoors: Door[] = [
   {
-    host: "terreno.com.py",
-    config: { ...VERTICALS["terreno.com.py"], enabled: true },
+    host: "villor.flyttatillspanien.example",
+    config: { ...VERTICALS[CANONICAL_HOST], enabled: true },
   },
   ...flipDoors,
 ];
 const tie = alternatesFor(threeDoors, FLIP_PRIMARY, { path: "/", scope: "site" });
 check(
   "the primary wins the locale it shares with another door",
-  tie?.["es"] === "https://inmobiliaria.com.py/",
-  tie?.["es"],
+  tie?.["sv"] === `https://${CANONICAL_HOST}/`,
+  tie?.["sv"],
 );
 check("one entry per locale, plus x-default", Object.keys(tie ?? {}).length === 3);
 
 const overridden = alternatesFor(flipDoors, FLIP_PRIMARY, {
-  path: "/venta/asuncion",
+  path: "/kopa/marbella",
   scope: "site",
-  pathByLocale: { en: "/for-sale/asuncion" },
+  // Not expressible while `Locale` is `"sv"` — same reason as the door above.
+  pathByLocale: { en: "/for-sale/marbella" } as Partial<Record<"sv", string>>,
 });
 check(
   "a per-locale path override reaches only that locale",
-  overridden?.["en"] === "https://realestateinparaguay.com/for-sale/asuncion" &&
-    overridden?.["es"] === "https://inmobiliaria.com.py/venta/asuncion",
+  overridden?.["en"] === `https://${EN_HOST}/for-sale/marbella` &&
+    overridden?.["sv"] === `https://${CANONICAL_HOST}/kopa/marbella`,
 );
 
 /** Google requires every version to list the same set, self included. */
 const selfListed = Object.values(home ?? {}).includes(
-  "https://inmobiliaria.com.py/",
+  `https://${CANONICAL_HOST}/`,
 );
 check("the set is self-referential (host-independent by construction)", selfListed);
 
 /**
  * The vertical table is hand-written TypeScript, so the traps below all
  * compile. Each one is a live SEO regression that no page would report: the
- * site keeps rendering and Google quietly does the wrong thing with it. The
- * flip checklist (PLAN.md D6) edits exactly these fields, one host at a time,
- * which is when a half-applied edit is most likely — so the half-applied state
- * fails a push instead of a quarter of indexing.
+ * site keeps rendering and Google quietly does the wrong thing with it. They
+ * are cheap to satisfy with one door and stay because adding the second one is
+ * exactly when a half-applied edit is likely — so the half-applied state fails
+ * a push instead of a quarter of indexing.
  */
 console.log("\nvertical table: traps that are not type errors");
 
@@ -233,7 +252,7 @@ check(
 check(
   "a directory/projects door does not claim listing detail",
   servedNow.every((d) => !d.config.mode || d.config.mode === "portal" || !d.config.ownsListingDetail),
-  "those doors render a different shell entirely and have no /propiedad to be canonical for",
+  "those doors render a different shell entirely and have no /bostad to be canonical for",
 );
 
 const brands = servedNow.map((d) => d.config.brand);
@@ -254,7 +273,7 @@ check(
 check(
   "the primary host's row agrees that it owns its detail pages",
   VERTICALS[CANONICAL_HOST]?.ownsListingDetail !== false,
-  `${CANONICAL_HOST} is primary, so origin.ts self-canonicalises its /propiedad pages regardless of the flag`,
+  `${CANONICAL_HOST} is primary, so origin.ts self-canonicalises its /bostad pages regardless of the flag`,
 );
 
 console.log(

@@ -20,6 +20,7 @@ import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
 import { listingScopeWhere, maySetStatus, type EditScope } from "@/lib/listing-edit";
+import { canPublish, publishBlockReason } from "@/lib/publish-gate";
 import { containsPattern } from "@/lib/sql-like";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
@@ -35,10 +36,14 @@ export interface ReviewRow {
   title: string;
   operation: (typeof listings.$inferSelect)["operation"];
   propertyType: (typeof listings.$inferSelect)["propertyType"];
-  priceAmount: string;
-  priceCurrency: "USD" | "PYG";
-  priceUsd: string;
+  priceEur: string;
   createdAt: Date;
+  /**
+   * Read here so the review queue can show at a glance which rows the publish
+   * gate would refuse — approving one and getting a silent no-op is worse than
+   * seeing why beforehand (publish-gate.ts).
+   */
+  energyRating: (typeof listings.$inferSelect)["energyRating"];
   agencyName: string | null;
   locationName: string | null;
 }
@@ -53,10 +58,9 @@ export async function getReviewQueue(): Promise<ReviewRow[]> {
       title: listings.title,
       operation: listings.operation,
       propertyType: listings.propertyType,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
-      priceUsd: listings.priceUsd,
+      priceEur: listings.priceEur,
       createdAt: listings.createdAt,
+      energyRating: listings.energyRating,
       agencyName: agencies.name,
       locationName: locations.name,
     })
@@ -96,9 +100,33 @@ export async function countRecentLeads(hours = 24): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
-/** Approve a pending listing → published. Scoped to pending_review so it can't
- * resurrect a removed/sold row. Returns rows affected (0 = nothing to do). */
-export async function approveListing(id: number): Promise<number> {
+export type ApproveResult =
+  | { ok: true }
+  | { ok: false; reason: "not_pending" | "blocked"; message?: string };
+
+/**
+ * Approve a pending listing → published. Scoped to pending_review so it can't
+ * resurrect a removed/sold row.
+ *
+ * This is the review queue's transition, and therefore one of the three places
+ * the publish gate fires (src/lib/publish-gate.ts): an approval is exactly the
+ * moment a row becomes an advertisement, and RD 390/2021 requires the energy
+ * rating to be in one. Unlike the other two writers this returns WHY rather
+ * than a row count — an operator clicking Approve and getting a silent no-op
+ * would go looking for a bug instead of for the missing field.
+ */
+export async function approveListing(id: number): Promise<ApproveResult> {
+  const [current] = await db
+    .select({ status: listings.status, energyRating: listings.energyRating })
+    .from(listings)
+    .where(eq(listings.id, id))
+    .limit(1);
+  if (!current || current.status !== "pending_review")
+    return { ok: false, reason: "not_pending" };
+
+  const blocked = publishBlockReason(current);
+  if (blocked) return { ok: false, reason: "blocked", message: blocked };
+
   const [res] = await db
     .update(listings)
     .set({
@@ -112,7 +140,7 @@ export async function approveListing(id: number): Promise<number> {
       reviewNotes: null,
     })
     .where(and(eq(listings.id, id), eq(listings.status, "pending_review")));
-  return res.affectedRows;
+  return res.affectedRows === 1 ? { ok: true } : { ok: false, reason: "not_pending" };
 }
 
 /** Reject a pending listing → removed, recording the reason on the row. */
@@ -132,7 +160,15 @@ export interface AgencyRow {
   id: number;
   name: string;
   slug: string;
-  whatsapp: string | null;
+  /**
+   * Which of the three lister types this is. A `relocation` agency represents
+   * the BUYER and earns from the introduction, so every surface that renders
+   * an agency name has to be able to say so rather than blur it into
+   * "byrå" — which is why the value rides along with the name everywhere,
+   * not just on the profile page.
+   */
+  kind: (typeof agencies.$inferSelect)["kind"];
+  phone: string | null;
   email: string | null;
   isVerified: boolean;
   plan: (typeof agencies.$inferSelect)["plan"];
@@ -144,7 +180,8 @@ export async function listAgencies(): Promise<AgencyRow[]> {
       id: agencies.id,
       name: agencies.name,
       slug: agencies.slug,
-      whatsapp: agencies.whatsapp,
+      kind: agencies.kind,
+      phone: agencies.phone,
       email: agencies.email,
       isVerified: agencies.isVerified,
       plan: agencies.plan,
@@ -157,9 +194,11 @@ export interface AgentRow {
   id: number;
   name: string;
   slug: string;
-  whatsapp: string | null;
+  phone: string | null;
   isVerified: boolean;
   agencyName: string | null;
+  /** The agent's agency kind, so the directory can label a relocation partner. */
+  agencyKind: (typeof agencies.$inferSelect)["kind"] | null;
 }
 
 export async function listAgents(): Promise<AgentRow[]> {
@@ -168,9 +207,10 @@ export async function listAgents(): Promise<AgentRow[]> {
       id: agents.id,
       name: agents.name,
       slug: agents.slug,
-      whatsapp: agents.whatsapp,
+      phone: agents.phone,
       isVerified: agents.isVerified,
       agencyName: agencies.name,
+      agencyKind: agencies.kind,
     })
     .from(agents)
     .leftJoin(agencies, eq(agents.agencyId, agencies.id))
@@ -180,8 +220,10 @@ export async function listAgents(): Promise<AgentRow[]> {
 export interface CreateAgencyInput {
   name: string;
   email: string | null;
-  whatsapp: string | null;
+  phone: string | null;
   plan: AgencyRow["plan"];
+  /** Defaults to `inmobiliaria`, the overwhelmingly common case. */
+  kind?: AgencyRow["kind"];
 }
 
 /**
@@ -204,8 +246,9 @@ export async function createPanelAgency(
     name: input.name,
     slug,
     email: input.email,
-    whatsapp: input.whatsapp,
+    phone: input.phone,
     plan: input.plan,
+    kind: input.kind ?? "inmobiliaria",
     isVerified: false,
   });
 
@@ -233,16 +276,31 @@ export async function setAgentVerified(id: number, verified: boolean): Promise<v
 /* ------------------------------------------------------------------ */
 
 export type UserRoleValue = (typeof users.$inferSelect)["role"];
+export type UserLocaleValue = (typeof users.$inferSelect)["locale"];
+export type IdentityDocType = NonNullable<
+  (typeof users.$inferSelect)["identityDocType"]
+>;
 
 export interface PanelUserRow {
   id: number;
   name: string | null;
-  email: string | null;
+  /** The identity here, and NOT NULL since the email-first flip (§3.7). */
+  email: string;
   role: UserRoleValue;
-  locale: "es" | "en";
-  whatsapp: string | null;
+  locale: UserLocaleValue;
+  phone: string | null;
   hasPassword: boolean;
   createdAt: Date;
+  /**
+   * Identity verification, operator-set only. `identityRefLast4` is the last
+   * four characters of the document and never the whole number — see the
+   * schema's `users.identity_*` note on why the full NIE/DNI is deliberately
+   * not a column. `identityVerifiedAt` NULL = unverified, which is the state
+   * almost every private seller is in and must be rendered as such.
+   */
+  identityDocType: IdentityDocType | null;
+  identityRefLast4: string | null;
+  identityVerifiedAt: Date | null;
   /** Agency the user belongs to via agents.user_id — NULL when unlinked. */
   agencyId: number | null;
   agencyName: string | null;
@@ -257,9 +315,12 @@ export async function listUsers(): Promise<PanelUserRow[]> {
       email: users.email,
       role: users.role,
       locale: users.locale,
-      whatsapp: users.whatsapp,
+      phone: users.phone,
       passwordHash: users.passwordHash,
       createdAt: users.createdAt,
+      identityDocType: users.identityDocType,
+      identityRefLast4: users.identityRefLast4,
+      identityVerifiedAt: users.identityVerifiedAt,
       agencyId: agents.agencyId,
       agencyName: agencies.name,
     })
@@ -287,9 +348,46 @@ export interface UpsertUserInput {
   name: string | null;
   email: string;
   role: UserRoleValue;
-  locale: "es" | "en";
+  locale: UserLocaleValue;
+  phone?: string | null;
   /** Omitted/empty on edit = keep the existing password. */
   password?: string;
+  /**
+   * Identity verification. **Operator-settable only**: these fields reach the
+   * database through this admin path and no other — never from the publish
+   * wizard, never from registration, never from a self-service profile form.
+   * The whole value of `identity_verified_at` is that the person it describes
+   * cannot set it, exactly like `listings.nota_simple_seen_at`.
+   *
+   * `undefined` leaves whatever is on the row; an explicit `null` clears it.
+   */
+  identityDocType?: IdentityDocType | null;
+  identityRefLast4?: string | null;
+  identityVerifiedAt?: Date | null;
+}
+
+/**
+ * The last four characters, uppercased, or null. Longer input is truncated
+ * from the END rather than rejected, because an operator pasting the whole
+ * document number is the expected mistake and storing its tail is the intended
+ * result — but the full number is never what lands in the column.
+ */
+function last4(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const cleaned = value.replace(/[^0-9A-Za-z]/g, "").toUpperCase();
+  return cleaned ? cleaned.slice(-4) : null;
+}
+
+/** The identity fields, shared by create and update. */
+function identityPatch(input: UpsertUserInput) {
+  const patch: Partial<typeof users.$inferInsert> = {};
+  if (input.identityDocType !== undefined)
+    patch.identityDocType = input.identityDocType;
+  if (input.identityRefLast4 !== undefined)
+    patch.identityRefLast4 = last4(input.identityRefLast4);
+  if (input.identityVerifiedAt !== undefined)
+    patch.identityVerifiedAt = input.identityVerifiedAt;
+  return patch;
 }
 
 /** True when another user already owns this email (unique column). */
@@ -318,7 +416,9 @@ export async function createPanelUser(
     email,
     role: input.role,
     locale: input.locale,
+    phone: input.phone?.trim() || null,
     passwordHash: await hashPassword(input.password),
+    ...identityPatch(input),
   });
 
   const [row] = await db
@@ -345,7 +445,9 @@ export async function updatePanelUser(
     email,
     role: input.role,
     locale: input.locale,
+    ...identityPatch(input),
   };
+  if (input.phone !== undefined) patch.phone = input.phone?.trim() || null;
   if (input.password) patch.passwordHash = await hashPassword(input.password);
 
   await db.update(users).set(patch).where(eq(users.id, id));
@@ -414,8 +516,7 @@ export interface AgencyListingRow {
   status: ListingStatus;
   operation: (typeof listings.$inferSelect)["operation"];
   propertyType: (typeof listings.$inferSelect)["propertyType"];
-  priceAmount: string;
-  priceCurrency: "USD" | "PYG";
+  priceEur: string;
   updatedAt: Date;
   /** Rejection reason set by admin review (status "removed"), else null. */
   reviewNotes: string | null;
@@ -440,8 +541,7 @@ export async function getPanelListings(
       status: listings.status,
       operation: listings.operation,
       propertyType: listings.propertyType,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
+      priceEur: listings.priceEur,
       updatedAt: listings.updatedAt,
       reviewNotes: listings.reviewNotes,
     })
@@ -464,11 +564,22 @@ export async function setPanelListingStatus(params: {
    * status it already has — see maySetStatus().
    */
   const [current] = await db
-    .select({ status: listings.status })
+    .select({
+      status: listings.status,
+      energyRating: listings.energyRating,
+    })
     .from(listings)
     .where(eq(listings.id, params.listingId))
     .limit(1);
   if (!maySetStatus(params.scope, current?.status, params.status)) return 0;
+
+  /**
+   * RD 390/2021: no energy rating, no advertisement. This is a status-only
+   * transition, so unlike `updateListing()` there is no incoming value that
+   * could supply the missing rating — the row as it stands is the row that
+   * would be published. See publish-gate.ts.
+   */
+  if (params.status === "published" && !canPublish(current ?? {})) return 0;
 
   // FIRST publish stamps publishedAt so category ordering (idx_fresh) is sane —
   // and only the first. Un-pausing a listing is not a new listing, so COALESCE
@@ -493,8 +604,9 @@ export interface LeadRow {
   id: number;
   leadType: (typeof leads.$inferSelect)["leadType"];
   name: string | null;
-  whatsapp: string;
-  email: string | null;
+  /** The required identity since the email-first flip. Was `whatsapp`. */
+  email: string;
+  phone: string | null;
   message: string | null;
   createdAt: Date;
   listingId: number | null;
@@ -514,16 +626,17 @@ export interface AdminLeadRow extends LeadRow {
   routedTo: (typeof leads.$inferSelect)["routedTo"];
   agencyName: string | null;
   /**
-   * The FSBO publisher behind an `internal` lead, when the listing has one.
+   * The FSBO publisher behind a lead on a self-published listing.
    *
-   * `routed_to` has no `owner` lane (adding one is a schema change), so a lead
-   * on a self-published listing lands in `internal` alongside valuation and
-   * seller leads — indistinguishable, and with no hint that a real person is
-   * waiting for it. Resolving the owner here makes the founder's inbox say who
-   * the lead is for and gives a one-tap way to forward it (audit F4).
+   * Resolving the owner here makes the founder's inbox say who the lead is
+   * for, and gives a one-tap way to forward it (audit F4) — by email now, the
+   * channel a Swedish private seller actually reads. This is a staff-only
+   * surface, which is why the address may be selected here and deliberately
+   * may not be on the public detail page (see `ListingOwner` in queries.ts).
    */
   ownerName: string | null;
-  ownerWhatsapp: string | null;
+  ownerEmail: string | null;
+  ownerPhone: string | null;
 }
 
 /**
@@ -532,7 +645,7 @@ export interface AdminLeadRow extends LeadRow {
  * Unscoped by design: this is the founder's own inbox, and it is the only
  * place a lead with `routed_to = 'internal'` (valuation and seller leads,
  * which belong to no agency) is visible at all. Optional filters narrow by
- * type and search name / WhatsApp / email.
+ * type and search name / email / phone.
  */
 export async function listAllLeads(params: {
   type?: LeadRow["leadType"] | "all";
@@ -548,8 +661,8 @@ export async function listAllLeads(params: {
     const term = containsPattern(q);
     const match = or(
       like(leads.name, term),
-      like(leads.whatsapp, term),
       like(leads.email, term),
+      like(leads.phone, term),
     );
     if (match) filters.push(match);
   }
@@ -559,8 +672,8 @@ export async function listAllLeads(params: {
       id: leads.id,
       leadType: leads.leadType,
       name: leads.name,
-      whatsapp: leads.whatsapp,
       email: leads.email,
+      phone: leads.phone,
       message: leads.message,
       createdAt: leads.createdAt,
       listingId: leads.listingId,
@@ -571,7 +684,8 @@ export async function listAllLeads(params: {
       routedTo: leads.routedTo,
       agencyName: agencies.name,
       ownerName: users.name,
-      ownerWhatsapp: users.whatsapp,
+      ownerEmail: users.email,
+      ownerPhone: users.phone,
     })
     .from(leads)
     .leftJoin(listings, eq(leads.listingId, listings.id))
@@ -627,8 +741,8 @@ export async function getPanelLeads(scope: EditScope): Promise<LeadRow[]> {
       id: leads.id,
       leadType: leads.leadType,
       name: leads.name,
-      whatsapp: leads.whatsapp,
       email: leads.email,
+      phone: leads.phone,
       message: leads.message,
       createdAt: leads.createdAt,
       listingId: leads.listingId,

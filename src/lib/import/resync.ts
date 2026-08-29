@@ -25,9 +25,9 @@ import type { ListingSource } from "./types";
 /** Sources that come from a feed, and can therefore go quiet. */
 const FEED_SOURCES: ListingSource[] = [
   "whiteglove",
-  "import_tulugar",
-  "import_infocasas",
-  "import_clasipar",
+  "import_idealista",
+  "import_fotocasa",
+  "import_kyero",
   "import_agency_site",
 ];
 
@@ -171,7 +171,7 @@ export async function recentPriceChanges(limit = 50): Promise<PriceChange[]> {
       listingId: importRows.listingId,
       title: importRows.title,
       previousJson: importRows.previousJson,
-      after: listings.priceUsd,
+      after: listings.priceEur,
       at: importJobs.createdAt,
     })
     .from(importRows)
@@ -183,7 +183,7 @@ export async function recentPriceChanges(limit = 50): Promise<PriceChange[]> {
 
   return rows
     .map((r) => {
-      const before = (r.previousJson as { priceUsd?: string } | null)?.priceUsd;
+      const before = (r.previousJson as { priceEur?: string } | null)?.priceEur;
       return {
         listingId: r.listingId as number,
         title: r.title,

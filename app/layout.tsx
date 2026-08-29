@@ -54,7 +54,10 @@ export default async function RootLayout({
   const theme = themeFor(vertical.key) as CSSProperties;
 
   return (
-    <html lang={vertical.locale === "en" ? "en" : "es-PY"} style={theme}>
+    // One served locale (verticals.ts). `lang` is derived from the vertical
+    // rather than hard-coded, so the English door is a config entry rather
+    // than an edit here.
+    <html lang={vertical.locale} style={theme}>
       <head>
         {/* Cormorant Garamond + Jost are self-hosted (audit F50): the
             @font-face rules live in globals.css and the variable woff2 files

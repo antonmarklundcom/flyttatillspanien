@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { getSessionUser } from "@/lib/auth/session";
 import { homeForRole } from "@/lib/auth/guards";
@@ -30,20 +30,20 @@ export default async function LoginPage({
     <main className="site-main">
       <div className="auth-wrap">
         <div className="auth-card">
-          <h1 className="auth-card__title">{esPanel.loginTitle}</h1>
-          <p className="auth-card__subtitle">{esPanel.loginSubtitle}</p>
+          <h1 className="auth-card__title">{svPanel.loginTitle}</h1>
+          <p className="auth-card__subtitle">{svPanel.loginSubtitle}</p>
 
           {error === "locked" ? (
-            <p className="auth-error">{esPanel.loginLocked}</p>
+            <p className="auth-error">{svPanel.loginLocked}</p>
           ) : error ? (
-            <p className="auth-error">{esPanel.loginError}</p>
+            <p className="auth-error">{svPanel.loginError}</p>
           ) : null}
 
           <form action={loginAction}>
             {next ? <input type="hidden" name="next" value={next} /> : null}
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="email">
-                {esPanel.emailLabel}
+                {svPanel.emailLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -56,7 +56,7 @@ export default async function LoginPage({
             </div>
             <div className="auth-field">
               <label className="auth-field__label" htmlFor="password">
-                {esPanel.passwordLabel}
+                {svPanel.passwordLabel}
               </label>
               <input
                 className="auth-field__input"
@@ -68,12 +68,12 @@ export default async function LoginPage({
               />
             </div>
             <button className="auth-submit" type="submit">
-              {esPanel.loginSubmit}
+              {svPanel.loginSubmit}
             </button>
           </form>
 
           <p className="auth-alt">
-            <Link href="/registro">{esPanel.loginToRegister}</Link>
+            <Link href="/registro">{svPanel.loginToRegister}</Link>
           </p>
         </div>
       </div>

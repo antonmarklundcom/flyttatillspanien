@@ -8,13 +8,20 @@
  *
  * Two rules encoded here rather than at each call site:
  *
- * - **Price filters run on `price_usd`.** It is the one normalized, indexed
- *   price column (schema §2.1); filtering on `price_amount` would compare
- *   guaraníes to dollars and silently return nonsense for half the inventory.
+ * - **Price filters run on `price_eur`.** It is the one stored, indexed price
+ *   column: Spain is EUR-only, and SEK is computed at render from a cached ECB
+ *   rate, never stored (design doc §2). A visitor who filters in kronor has
+ *   their bounds converted SEK→EUR **in the caller**, before `facetConds()`
+ *   sees them — `price_eur * :rate` in a WHERE is an expression over a column,
+ *   so it cannot use the index and every filtered search would scan the whole
+ *   published set. Same class of mistake as comparing two currencies in one
+ *   column, in a different costume.
  * - **The vertical's hard filters are ANDed in, not merged.** A door that
  *   declares `filters: { operation: ["alquiler"] }` may only ever *narrow*
- *   what a visitor asked for, never widen it — otherwise alquiler.com.py could
- *   be talked into serving ventas with a query string.
+ *   what a visitor asked for, never widen it — otherwise a rentals-only door
+ *   could be talked into serving ventas with a query string. No enabled
+ *   vertical declares any today; the machinery stays because that is the only
+ *   safe shape for the day one does.
  */
 import "server-only";
 import { and, eq, gte, inArray, lte, type SQL } from "drizzle-orm";
@@ -30,8 +37,8 @@ export function facetConds(f: ListingFacets): SQL[] {
   if (f.operation) conds.push(eq(listings.operation, f.operation));
   if (f.propertyType) conds.push(eq(listings.propertyType, f.propertyType));
   if (f.locationIds) conds.push(inArray(listings.locationId, f.locationIds));
-  if (f.priceMin != null) conds.push(gte(listings.priceUsd, String(f.priceMin)));
-  if (f.priceMax != null) conds.push(lte(listings.priceUsd, String(f.priceMax)));
+  if (f.priceMin != null) conds.push(gte(listings.priceEur, String(f.priceMin)));
+  if (f.priceMax != null) conds.push(lte(listings.priceEur, String(f.priceMax)));
   if (f.minBedrooms != null) conds.push(gte(listings.bedrooms, f.minBedrooms));
   return conds;
 }
@@ -63,12 +70,6 @@ export function verticalConds(vertical: VerticalConfig): SQL[] {
   if (types.length === 1) conds.push(eq(listings.propertyType, types[0]));
   else if (types.length > 1) conds.push(inArray(listings.propertyType, types));
 
-  // Only `true` is a filter. `foreign_exposure: false` would mean "show the
-  // ones nobody opted in for", which no door wants — the column is an opt-in
-  // (default true), so its absence is the neutral state.
-  if (f.foreign_exposure === true) {
-    conds.push(eq(listings.foreignExposure, true));
-  }
   return conds;
 }
 

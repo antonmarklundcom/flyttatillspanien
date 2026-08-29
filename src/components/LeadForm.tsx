@@ -17,12 +17,13 @@ export interface LeadFormReason {
 /**
  * Standalone lead form for the marketing pages (/contacto,
  * /para-inmobiliarias). ContactForm.tsx is the listing-scoped version — it
- * always carries a listingPublicId and hands off to the seller's WhatsApp.
- * These leads have no listing and no counterparty: they come to us, so this
- * one just posts to /api/leads (MySQL first, then GHL) and confirms inline.
+ * always carries a listingPublicId and can hand off to the seller's own
+ * channel. These leads have no listing and no counterparty: they come to us,
+ * so this one just posts to /api/leads (MySQL first, then the CRM webhook)
+ * and confirms inline.
  *
- * WhatsApp is required by the API and is the field that actually gets a reply
- * in Paraguay; email is optional.
+ * Email is required by the API and is the field that actually gets a reply
+ * (design doc §3.7); the phone is optional.
  */
 export function LeadForm({
   leadType,
@@ -56,9 +57,12 @@ export function LeadForm({
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const digits = phone.replace(/\D/g, "");
-    if (digits.length < 6) {
-      setError("Ingresá un número de WhatsApp válido.");
+    // Email is the required identity now (design doc §3.7) and the phone is
+    // optional, so it is the address this gates on. Deliberately permissive,
+    // like every other address check in this repo.
+    const address = email.trim().toLowerCase();
+    if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(address)) {
+      setError("Ingresá un email válido.");
       return;
     }
     setError(null);
@@ -78,8 +82,8 @@ export function LeadForm({
         body: JSON.stringify({
           leadType: type,
           name: name || undefined,
-          email: email || undefined,
-          whatsapp: phone.trim(),
+          email: address,
+          phone: phone.trim() || undefined,
           message: body || undefined,
           utm: readUtm(),
         }),
@@ -139,30 +143,30 @@ export function LeadForm({
         </label>
         <label className="lead-form__field">
           <span className="lead-form__label">
-            WhatsApp <span aria-hidden>*</span>
+            Email <span aria-hidden>*</span>
           </span>
           <input
             className="lead-form__input"
-            type="tel"
+            type="email"
             required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+595 981 234 567"
-            autoComplete="tel"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu@email.com"
+            autoComplete="email"
           />
         </label>
       </div>
 
       <div className="lead-form__row">
         <label className="lead-form__field">
-          <span className="lead-form__label">Email (opcional)</span>
+          <span className="lead-form__label">Teléfono (opcional)</span>
           <input
             className="lead-form__input"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
-            autoComplete="email"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+46 70 123 45 67"
+            autoComplete="tel"
           />
         </label>
         {companyField && (

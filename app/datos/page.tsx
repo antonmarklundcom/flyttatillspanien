@@ -5,10 +5,7 @@ import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
 import { citiesWithPrices } from "@/lib/precios-queries";
-import {
-  getPortalStats,
-  listFinancingPrograms,
-} from "@/lib/directory-queries";
+import { getPortalStats } from "@/lib/directory-queries";
 import {
   CtaBand,
   FeatureGrid,
@@ -59,15 +56,16 @@ const TOOLS = [
  * entry point, and states plainly how each number is produced.
  */
 export default async function DatosPage() {
-  const [origin, priceCities, programs, stats] = await Promise.all([
+  const [origin, priceCities, stats] = await Promise.all([
     siteOrigin(),
     citiesWithPrices(),
-    listFinancingPrograms(),
     getPortalStats(),
   ]);
 
-  const totalSample = priceCities.reduce((n, c) => n + c.reliableSample, 0);
-  const bestRate = programs[0];
+  const totalSample = priceCities.reduce(
+    (n: number, c: { reliableSample: number }) => n + c.reliableSample,
+    0,
+  );
 
   return (
     <main>
@@ -101,14 +99,6 @@ export default async function DatosPage() {
               value: totalSample.toLocaleString("es-PY"),
               label: "Avisos en la muestra de precios",
             },
-            {
-              value: bestRate
-                ? `${Number(bestRate.annualRate).toLocaleString("es-PY", {
-                    maximumFractionDigits: 2,
-                  })}%`
-                : "—",
-              label: "Tasa anual más baja vigente",
-            },
           ]}
         />
       </Section>
@@ -121,9 +111,6 @@ export default async function DatosPage() {
           </Link>
           <Link className="mk-btn mk-btn--outline" href="/tasacion">
             Tasar mi propiedad
-          </Link>
-          <Link className="mk-btn mk-btn--outline" href="/financiamiento">
-            Financiamiento
           </Link>
         </div>
       </Section>
@@ -170,20 +157,6 @@ export default async function DatosPage() {
             Importante: son precios <em>de publicación</em>, no de cierre. En
             Paraguay lo habitual es que la operación cierre por debajo del
             precio publicado, así que tomalos como el techo de la negociación.
-          </p>
-
-          <h2>Cuotas estimadas</h2>
-          <p>
-            Convertimos el precio de venta en una cuota mensual con la fórmula
-            de cuota fija (sistema francés), usando las condiciones de los
-            programas de financiamiento cargados en el portal y descontando la
-            entrega mínima que cada uno exige. Cuando una propiedad califica
-            para más de un programa, mostramos el que da la cuota más baja.
-          </p>
-          <p>
-            No incluyen seguros, gastos administrativos ni escrituración, y no
-            consideran tu perfil crediticio.{" "}
-            <Link href="/financiamiento">Ver el detalle de cada programa</Link>.
           </p>
 
           <h2>Tasación</h2>
