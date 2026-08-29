@@ -2,10 +2,8 @@ import type { Metadata } from "next";
 import { homeForRole, requireUser } from "@/lib/auth/guards";
 import {
   getUserDraft,
-  listActiveFinancingPrograms,
   listNearbyProjects,
   listPublishLocations,
-  USD_TO_PYG,
 } from "@/lib/publish-queries";
 import { svPublish } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
@@ -52,8 +50,8 @@ async function readPrefill(params: {
   if (Number.isFinite(m2) && m2 >= 10 && m2 <= 100_000) {
     // /tasacion asks for lot m² on a terreno and built m² on everything else,
     // and the wizard keeps those in two different fields.
-    if (out.propertyType === "terreno") out.landM2 = String(Math.round(m2));
-    else out.areaM2 = String(Math.round(m2));
+    if (out.propertyType === "terreno") out.plotM2 = String(Math.round(m2));
+    else out.builtM2 = String(Math.round(m2));
   }
 
   if (params.ciudad) {
@@ -86,10 +84,9 @@ export default async function PublishPage({
   ).toString();
   const user = await requireUser(query ? `/publicar?${query}` : "/publicar");
 
-  const [locations, projects, programs] = await Promise.all([
+  const [locations, projects] = await Promise.all([
     listPublishLocations(),
     listNearbyProjects(),
-    listActiveFinancingPrograms(),
   ]);
 
   // A prefill only ever matters when there is no draft to resume; resolving it
@@ -112,14 +109,13 @@ export default async function PublishPage({
         bedrooms: row.bedrooms != null ? String(row.bedrooms) : "",
         bathrooms: row.bathrooms != null ? String(row.bathrooms) : "",
         parking: row.parking != null ? String(row.parking) : "",
-        areaM2: row.areaM2 != null ? String(row.areaM2) : "",
-        landM2: row.landM2 != null ? String(row.landM2) : "",
+        builtM2: row.builtM2 != null ? String(row.builtM2) : "",
+        usableM2: row.usableM2 != null ? String(row.usableM2) : "",
+        plotM2: row.plotM2 != null ? String(row.plotM2) : "",
         locationId: row.locationId,
         projectId: row.projectId,
-        priceCurrency: row.priceCurrency,
-        priceAmount: String(row.priceAmount),
+        priceEur: String(row.priceEur),
         videoUrl: row.videoUrl ?? "",
-        foreignExposure: row.foreignExposure,
       };
       // Same owner scope the upload action uses, so a resumed draft shows the
       // photos already stored for it.
@@ -139,8 +135,7 @@ export default async function PublishPage({
       <PublishWizard
         locations={locations}
         projects={projects}
-        programs={programs}
-        usdToPyg={USD_TO_PYG}
+        accountEmail={user.email}
         initialDraft={initialDraft}
         initialPhotos={initialPhotos}
         prefill={prefill}

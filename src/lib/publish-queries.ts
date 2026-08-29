@@ -182,16 +182,32 @@ function draftFields(input: DraftInput, agencyId: number | null) {
     projectId: input.projectId ?? null,
     agencyId,
     videoUrl: input.videoUrl ?? null,
-    referenciaCatastral: normalizeCatastral(input.referenciaCatastral),
-    energyRating: input.energyRating ?? null,
-    legalStatus: input.legalStatus ?? "desconocido",
-    chargesStatus: input.chargesStatus ?? "desconocido",
+    /**
+     * The legal block is written only when the caller actually carried it.
+     *
+     * `undefined` means "this form did not ask", not "the seller cleared it",
+     * and the two must not be the same write: a draft whose energy rating an
+     * operator filled in from /admin would otherwise be wiped the next time
+     * the seller saved a step in the wizard. An explicit `null` still clears.
+     */
+    ...(input.referenciaCatastral !== undefined && {
+      referenciaCatastral: normalizeCatastral(input.referenciaCatastral),
+    }),
+    ...(input.energyRating !== undefined && {
+      energyRating: input.energyRating,
+    }),
+    ...(input.legalStatus !== undefined && { legalStatus: input.legalStatus }),
+    ...(input.chargesStatus !== undefined && {
+      chargesStatus: input.chargesStatus,
+    }),
     // A licence number only means anything on a holiday let; carrying one on a
     // venta would render a compliance claim about the wrong thing.
-    touristLicence:
-      input.operation === "alquiler_vacacional"
-        ? input.touristLicence?.trim() || null
-        : null,
+    ...(input.touristLicence !== undefined && {
+      touristLicence:
+        input.operation === "alquiler_vacacional"
+          ? input.touristLicence?.trim() || null
+          : null,
+    }),
   };
 }
 

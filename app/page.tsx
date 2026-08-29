@@ -30,8 +30,7 @@ import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
 import { languageAlternates } from "@/lib/alternates";
-import { CONTACT_WHATSAPP } from "@/config/contact";
-import { waLink } from "@/lib/wa";
+import { CONTACT_EMAIL } from "@/config/contact";
 import { safeImageUrl } from "@/lib/external-image";
 
 /**
@@ -92,9 +91,9 @@ const getHomePayload = unstable_cache(
       getRecentListings(8, vertical),
       listCities(),
       countPublished(vertical),
-      getRecentListingsBy({ operation: "venta", type: "casa", vertical }, 8),
+      getRecentListingsBy({ operation: "venta", type: "villa", vertical }, 8),
       getRecentListingsBy(
-        { operation: "venta", type: "departamento", vertical },
+        { operation: "venta", type: "apartamento", vertical },
         8,
       ),
       getRecentListingsBy({ operation: "alquiler", vertical }, 8),
@@ -127,7 +126,7 @@ const getHomePayload = unstable_cache(
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: { absolute: `${brand} — ${brandTaglineFor("es")}` },
+    title: { absolute: `${brand} — ${brandTaglineFor("sv")}` },
     description: (await dict()).home.metaDescription,
     // Self-canonical so ?utm_*/?fbclid variants don't index as duplicates.
     // `languages` is empty while every door is Spanish — see alternates.ts.
@@ -144,13 +143,23 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Publish CTA — outbound WhatsApp when a portal number is configured, null
- * otherwise. It used to fall back to a mailto:, which pointed at an address
- * nobody owns; `/publicar` is the real form, so call sites route there
- * instead of opening a compose window into a black hole.
+ * The secondary "or write to us" CTA next to /publicar — a compose window when
+ * a real mailbox is configured, null otherwise.
+ *
+ * Email, not WhatsApp, since the flip: Sweden is email-first, and
+ * `CONTACT_WHATSAPP` is the agency-facing channel now. Still null-safe for the
+ * same reason it always was — `CONTACT_EMAIL` has no fallback, because a
+ * compose window into a mailbox nobody owns is worse than no link at all.
+ * `/publicar` is the real form and is always rendered beside this.
  */
-function publishWaHref(brand: string, t: Dictionary["home"]): string | null {
-  return waLink(CONTACT_WHATSAPP, t.publishWaPrefill(brand));
+function publishContactHref(
+  brand: string,
+  t: Dictionary["home"],
+): string | null {
+  if (!CONTACT_EMAIL) return null;
+  return `mailto:${encodeURIComponent(CONTACT_EMAIL)}?body=${encodeURIComponent(
+    t.publishEmailPrefill(brand),
+  )}`;
 }
 
 /**
@@ -270,17 +279,10 @@ export default async function Home() {
                 : t.heroStatCountEmpty}
             </span>
             <span>{t.heroStatUpdated}</span>
-            {publishWaHref(brand, t) ? (
-              <a
-                href={publishWaHref(brand, t)!}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {tCommon.publishCta}
-              </a>
-            ) : (
-              <Link href="/publicar">{tCommon.publishCta}</Link>
-            )}
+            {/* The hero's publish link always goes to the real form. It used
+                to prefer an outbound chat link, which put the one on-site
+                funnel behind a third party's app. */}
+            <Link href="/publicar">{tCommon.publishCta}</Link>
           </div>
         </div>
       </section>
@@ -614,16 +616,12 @@ export default async function Home() {
             <Link className="home-cta__button" href="/publicar">
               {t.ctaButton}
             </Link>
-            {/* Only rendered with a real number behind it: the label promises
-                WhatsApp, so it must not quietly become something else. */}
-            {publishWaHref(brand, t) && (
-              <a
-                className="home-cta__alt"
-                href={publishWaHref(brand, t)!}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {t.ctaWhatsapp}
+            {/* Only rendered with a real mailbox behind it: the label
+                promises somewhere to write, so it must not quietly become
+                something else. */}
+            {publishContactHref(brand, t) && (
+              <a className="home-cta__alt" href={publishContactHref(brand, t)!}>
+                {t.ctaEmail}
               </a>
             )}
           </div>

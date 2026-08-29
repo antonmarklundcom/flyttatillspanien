@@ -141,19 +141,34 @@ export async function saveDraftAction(
       locationId,
       projectId: posIntOrNull(payload.projectId) || null,
       videoUrl: String(payload.videoUrl ?? "").trim().slice(0, 500) || null,
-      referenciaCatastral:
-        String(payload.referenciaCatastral ?? "").trim() || null,
-      energyRating: enumOrNull<EnergyRating>(
-        payload.energyRating,
-        ENERGY_RATINGS,
-      ),
-      legalStatus:
-        enumOrNull<LegalStatus>(payload.legalStatus, LEGAL_STATUSES) ??
-        "desconocido",
-      chargesStatus:
-        enumOrNull<ChargesStatus>(payload.chargesStatus, CHARGES_STATUSES) ??
-        "desconocido",
-      touristLicence: String(payload.touristLicence ?? "").trim() || null,
+      /**
+       * Only forwarded when the wizard actually carried the key. A field the
+       * form did not ask about must not be written as "the seller cleared
+       * it" — see draftFields() in publish-queries.ts.
+       */
+      ...("referenciaCatastral" in payload && {
+        referenciaCatastral:
+          String(payload.referenciaCatastral ?? "").trim() || null,
+      }),
+      ...("energyRating" in payload && {
+        energyRating: enumOrNull<EnergyRating>(
+          payload.energyRating,
+          ENERGY_RATINGS,
+        ),
+      }),
+      ...("legalStatus" in payload && {
+        legalStatus:
+          enumOrNull<LegalStatus>(payload.legalStatus, LEGAL_STATUSES) ??
+          "desconocido",
+      }),
+      ...("chargesStatus" in payload && {
+        chargesStatus:
+          enumOrNull<ChargesStatus>(payload.chargesStatus, CHARGES_STATUSES) ??
+          "desconocido",
+      }),
+      ...("touristLicence" in payload && {
+        touristLicence: String(payload.touristLicence ?? "").trim() || null,
+      }),
       /**
        * `nota_simple_seen_at` is not in `DraftPayload` and must never be: it
        * is the portal's attestation that a charges search was sighted, and a
@@ -188,8 +203,7 @@ export type RequestOtpResult =
  */
 export async function requestOtpAction(): Promise<RequestOtpResult> {
   const user = await requireUser("/publicar");
-  const email = user.email?.trim();
-  if (!email) return { ok: false, error: "invalid_email" };
+  const email = user.email.trim();
 
   if (!isMessagingConfigured()) return { ok: false, error: "undeliverable" };
 
@@ -260,8 +274,7 @@ export async function verifyAndPublishAction(params: {
 
   // Same address the code was sent to, and for the same reason: the session
   // decides who this is, never the payload.
-  const email = user.email?.trim();
-  if (!email) return { ok: false, error: "invalid_email" };
+  const email = user.email.trim();
 
   const verified = await verifyOtp(email, params.code);
   if (!verified.ok) {

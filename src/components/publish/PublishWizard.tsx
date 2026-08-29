@@ -2,7 +2,7 @@
 
 /**
  * 3-step publish wizard (ARCHITECTURE.md §3, M5). Detalles → Ubicación →
- * Precio & publicación, then WhatsApp OTP at publish. Autosave is two-layer:
+ * Precio & publicación, then an emailed code at publish. Autosave is two-layer:
  * localStorage on every change (instant, survives a reload) and a server draft
  * (a status='draft' listings row) written when a step is completed, so a draft
  * also survives a device change and shows up in the panel. All identity,
@@ -10,9 +10,7 @@
  * actions.ts — this component only collects and previews.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { bestCuota, type FinancingProgram } from "@/lib/cuota";
-import { formatCuota } from "@/lib/format";
-import { svPublish } from "@/i18n/sv";
+import { svPanel, svPublish } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
 import type { Operation, PropertyType } from "@/lib/import/types";
@@ -33,7 +31,7 @@ import type { ListingImageRow } from "@/lib/listing-images";
 const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
   { value: "venta", label: "Venta" },
   { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_temporal", label: "Alquiler temporal" },
+  { value: "alquiler_vacacional", label: "Alquiler vacacional" },
 ];
 
 /** Terrenos have no rooms; every other type does. */
@@ -50,14 +48,14 @@ interface WizardState {
   bedrooms: string;
   bathrooms: string;
   parking: string;
-  areaM2: string;
-  landM2: string;
+  builtM2: string;
+  usableM2: string;
+  plotM2: string;
   locationId: number;
   projectId: number | null;
-  priceCurrency: "USD" | "PYG";
-  priceAmount: string;
+  /** EUR — the only stored price, so there is no currency to pick. */
+  priceEur: string;
   videoUrl: string;
-  foreignExposure: boolean;
 }
 
 export interface InitialDraft extends Partial<WizardState> {
@@ -71,7 +69,10 @@ export interface InitialDraft extends Partial<WizardState> {
  * to a draft in progress on this device.
  */
 export type PublishPrefill = Partial<
-  Pick<WizardState, "operation" | "propertyType" | "areaM2" | "landM2" | "locationId">
+  Pick<
+    WizardState,
+    "operation" | "propertyType" | "builtM2" | "plotM2" | "locationId"
+  >
 >;
 
 const EMPTY: WizardState = {
@@ -83,14 +84,13 @@ const EMPTY: WizardState = {
   bedrooms: "",
   bathrooms: "",
   parking: "",
-  areaM2: "",
-  landM2: "",
+  builtM2: "",
+  usableM2: "",
+  plotM2: "",
   locationId: 0,
   projectId: null,
-  priceCurrency: "USD",
-  priceAmount: "",
+  priceEur: "",
   videoUrl: "",
-  foreignExposure: true,
 };
 
 const LS_KEY = "ftse:publish-draft";
@@ -98,8 +98,7 @@ const LS_KEY = "ftse:publish-draft";
 export function PublishWizard({
   locations,
   projects,
-  programs,
-  usdToPyg,
+  accountEmail,
   initialDraft,
   initialPhotos,
   prefill,
@@ -108,14 +107,14 @@ export function PublishWizard({
 }: {
   locations: PublishLocation[];
   projects: NearbyProject[];
-  programs: FinancingProgram[];
-  usdToPyg: number;
+  /** The signed-in account's address — where the code is sent. Display only. */
+  accountEmail: string;
   initialDraft: InitialDraft | null;
   initialPhotos?: ListingImageRow[];
   /** Seed values from /tasacion. See PublishPrefill. */
   prefill?: PublishPrefill | null;
   /**
-   * Whether a WhatsApp code can actually be delivered. False → publish
+   * Whether an emailed code can actually be delivered. False → publish
    * directly; the server enforces the same rule, this only shapes the UI.
    */
   otpEnabled: boolean;
@@ -140,7 +139,13 @@ export function PublishWizard({
 
   // OTP sub-state (step 3 → publish).
   const [otpSent, setOtpSent] = useState(false);
-  const [whatsapp, setWhatsapp] = useState("");
+  /**
+   * An optional callback number. NOT the code's destination: the code goes to
+   * the account's own address, decided server-side from the session, because a
+   * client-named destination would make this an open relay that mails a
+   * six-digit code anywhere a script asks.
+   */
+  const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [otpBusy, setOtpBusy] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
@@ -202,18 +207,6 @@ export function PublishWizard({
     return state.projectId ? byId.get(state.projectId) ?? "" : "";
   }, [projects, state.projectId]);
 
-  // Cuota preview (venta only), computed client-side from the same engine the
-  // nightly cron uses. Converts the entered price to Gs first.
-  const cuotaPreview = useMemo(() => {
-    if (state.operation !== "venta") return null;
-    const amount = Number(state.priceAmount);
-    if (!Number.isFinite(amount) || amount <= 0) return null;
-    const priceGs = state.priceCurrency === "PYG" ? amount : amount * usdToPyg;
-    const best = bestCuota(priceGs, programs);
-    if (!best) return null;
-    return { text: formatCuota(best.monthlyGs), programName: best.programName };
-  }, [state.operation, state.priceAmount, state.priceCurrency, usdToPyg, programs]);
-
   const payload = useCallback(
     (): DraftPayload => ({
       draftId: state.draftId,
@@ -221,17 +214,22 @@ export function PublishWizard({
       propertyType: state.propertyType || undefined,
       title: state.title,
       descriptionEs: state.descriptionEs,
-      priceAmount: Number(state.priceAmount) || 0,
-      priceCurrency: state.priceCurrency,
+      priceEur: Number(state.priceEur) || 0,
       bedrooms: hasRooms(state.propertyType) ? numOrNull(state.bedrooms) : null,
       bathrooms: hasRooms(state.propertyType) ? numOrNull(state.bathrooms) : null,
       parking: numOrNull(state.parking),
-      areaM2: numOrNull(state.areaM2),
-      landM2: numOrNull(state.landM2),
+      builtM2: numOrNull(state.builtM2),
+      usableM2: numOrNull(state.usableM2),
+      plotM2: numOrNull(state.plotM2),
       locationId: state.locationId,
       projectId: state.projectId,
       videoUrl: state.videoUrl,
-      foreignExposure: state.foreignExposure,
+      /**
+       * The Spain legal block is deliberately absent from this payload until
+       * Phase 3 adds its inputs. The server treats an omitted key as "this
+       * form did not ask" rather than "the seller cleared it", so a rating an
+       * operator filled in from /admin survives a save here.
+       */
     }),
     [state],
   );
@@ -318,7 +316,7 @@ export function PublishWizard({
         if (state.title.trim().length < 8) return svPublish.errors.title;
       }
       if (i === 1 && !state.locationId) return svPublish.errors.location;
-      if (i === 2 && !(Number(state.priceAmount) > 0)) return svPublish.errors.price;
+      if (i === 2 && !(Number(state.priceEur) > 0)) return svPublish.errors.price;
       return null;
     },
     [state],
@@ -348,7 +346,7 @@ export function PublishWizard({
       // Make sure the latest edits are on the draft before we verify & publish.
       const saved = await persist();
       if (saved === null) return;
-      const res = await requestOtpAction(whatsapp);
+      const res = await requestOtpAction();
       if (!res.ok) {
         if (res.error === "cooldown") {
           setCooldown(Math.ceil((res.cooldownMs ?? 60000) / 1000));
@@ -365,7 +363,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp]);
+  }, [persist]);
 
   /** Publish with no code, when none can be delivered (otpEnabled === false). */
   const publishDirect = useCallback(async () => {
@@ -374,7 +372,7 @@ export function PublishWizard({
     try {
       const saved = await persist();
       if (saved === null) return;
-      const res = await publishDraftAction({ draftId: saved, whatsapp });
+      const res = await publishDraftAction({ draftId: saved, phone });
       if (!res.ok) {
         setOtpError(svPublish.errors.generic);
         return;
@@ -390,7 +388,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [persist, whatsapp]);
+  }, [persist, phone]);
 
   const verifyAndPublish = useCallback(async () => {
     if (!state.draftId) return;
@@ -399,7 +397,6 @@ export function PublishWizard({
     try {
       const res = await verifyAndPublishAction({
         draftId: state.draftId,
-        whatsapp,
         code,
       });
       if (!res.ok) {
@@ -423,7 +420,7 @@ export function PublishWizard({
     } finally {
       setOtpBusy(false);
     }
-  }, [state.draftId, whatsapp, code]);
+  }, [state.draftId, code]);
 
   if (done) {
     return (
@@ -534,10 +531,11 @@ export function PublishWizard({
                 <NumField label={svPublish.bedroomsLabel} value={state.bedrooms} onChange={(v) => set("bedrooms", v)} />
                 <NumField label={svPublish.bathroomsLabel} value={state.bathrooms} onChange={(v) => set("bathrooms", v)} />
                 <NumField label={svPublish.parkingLabel} value={state.parking} onChange={(v) => set("parking", v)} />
-                <NumField label={svPublish.areaLabel} value={state.areaM2} onChange={(v) => set("areaM2", v)} />
+                <NumField label={svPublish.builtLabel} value={state.builtM2} onChange={(v) => set("builtM2", v)} />
+                <NumField label={svPublish.usableLabel} value={state.usableM2} onChange={(v) => set("usableM2", v)} />
               </>
             )}
-            <NumField label={svPublish.landLabel} value={state.landM2} onChange={(v) => set("landM2", v)} />
+            <NumField label={svPublish.plotLabel} value={state.plotM2} onChange={(v) => set("plotM2", v)} />
           </div>
         </div>
       )}
@@ -600,28 +598,21 @@ export function PublishWizard({
         <div className="wizard-panel">
           <div className="wizard-field">
             <label className="wizard-label">{svPublish.priceLabel}</label>
+            {/* No currency select: EUR is the only stored price, and the
+                kronor figure is computed at render from a dated ECB rate. */}
             <div className="wizard-price">
-              <select
-                className="wizard-input wizard-currency"
-                value={state.priceCurrency}
-                onChange={(e) => set("priceCurrency", e.target.value as "USD" | "PYG")}
-              >
-                <option value="USD">US$</option>
-                <option value="PYG">Gs</option>
-              </select>
+              <span className="wizard-currency" aria-hidden>
+                €
+              </span>
               <input
                 className="wizard-input"
                 inputMode="numeric"
-                value={state.priceAmount}
+                value={state.priceEur}
                 placeholder="0"
-                onChange={(e) => set("priceAmount", e.target.value.replace(/[^\d.]/g, ""))}
+                onChange={(e) => set("priceEur", e.target.value.replace(/[^\d.]/g, ""))}
               />
             </div>
-            {cuotaPreview && (
-              <p className="wizard-cuota">
-                🏦 {cuotaPreview.text} {svPublish.cuotaWith} {cuotaPreview.programName}
-              </p>
-            )}
+            <p className="wizard-hint">{svPublish.priceHint}</p>
           </div>
 
           <div className="wizard-field">
@@ -690,15 +681,6 @@ export function PublishWizard({
             )}
           </div>
 
-          <label className="wizard-toggle">
-            <input
-              type="checkbox"
-              checked={state.foreignExposure}
-              onChange={(e) => set("foreignExposure", e.target.checked)}
-            />
-            <span>{svPublish.foreignExposureLabel}</span>
-          </label>
-
           {/* OTP-at-publish — only when a code can actually reach them. */}
           <div className="wizard-otp">
             <h3 className="wizard-otp__title">
@@ -707,20 +689,29 @@ export function PublishWizard({
             <p className="wizard-hint">
               {otpEnabled ? svPublish.otpSubtitle : svPublish.publishSubtitle}
             </p>
+            {/* The destination is shown, not asked for: it is the address
+                this account logs in with, and the server sends there whatever
+                the form says. */}
             <div className="wizard-field">
-              <label className="wizard-label" htmlFor="wa">
-                {svPublish.whatsappLabel}
-              </label>
-              <input
-                id="wa"
-                className="wizard-input"
-                inputMode="tel"
-                value={whatsapp}
-                placeholder="0981 123 456"
-                onChange={(e) => setWhatsapp(e.target.value)}
-                disabled={otpEnabled && otpSent}
-              />
+              <span className="wizard-label">{svPublish.emailLabel}</span>
+              <p className="wizard-hint">{accountEmail}</p>
             </div>
+
+            {!otpEnabled && (
+              <div className="wizard-field">
+                <label className="wizard-label" htmlFor="phone">
+                  {svPanel.profilePhoneLabel}
+                </label>
+                <input
+                  id="phone"
+                  className="wizard-input"
+                  inputMode="tel"
+                  value={phone}
+                  placeholder="+46 70 123 45 67"
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            )}
 
             {otpEnabled && otpSent && (
               <div className="wizard-field">
@@ -747,16 +738,16 @@ export function PublishWizard({
                   type="button"
                   className="panel-btn panel-btn--primary"
                   onClick={publishDirect}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || Number(state.priceEur) <= 0}
                 >
                   {otpBusy ? svPublish.publishing : svPublish.publish}
                 </button>
               ) : !otpSent ? (
                 <button
                   type="button"
-                  className="panel-btn panel-btn--whatsapp"
+                  className="panel-btn panel-btn--primary"
                   onClick={sendCode}
-                  disabled={otpBusy || Number(state.priceAmount) <= 0}
+                  disabled={otpBusy || Number(state.priceEur) <= 0}
                 >
                   {otpBusy ? svPublish.sending : svPublish.sendCode}
                 </button>

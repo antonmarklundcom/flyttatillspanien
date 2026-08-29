@@ -27,8 +27,34 @@ import {
 } from "@/lib/import/claim-import";
 import { UnsafeUrlError, type FetchRejection } from "@/lib/safe-fetch";
 import { allowRequest } from "@/lib/rate-limit";
-import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import {
+  CHARGES_STATUSES,
+  ENERGY_RATINGS,
+  LEGAL_STATUSES,
+  OPERATIONS,
+  PROPERTY_TYPES,
+} from "@/lib/import/types";
+import type {
+  ChargesStatus,
+  EnergyRating,
+  LegalStatus,
+  Operation,
+  PropertyType,
+} from "@/lib/import/types";
+
+/**
+ * A form value narrowed to a known enum member, or null. Blank and
+ * unrecognised are the same answer here: the claim form only ever renders the
+ * options below, so anything else is a hand-built POST that should set
+ * nothing rather than fail loudly.
+ */
+function enumOrNull<T extends string>(
+  value: FormDataEntryValue | null,
+  allowed: readonly T[],
+): T | null {
+  const v = String(value ?? "").trim();
+  return (allowed as readonly string[]).includes(v) ? (v as T) : null;
+}
 
 export type ReadUrlResult =
   | {
@@ -101,8 +127,7 @@ export async function confirmImportAction(formData: FormData): Promise<void> {
   const title = String(formData.get("title") ?? "").trim();
   const operation = String(formData.get("operation") ?? "");
   const propertyType = String(formData.get("propertyType") ?? "");
-  const priceAmount = num(formData.get("priceAmount"));
-  const priceCurrency = formData.get("priceCurrency") === "PYG" ? "PYG" : "USD";
+  const priceEur = num(formData.get("priceEur"));
   const locationId = num(formData.get("locationId"));
 
   const valid =
@@ -110,8 +135,8 @@ export async function confirmImportAction(formData: FormData): Promise<void> {
     title.length >= 8 &&
     OPERATIONS.includes(operation as Operation) &&
     PROPERTY_TYPES.includes(propertyType as PropertyType) &&
-    priceAmount != null &&
-    priceAmount > 0 &&
+    priceEur != null &&
+    priceEur > 0 &&
     locationId != null &&
     locationId > 0;
 
@@ -142,29 +167,45 @@ export async function confirmImportAction(formData: FormData): Promise<void> {
       imageUrls: [],
       title: null,
       description: null,
-      priceAmount: null,
-      priceCurrency: null,
+      priceEur: null,
       operation: null,
       propertyType: null,
       bedrooms: null,
       bathrooms: null,
       parking: null,
-      areaM2: null,
-      landM2: null,
+      builtM2: null,
+      plotM2: null,
       notes: [],
     },
     operation: operation as Operation,
     propertyType: propertyType as PropertyType,
     title,
     descriptionEs: String(formData.get("descriptionEs") ?? "").trim() || null,
-    priceAmount,
-    priceCurrency,
+    priceEur,
     bedrooms: num(formData.get("bedrooms")),
     bathrooms: num(formData.get("bathrooms")),
     parking: num(formData.get("parking")),
-    areaM2: num(formData.get("areaM2")),
-    landM2: num(formData.get("landM2")),
+    builtM2: num(formData.get("builtM2")),
+    usableM2: num(formData.get("usableM2")),
+    plotM2: num(formData.get("plotM2")),
     locationId,
+    /* The Spain legal block, as the claiming agent states it. */
+    referenciaCatastral:
+      String(formData.get("referenciaCatastral") ?? "").trim() || null,
+    energyRating: enumOrNull<EnergyRating>(
+      formData.get("energyRating"),
+      ENERGY_RATINGS,
+    ),
+    legalStatus: enumOrNull<LegalStatus>(
+      formData.get("legalStatus"),
+      LEGAL_STATUSES,
+    ),
+    chargesStatus: enumOrNull<ChargesStatus>(
+      formData.get("chargesStatus"),
+      CHARGES_STATUSES,
+    ),
+    touristLicence:
+      String(formData.get("touristLicence") ?? "").trim() || null,
     userId: ctx.user.id,
     // An independent agent has no agency; the draft is theirs via ownerUserId.
     agencyId: scope.kind === "agency" ? scope.agencyId : null,

@@ -199,27 +199,18 @@ export function ImportByUrl({
 
             <label className="panel-form__field">
               <span className="auth-field__label">{svPanel.listingPriceLabel}</span>
+              {/* No currency select: EUR is the only stored price. A page
+                  quoting £ or $ leaves this blank with a note rather than
+                  converting — see from-url.ts. */}
               <input
                 className="auth-field__input"
-                name="priceAmount"
+                name="priceEur"
                 type="number"
                 min={1}
                 step={1}
-                defaultValue={parsed.priceAmount ?? ""}
+                defaultValue={parsed.priceEur ?? ""}
                 required
               />
-            </label>
-
-            <label className="panel-form__field">
-              <span className="auth-field__label">{svPanel.listingCurrencyLabel}</span>
-              <select
-                className="panel-select"
-                name="priceCurrency"
-                defaultValue={parsed.priceCurrency ?? "USD"}
-              >
-                <option value="USD">USD</option>
-                <option value="PYG">Gs</option>
-              </select>
             </label>
 
             <label className="panel-form__field" style={{ flexBasis: "100%" }}>
@@ -273,27 +264,70 @@ export function ImportByUrl({
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{svPanel.listingAreaLabel}</span>
+              <span className="auth-field__label">{svPanel.listingBuiltLabel}</span>
               <input
                 className="auth-field__input"
-                name="areaM2"
+                name="builtM2"
                 type="number"
                 min={0}
                 step="0.01"
-                defaultValue={parsed.areaM2 ?? ""}
+                defaultValue={parsed.builtM2 ?? ""}
               />
             </label>
 
             <label className="panel-form__field">
-              <span className="auth-field__label">{svPanel.listingLandLabel}</span>
+              <span className="auth-field__label">
+                {svPanel.listingUsableLabel}
+              </span>
               <input
                 className="auth-field__input"
-                name="landM2"
+                name="usableM2"
                 type="number"
                 min={0}
                 step="0.01"
-                defaultValue={parsed.landM2 ?? ""}
               />
+            </label>
+
+            <label className="panel-form__field">
+              <span className="auth-field__label">{svPanel.listingPlotLabel}</span>
+              <input
+                className="auth-field__input"
+                name="plotM2"
+                type="number"
+                min={0}
+                step="0.01"
+                defaultValue={parsed.plotM2 ?? ""}
+              />
+            </label>
+
+            <label className="panel-form__field" style={{ flexBasis: "260px" }}>
+              <span className="auth-field__label">{svPanel.catastralLabel}</span>
+              <input
+                className="auth-field__input"
+                name="referenciaCatastral"
+                type="text"
+                maxLength={40}
+              />
+              <span className="auth-field__hint">{svPanel.catastralHint}</span>
+            </label>
+
+            <label className="panel-form__field">
+              <span className="auth-field__label">
+                {svPanel.energyRatingLabel}
+              </span>
+              <select className="panel-select" name="energyRating" defaultValue="">
+                <option value="">—</option>
+                {["A", "B", "C", "D", "E", "F", "G", "en_tramite", "exento"].map(
+                  (o) => (
+                    <option key={o} value={o}>
+                      {o}
+                    </option>
+                  ),
+                )}
+              </select>
+              <span className="auth-field__hint">
+                {svPanel.energyRatingHint}
+              </span>
             </label>
           </div>
 
