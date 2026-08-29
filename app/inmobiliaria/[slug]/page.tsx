@@ -15,8 +15,10 @@ import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
+import { getFxRate } from "@/lib/reference-queries";
 import { waLink } from "@/lib/wa";
 import { safeImageUrl } from "@/lib/external-image";
+import { svAgencyProfile, svListing } from "@/i18n/sv";
 
 // Same shape as the listing detail page: DB-backed, so no static caching —
 // this is the founder's inventory changing, not content that goes stale slowly.
@@ -35,13 +37,13 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const brand = await brandName();
   const { slug } = await params;
   const r = await resolve(slug);
-  if (!r) return { title: `Inmobiliaria no encontrada` };
+  if (!r) return { title: svAgencyProfile.notFoundTitle };
   const { agency, listingCount } = r;
   const ix = getIndexability({ listingCount });
   const canonical = `${await siteOrigin()}${agencyUrl(agency.slug)}`;
   return {
-    title: `${agency.name} — Propiedades en venta y alquiler`,
-    description: `${listingCount} ${listingCount === 1 ? "propiedad" : "propiedades"} publicadas por ${agency.name} en ${brand}.`,
+    title: svAgencyProfile.metaTitle(agency.name),
+    description: svAgencyProfile.metaDescription(brand, agency.name, listingCount),
     alternates: { canonical },
     robots: { index: ix.state === "index", follow: true },
   };
@@ -60,7 +62,10 @@ export default async function AgencyProfilePage({ params }: Params) {
   const ix = getIndexability({ listingCount });
   if (ix.state === "gone") notFound();
 
-  const listings = await getAgencyListings({ agencyId: agency.id, limit: 24 });
+  const [listings, fx] = await Promise.all([
+    getAgencyListings({ agencyId: agency.id, limit: 24 }),
+    getFxRate(),
+  ]);
   const origin = await siteOrigin();
   // The ItemList's entries are listing detail URLs, which may be canonical on
   // a different host than the one serving this profile (audit F9).
@@ -72,7 +77,7 @@ export default async function AgencyProfilePage({ params }: Params) {
     .join("");
 
   const crumbs = [
-    { name: "Inicio", url: "/" },
+    { name: svAgencyProfile.breadcrumbHome, url: "/" },
     { name: agency.name, url: agencyUrl(agency.slug) },
   ];
 
@@ -90,10 +95,10 @@ export default async function AgencyProfilePage({ params }: Params) {
         />
       )}
 
-      <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
+      <nav className="breadcrumb-nav" aria-label={svListing.breadcrumbLabel}>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Link className="breadcrumb-nav__link" href="/">
-            Inicio
+            {svAgencyProfile.breadcrumbHome}
           </Link>
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -117,17 +122,25 @@ export default async function AgencyProfilePage({ params }: Params) {
           <h1 className="agency-profile__name">
             {agency.name}
             {agency.isVerified && (
-              <span className="agency-profile__verified" title="Verificado">
+              <span className="agency-profile__verified" title={svAgencyProfile.verified}>
                 ✓
               </span>
             )}
           </h1>
           <p className="agency-profile__meta">
-            Inmobiliaria ·{" "}
-            {listingCount > 0
-              ? `${listingCount} ${listingCount === 1 ? "propiedad publicada" : "propiedades publicadas"}`
-              : "Sin propiedades publicadas por el momento"}
+            {svAgencyProfile.kindLabel[agency.kind] ?? svAgencyProfile.kindLabel.inmobiliaria}
+            {" · "}
+            {svAgencyProfile.listingCount(listingCount)}
           </p>
+          {/* A relocation partner represents the BUYER, not the seller, and
+              earns from the introduction — materially different to a selling
+              agency, so it is labelled rather than blurred into "byrå"
+              (design doc §3.3). Same note the listing detail seller card uses. */}
+          {agency.kind === "relocation" && (
+            <p className="agency-profile__relocation-note">
+              {svListing.sellerRelocationNote}
+            </p>
+          )}
           {(agency.phone || agency.email) && (
             <div className="agency-profile__contact">
               {waLink(agency.phone) && (
@@ -152,17 +165,15 @@ export default async function AgencyProfilePage({ params }: Params) {
 
       {listings.length > 0 ? (
         <section className="similar-listings" style={{ borderTop: "none", paddingTop: 0 }}>
-          <h2 className="similar-listings__title">Propiedades publicadas</h2>
+          <h2 className="similar-listings__title">{svAgencyProfile.listingsTitle}</h2>
           <div className="similar-listings__grid">
             {listings.map((card) => (
-              <ListingCard key={card.id} card={card} />
+              <ListingCard key={card.id} card={card} fx={fx} />
             ))}
           </div>
         </section>
       ) : (
-        <p className="agency-profile__empty">
-          Esta inmobiliaria todavía no tiene propiedades publicadas.
-        </p>
+        <p className="agency-profile__empty">{svAgencyProfile.empty}</p>
       )}
     </main>
   );

@@ -12,8 +12,8 @@ import { registerAction } from "./actions";
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `Creá tu cuenta`,
-    description: `Publicá tus propiedades en ${brand}. Cuentas gratuitas para inmobiliarias y agentes independientes en Paraguay.`,
+    title: svPanel.registerTitle,
+    description: `Annonsera dina bostäder på ${brand}. Gratis konton för mäklarbyråer och fristående mäklare.`,
     // Renders per ?invite= token — keep every variant out of the index (F40).
     robots: { index: false, follow: true },
   };
@@ -183,7 +183,7 @@ export default async function RegisterPage({
                 name="phone"
                 type="tel"
                 inputMode="tel"
-                placeholder="0981 123 456"
+                placeholder="070 123 45 67"
                 maxLength={30}
                 autoComplete="tel"
               />

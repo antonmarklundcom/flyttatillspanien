@@ -10,6 +10,7 @@ import {
 import { brandName } from "@/lib/brand-server";
 import { CONTACT_EMAIL, CONTACT_WHATSAPP } from "@/config/contact";
 import { waLink } from "@/lib/wa";
+import { svFooter } from "@/i18n/sv";
 
 /**
  * Global footer (portal shell). Two jobs at once: it is the site's second
@@ -57,11 +58,7 @@ export async function SiteFooter() {
       <div className="site-footer__inner">
         <div className="site-footer__about">
           <div className="site-footer__brand">{brand}</div>
-          <p className="site-footer__tagline">
-            El portal inmobiliario de Paraguay. Casas, departamentos, terrenos y
-            proyectos nuevos en venta y alquiler — con precios de referencia por
-            zona y cuota estimada en cada aviso.
-          </p>
+          <p className="site-footer__tagline">{svFooter.tagline}</p>
 
           <ul className="site-footer__contact">
             {waHref && (
@@ -86,26 +83,23 @@ export async function SiteFooter() {
                 </a>
               ) : (
                 <Link className="site-footer__link" href="/contacto">
-                  ✉️ Escribinos
+                  {svFooter.writeToUs}
                 </Link>
               )}
-            </li>
-            <li>
-              <span className="site-footer__muted">📍 Asunción, Paraguay</span>
             </li>
           </ul>
         </div>
 
-        <Column title="Comprar y alquilar" links={FOOTER_BUY} />
-        <Column title="Herramientas" links={FOOTER_TOOLS} />
-        <Column title="Para profesionales" links={FOOTER_PRO} />
-        <Column title="Ubicaciones" links={FOOTER_LOCATIONS} />
-        <Column title="Por tipo" links={FOOTER_TYPES} />
+        <Column title={svFooter.columnBuy} links={FOOTER_BUY} />
+        <Column title={svFooter.columnTools} links={FOOTER_TOOLS} />
+        <Column title={svFooter.columnPro} links={FOOTER_PRO} />
+        <Column title={svFooter.columnLocations} links={FOOTER_LOCATIONS} />
+        <Column title={svFooter.columnTypes} links={FOOTER_TYPES} />
       </div>
 
       <div className="site-footer__bottom">
         <span>
-          © {year} {brand} — Encontrá tu propiedad en Paraguay.
+          © {year} {svFooter.copyright(brand)}
         </span>
         <span className="site-footer__legal">
           {FOOTER_COMPANY.map((l) => (
@@ -116,15 +110,7 @@ export async function SiteFooter() {
         </span>
       </div>
 
-      <div className="site-footer__disclaimer">
-        Los precios de referencia, las cuotas estimadas y las tasaciones
-        publicadas son cálculos orientativos elaborados a partir de los avisos
-        del portal y de las condiciones vigentes de los programas de
-        financiamiento. No constituyen una tasación oficial, una oferta de
-        crédito ni asesoramiento financiero. {brand} no participa de las
-        negociaciones entre las partes ni verifica de forma independiente la
-        titularidad de cada inmueble publicado.
-      </div>
+      <div className="site-footer__disclaimer">{svFooter.disclaimer(brand)}</div>
     </footer>
   );
 }

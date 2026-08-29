@@ -55,7 +55,7 @@ export default async function OwnerListingsPage() {
                   <tr>
                     <th>Propiedad</th>
                     <th>Tipo</th>
-                    <th>Precio</th>
+                    <th>Pris</th>
                     <th>{svOwner.statusLabel}</th>
                     <th title={svPanel.statsViewsHint}>{svPanel.statsViews}</th>
                     <th>{svPanel.statsLeads}</th>

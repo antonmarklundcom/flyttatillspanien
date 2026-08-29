@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     metadataBase: new URL(await siteOrigin()),
     title: { default: `${name} — ${tagline}`, template: `%s — ${name}` },
     description:
-      "Casas, departamentos y terrenos en venta y alquiler en todo Paraguay.",
+      "Villor, lägenheter och tomter till salu och uthyres i Spanien — för svenska köpare.",
     // Default Open Graph for every page that doesn't set its own: Next only
     // emits og:* when metadata.openGraph is truthy, so before this the whole
     // category tree, /precios, profiles and legal pages shared as bare links
@@ -35,7 +35,7 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       type: "website",
       siteName: name,
-      locale: "es_PY",
+      locale: "sv_SE",
       images: [{ url: "/img/og-share.webp", width: 1200, height: 630 }],
     },
   };

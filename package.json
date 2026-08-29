@@ -18,6 +18,7 @@
     "db:studio": "drizzle-kit studio",
     "seed:costs": "tsx --tsconfig scripts/tsconfig.json scripts/seed-acquisition-costs.ts",
     "seed:locations": "tsx --tsconfig scripts/tsconfig.json scripts/seed-locations.ts",
+    "seed:dev": "tsx --tsconfig scripts/tsconfig.json scripts/seed-dev-listings.ts",
     "cron:fx": "tsx --tsconfig scripts/tsconfig.json scripts/fetch-fx.ts",
     "cron:medians": "tsx --tsconfig scripts/tsconfig.json scripts/compute-medians.ts",
     "cron:resync": "tsx --tsconfig scripts/tsconfig.json scripts/resync-stale.ts",

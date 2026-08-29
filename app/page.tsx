@@ -26,6 +26,8 @@ import { faqHome } from "@/config/faq";
 import { faqJsonLd } from "@/lib/jsonld";
 import { citiesWithPrices } from "@/lib/precios-queries";
 import { categoryUrl } from "@/lib/urls";
+import { getFxRate } from "@/lib/reference-queries";
+import type { FxRate } from "@/lib/format";
 import { brandTaglineFor } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { siteOrigin } from "@/lib/origin";
@@ -34,31 +36,30 @@ import { CONTACT_EMAIL } from "@/config/contact";
 import { safeImageUrl } from "@/lib/external-image";
 
 /**
- * Zone cards on the home page. Each one needs a photograph, so this is a fixed
- * curated list rather than a DB query — a city with no image would render an
- * empty tile in a grid built entirely out of photographs.
+ * Zone cards on the home page. Each one needs a photograph, so this is a
+ * fixed curated list rather than a DB query — a city with no image would
+ * render an empty tile in a grid built entirely out of photographs. The four
+ * slugs match `svHome.zoneCardSub`'s keys exactly (src/i18n/sv.ts) — that is
+ * the one translatable half of the card, this the structural half.
  */
 const ZONE_CARDS = [
-  { name: "Asunción", slug: "asuncion", img: "/img/zona-asuncion.webp" },
-  {
-    name: "San Bernardino",
-    slug: "san-bernardino",
-    img: "/img/zona-san-bernardino.webp",
-  },
-  { name: "Luque", slug: "luque", img: "/img/zona-luque.webp" },
-  { name: "Encarnación", slug: "encarnacion", img: "/img/zona-encarnacion.webp" },
+  { name: "Marbella", slug: "marbella", img: "/img/zona-marbella.webp" },
+  { name: "Torrevieja", slug: "torrevieja", img: "/img/zona-torrevieja.webp" },
+  { name: "Palma", slug: "palma", img: "/img/zona-palma.webp" },
+  { name: "Jávea", slug: "javea", img: "/img/zona-javea.webp" },
 ] as const;
 
-/** Curated, high-population cities — a fixed shortcut row (avoids querying
- * every seeded city, some of which have little to no live inventory yet). */
+/** Curated, high-inventory municipios — a fixed shortcut row (avoids querying
+ * every seeded location, most of which have little to no live inventory yet
+ * on a brand-new deployment). Matches scripts/seed-locations.ts's TREE. */
 const CITY_SHORTCUTS = [
-  "Asunción",
-  "Luque",
-  "San Lorenzo",
-  "Lambaré",
-  "Fernando de la Mora",
-  "Ciudad del Este",
-  "Encarnación",
+  "Marbella",
+  "Estepona",
+  "Mijas",
+  "Torrevieja",
+  "Jávea",
+  "Palma",
+  "Mogán",
 ];
 
 /**
@@ -178,10 +179,12 @@ async function Row({
   title,
   href,
   cards,
+  fx,
 }: {
   title: string;
   href: string;
   cards: Card[];
+  fx: FxRate | null;
 }) {
   if (cards.length === 0) return null;
   const t = (await dict()).home;
@@ -195,7 +198,7 @@ async function Row({
       </div>
       <div className="home-row">
         {cards.map((card) => (
-          <ListingCard key={card.id} card={card} />
+          <ListingCard key={card.id} card={card} fx={fx} />
         ))}
       </div>
     </section>
@@ -212,18 +215,21 @@ export default async function Home() {
   // Number formatting follows the request's locale, not the copy: the
   // thousands separator is not the same character everywhere.
   const numberLocale = vertical.locale === "sv" ? "sv-SE" : "en-US";
-  const {
-    recent,
-    cities,
-    total,
-    ventaCasas,
-    ventaDeptos,
-    alquileres,
-    terrenos,
-    featuredProjects,
-    featuredDevelopers,
-    priceCities,
-  } = await getHomePayload(vertical.key);
+  const [
+    {
+      recent,
+      cities,
+      total,
+      ventaCasas,
+      ventaDeptos,
+      alquileres,
+      terrenos,
+      featuredProjects,
+      featuredDevelopers,
+      priceCities,
+    },
+    fx,
+  ] = await Promise.all([getHomePayload(vertical.key), getFxRate()]);
 
   const cityShortcuts = CITY_SHORTCUTS.map((name) =>
     cities.find((c) => c.name === name),
@@ -252,7 +258,10 @@ export default async function Home() {
           <p className="home-hero__subtitle">{t.heroSubtitle}</p>
 
           <div className="home-hero__actions">
-            <Link className="ds-btn ds-btn--primary" href="/venta/asuncion">
+            <Link
+              className="ds-btn ds-btn--primary"
+              href={categoryUrl({ operation: "venta", citySlug: "marbella" })}
+            >
               {t.heroSeeListings}
             </Link>
             <Link className="ds-btn ds-btn--on-photo" href="/publicar">
@@ -296,13 +305,20 @@ export default async function Home() {
             <p className="ds-label">{t.zonesKicker}</p>
             <h2>{t.zonesTitle}</h2>
           </div>
-          <Link className="ds-link-underline" href="/venta/asuncion">
+          <Link
+            className="ds-link-underline"
+            href={categoryUrl({ operation: "venta", citySlug: "marbella" })}
+          >
             {t.zonesAll}
           </Link>
         </div>
         <div className="ds-grid" style={{ ["--ds-track" as string]: "220px" }}>
           {ZONE_CARDS.map((z) => (
-            <Link key={z.slug} className="ds-photo-card ds-photo-card--zone" href={`/venta/${z.slug}`}>
+            <Link
+              key={z.slug}
+              className="ds-photo-card ds-photo-card--zone"
+              href={categoryUrl({ operation: "venta", citySlug: z.slug })}
+            >
               <img
                 className="ds-photo-card__img"
                 src={z.img}
@@ -439,28 +455,38 @@ export default async function Home() {
         <RecentlyViewed />
         <Row
           title={t.rowRecommended}
-          href="/venta/asuncion"
+          href={categoryUrl({ operation: "venta", citySlug: "marbella" })}
           cards={recent}
+          fx={fx}
         />
+        {/* Copy names the coast each row draws its flavour from
+            (svHome.rowHousesForSale/rowFlatsForSale); the query itself is
+            nationwide (getRecentListingsBy has no city filter), so the link
+            below points at that coast's own municipio page rather than
+            implying the row IS that municipio's listings. */}
         <Row
           title={t.rowHousesForSale}
-          href="/venta/asuncion/casas"
+          href={categoryUrl({ operation: "venta", citySlug: "marbella", type: "villa" })}
           cards={ventaCasas}
+          fx={fx}
         />
         <Row
           title={t.rowFlatsForSale}
-          href="/venta/asuncion/departamentos"
+          href={categoryUrl({ operation: "venta", citySlug: "torrevieja", type: "apartamento" })}
           cards={ventaDeptos}
+          fx={fx}
         />
         <Row
           title={t.rowRentals}
-          href="/alquiler/asuncion"
+          href={categoryUrl({ operation: "alquiler", citySlug: "marbella" })}
           cards={alquileres}
+          fx={fx}
         />
         <Row
           title={t.rowLand}
-          href="/venta/asuncion/terrenos"
+          href={categoryUrl({ operation: "venta", citySlug: "marbella", type: "terreno" })}
           cards={terrenos}
+          fx={fx}
         />
 
         {recent.length === 0 && (

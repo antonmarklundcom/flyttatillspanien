@@ -8,13 +8,14 @@ Format: `- [phase found] area — what, and what would fix it.`
 
 ## Open
 
-- [1] `src/lib/urls.ts` — `agencyUrl()` and `agentUrl()` still emit the Spanish
-  segments `/inmobiliaria/{slug}` and `/agente/{slug}` while every other public
-  path is Swedish. Left alone deliberately: changing them means moving
-  `app/inmobiliaria/[slug]/` and `app/agente/[slug]/` too, which is a route-tree
-  change, and the design doc's handoff names only `/propiedad → /bostad` and the
-  operation segments. Phase 3 owns the route tree — move the directories and the
-  two helpers in the same commit, or decide to keep them.
+- [3, decided] `src/lib/urls.ts` — `agencyUrl()`/`agentUrl()` keep the Spanish
+  segments `/inmobiliaria/{slug}` and `/agente/{slug}`. Phase 3 had the choice
+  (§4.6 build log left it open) and decided to keep them rather than move the
+  route directories: the design doc's handoff names only `/propiedad → /bostad`
+  and the operation segments as required renames, these two profile routes
+  are not SEO-load-bearing category pages, and moving them adds redirect risk
+  for zero design-doc benefit. `/bostad` (the one rename the handoff actually
+  requires) is done — see the Phase 3 build log.
 
 - [1] `src/i18n/sv.ts` — the dictionary is **working-draft Swedish**: correct
   language, correct intent, no Spanish left, no empty strings, but not the final
@@ -64,11 +65,13 @@ Format: `- [phase found] area — what, and what would fix it.`
 
 - [2] `/admin` and `/agencia` still carry inline Spanish labels
   (`LEAD_TYPE_LABEL`, `ROUTED_LABEL`, `OPERATION_OPTIONS`, the panel's inline
-  Spanish `listingStatusLabel` neighbours, `/datos`'s prose and its
-  `toLocaleString("es-PY")` calls). Phase 2 changed only what stopped
+  Spanish `listingStatusLabel` neighbours). Phase 2 changed only what stopped
   compiling or stated something false; the panels are Phase 4's and the
   editorial pass is Phase 5's. They compile and they are not wrong about the
-  data — they are just in the wrong language.
+  data — they are just in the wrong language. (`/datos`'s prose and its
+  `toLocaleString("es-PY")` calls, part of this item when it was written, were
+  fixed in Phase 3 — that page is a public content page, not part of the
+  panel.)
 
 - [2] `scripts/check-migrations.ts` still probes for "migration 0009" by name
   when it reports on the `leads.routed_to` owner lane. Phase 1 regenerated the
@@ -96,3 +99,63 @@ Format: `- [phase found] area — what, and what would fix it.`
   and be tagged locally. `docker-compose.yml` deliberately still names `mysql:8.4`,
   which is what works on an unrestricted machine; anyone hitting a 403 while
   pulling can do the same two commands. Not a code defect.
+
+- [3] `public/img/zona-{marbella,torrevieja,palma,javea}.webp` (the home page's
+  zone cards) are the four inherited Paraguay zone photos, copied and renamed
+  rather than replaced — none of them actually depict their new city. Real
+  location photography (or an image-generation pass) is a founder/content task,
+  not a code task; the four old Paraguay-named files were deleted so nothing
+  keeps two copies.
+
+- [3] The publish wizard (`PublishWizard.tsx` / `app/publicar/actions.ts`)
+  collects `referencia_catastral`, `energy_rating`, `legal_status`,
+  `charges_status` and `tourist_licence`, but **not** `ibi_annual_eur` /
+  `community_monthly_eur` — `DraftPayload` and `saveDraft()`'s `DraftInput`
+  (`src/lib/publish-queries.ts`) never gained fields for them in Phase 2, and
+  extending that file is query-layer/core-logic territory a Sonnet phase's
+  hard limits (§4.7) put out of reach. The columns exist and the detail page
+  already renders them when present (via CSV import or a future `/admin`
+  edit) — a self-published FSBO listing just cannot state them yet. Whichever
+  phase next has license to touch `publish-queries.ts` should add the two
+  fields following the exact `referenciaCatastral`/`energyRating` pattern
+  already there.
+
+- [3] `svListing.priceRentPeriod` ("/mån") renders under the price for every
+  non-`venta` operation, `alquiler_vacacional` (a holiday let) included — a
+  short-term rental is conventionally priced per night or per week, not per
+  month. This is an inherited simplification (the same line propia.node used
+  for its one rental type); giving holiday lets their own period unit is a
+  small product decision, not a bug fix, so `scripts/seed-dev-listings.ts`'s
+  `alquiler_vacacional` rows use monthly-scale prices to match what the page
+  currently prints rather than pretending the fixture disagrees with the
+  page.
+
+- [3] `projects` has no `description_sv` column (only `listings` gained the
+  `title_sv`/`description_sv`/`translation_hash_sv` triple in Phase 1) — the
+  project detail page (`app/proyecto/[slug]/page.tsx`) and its metadata can
+  only ever show `descriptionEs`. Adding the column is schema work, out of a
+  Sonnet phase's reach; noted here rather than worked around with an invented
+  Swedish string.
+
+- [3] `projects.projectType` (`edificio`/`loteamiento`/`condominio`/
+  `barrio_cerrado`) is an inherited enum the design doc never revisits for
+  Spain — `loteamiento` and `barrio_cerrado` are Latin-American development
+  types with no clean Spanish real-estate equivalent. `svProject.typeLabel` in
+  `src/i18n/sv.ts` gives each a working Swedish gloss so the page never prints
+  a raw enum value, but they are not a researched taxonomy; a founder call on
+  whether `projects` needs its own Spain-shaped type set (or whether the
+  feature is even in scope before real project data exists) is a design
+  question, not a Phase 3 fix. The same file also had `STAGE_LABEL`/
+  `STATE_LABEL` maps keyed to the old Paraguay stage enum
+  (`en_pozo`/`entrega_inmediata`/`usado`) that would have printed raw enum
+  values against the real `sobre_plano`/`en_construccion`/`obra_nueva`/
+  `segunda_mano` schema — fixed by reusing `svListing.stateLabel`, the same
+  class of bug `app/desarrolladoras/page.tsx` had.
+
+- [3] `/for-maklare` (this phase's purpose-built Swedish agency pitch) and
+  `/para-inmobiliarias` (the inherited page, content-corrected but not
+  redesigned) now both exist and pitch the same thing. Primary nav
+  (`HEADER_NAV`, `FOOTER_PRO`) points at `/for-maklare`; `/para-inmobiliarias`
+  is still in `STATIC_SITEMAP_PATHS` and reachable by direct link, but no
+  longer linked from the header or footer. Consolidating or redirecting one
+  into the other is an editorial call for Phase 5, not a Phase 3 fix.

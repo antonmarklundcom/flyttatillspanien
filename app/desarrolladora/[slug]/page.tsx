@@ -11,6 +11,7 @@ import { getDeveloperBySlug } from "@/lib/directory-queries";
 import { CtaBand, Section } from "@/components/MarketingUI";
 import { waLink } from "@/lib/wa";
 import { safeImageUrl } from "@/lib/external-image";
+import { svDeveloper } from "@/i18n/sv";
 
 // DB-backed profile, same posture as the agency and agent profiles.
 export const dynamic = "force-dynamic";
@@ -22,14 +23,11 @@ const resolve = cache(getDeveloperBySlug);
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const r = await resolve(slug);
-  if (!r) return { title: `Desarrolladora no encontrada` };
+  if (!r) return { title: svDeveloper.notFoundTitle };
   const { developer, projects } = r;
-  const description = `${developer.name}: ${projects.length} ${
-    projects.length === 1 ? "proyecto" : "proyectos"
-  } en Paraguay. Etapa de obra, fecha de entrega y unidades disponibles.`;
   return {
-    title: `${developer.name} — proyectos en Paraguay`,
-    description,
+    title: svDeveloper.metaTitle(developer.name),
+    description: svDeveloper.metaDescription(developer.name, projects.length),
     alternates: {
       canonical: `${await siteOrigin()}/desarrolladora/${developer.slug}`,
     },
@@ -54,7 +52,7 @@ export default async function DesarrolladoraPage({ params }: Params) {
   const totalUnits = projects.reduce((n, p) => n + p.availableUnits, 0);
   const waHref = waLink(
     developer.phone,
-    `Hola, vi los proyectos de ${developer.name} en ${brand}.`,
+    svDeveloper.waPrefill(developer.name, brand),
   );
 
   return (
@@ -62,8 +60,8 @@ export default async function DesarrolladoraPage({ params }: Params) {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: "Desarrolladoras", url: "/desarrolladoras" },
+            { name: svDeveloper.breadcrumbHome, url: "/" },
+            { name: svDeveloper.breadcrumbDevelopers, url: "/desarrolladoras" },
             { name: developer.name, url: `/desarrolladora/${developer.slug}` },
           ]),
           ...(projects.length > 0
@@ -96,19 +94,11 @@ export default async function DesarrolladoraPage({ params }: Params) {
             </div>
           )}
           <div>
-            <div className="profile-hero__kicker">Desarrolladora</div>
+            <div className="profile-hero__kicker">{svDeveloper.kicker}</div>
             <h1 className="profile-hero__title">{developer.name}</h1>
             <div className="profile-hero__meta">
-              <span>
-                {projects.length}{" "}
-                {projects.length === 1 ? "proyecto" : "proyectos"}
-              </span>
-              {totalUnits > 0 && (
-                <span>
-                  {totalUnits.toLocaleString("es-PY")}{" "}
-                  {totalUnits === 1 ? "unidad publicada" : "unidades publicadas"}
-                </span>
-              )}
+              <span>{svDeveloper.projectCount(projects.length)}</span>
+              {totalUnits > 0 && <span>{svDeveloper.unitCount(totalUnits)}</span>}
             </div>
             <div className="profile-hero__actions">
               {waHref && (
@@ -118,7 +108,7 @@ export default async function DesarrolladoraPage({ params }: Params) {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Consultar por WhatsApp
+                  {svDeveloper.contactWhatsapp}
                 </a>
               )}
               {developer.website && (
@@ -128,7 +118,7 @@ export default async function DesarrolladoraPage({ params }: Params) {
                   target="_blank"
                   rel="noopener noreferrer nofollow"
                 >
-                  Sitio web
+                  {svDeveloper.website}
                 </a>
               )}
             </div>
@@ -136,12 +126,12 @@ export default async function DesarrolladoraPage({ params }: Params) {
         </div>
       </section>
 
-      <Section title="Proyectos">
+      <Section title={svDeveloper.projectsTitle}>
         {projects.length === 0 ? (
           <div className="mk-empty">
-            <p>Esta desarrolladora todavía no tiene proyectos publicados.</p>
+            <p>{svDeveloper.empty}</p>
             <Link className="mk-btn mk-btn--accent" href="/proyectos">
-              Ver todos los proyectos
+              {svDeveloper.emptyCta}
             </Link>
           </div>
         ) : (
@@ -155,19 +145,16 @@ export default async function DesarrolladoraPage({ params }: Params) {
 
       <Section width="narrow">
         <p className="mk-note">
-          Antes de reservar una unidad en pozo, pedí el permiso de
-          construcción, la fecha de entrega contractual y qué pasa si la obra
-          se atrasa. {brand} publica los proyectos pero no verifica de
-          forma independiente el avance de obra ni los plazos informados.{" "}
-          <Link href="/proyectos">Más sobre comprar en pozo</Link>.
+          {svDeveloper.preBookingNote(brand)}{" "}
+          <Link href="/proyectos">{svDeveloper.preBookingLinkText}</Link>.
         </p>
       </Section>
 
       <CtaBand
-        title="Explorá toda la obra nueva"
-        text="Edificios, condominios, barrios cerrados y loteamientos en desarrollo."
-        primary={{ label: "Ver proyectos", href: "/proyectos" }}
-        secondary={{ label: "Ver desarrolladoras", href: "/desarrolladoras" }}
+        title={svDeveloper.ctaTitle}
+        text={svDeveloper.ctaText}
+        primary={{ label: svDeveloper.ctaPrimary, href: "/proyectos" }}
+        secondary={{ label: svDeveloper.ctaSecondary, href: "/desarrolladoras" }}
       />
     </main>
   );

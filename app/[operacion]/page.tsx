@@ -11,6 +11,7 @@ import { ListingCard } from "@/components/ListingCard";
 import { SearchBar } from "@/components/SearchBar";
 import { getRecentListingsBy, listCities } from "@/lib/queries";
 import { currentVertical } from "@/lib/vertical-context";
+import { getFxRate } from "@/lib/reference-queries";
 import { getOperationHubData } from "@/lib/directory-queries";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { categoryUrl, parseOperation, operationSlug } from "@/lib/urls";
@@ -69,14 +70,18 @@ export default async function OperationHubPage({ params }: Params) {
   // The door's own hard filters narrow this rail like every other listing
   // query on the domain (VerticalConfig.filters).
   const vertical = await currentVertical();
-  const [origin, hub, cities, recent] = await Promise.all([
+  const [origin, hub, cities, recent, fx] = await Promise.all([
     siteOrigin(),
     getOperationHubData(op),
     listCities(),
     getRecentListingsBy({ operation: op, vertical }, 8),
+    getFxRate(),
   ]);
 
-  const topCity = hub.cities[0]?.slug ?? "asuncion";
+  // Marbella seeds first among the seven comunidades (scripts/seed-locations.ts)
+  // and carries the deepest inventory, so it is the sane fallback when a
+  // brand-new deployment has no listings yet to derive hub.cities from.
+  const topCity = hub.cities[0]?.slug ?? "marbella";
 
   return (
     <main>
@@ -159,13 +164,13 @@ export default async function OperationHubPage({ params }: Params) {
         <Section title={t.latestTitle}>
           <div className="mk-project-grid">
             {recent.map((card) => (
-              <ListingCard key={card.id} card={card} />
+              <ListingCard key={card.id} card={card} fx={fx} />
             ))}
           </div>
           <p className="mk-note">
             {t.latestNoteLead}{" "}
             <Link href={categoryUrl({ operation: op, citySlug: topCity })}>
-              {copy.cityLabel} {hub.cities[0]?.name ?? "Asunción"}
+              {copy.cityLabel} {hub.cities[0]?.name ?? "Marbella"}
             </Link>{" "}
             {t.latestNoteTail}
           </p>

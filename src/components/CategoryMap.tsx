@@ -26,6 +26,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { listingUrl } from "@/lib/urls";
+import { svCategory } from "@/i18n/sv";
 
 const OSM_STYLE: maplibregl.StyleSpecification = {
   version: 8,
@@ -40,26 +41,25 @@ const OSM_STYLE: maplibregl.StyleSpecification = {
   layers: [{ id: "osm", type: "raster", source: "osm" }],
 };
 
+/** Mirrors MapPin (src/lib/map-queries.ts) — the shape /api/mapa serves. */
 interface Pin {
   publicId: string;
   slug: string;
   title: string;
   lat: number;
   lng: number;
-  priceUsd: number;
-  priceAmount: number;
-  priceCurrency: "USD" | "PYG";
+  priceEur: number;
   bedrooms: number | null;
-  areaM2: number | null;
+  builtM2: number | null;
   approximate: boolean;
 }
 
-/** Compact price for a pin: "US$ 85 mil", "US$ 1,2 M". Space is ~70px. */
+/** Compact price for a pin: "€ 85k", "€ 1,2 M". Space is ~70px. */
 function pinPrice(pin: Pin): string {
-  const n = pin.priceUsd;
+  const n = pin.priceEur;
   if (!Number.isFinite(n) || n <= 0) return "—";
-  if (n >= 1_000_000) return `US$ ${(n / 1_000_000).toFixed(1).replace(".", ",")} M`;
-  return `US$ ${Math.round(n / 1000)} mil`;
+  if (n >= 1_000_000) return `€ ${(n / 1_000_000).toFixed(1).replace(".", ",")} M`;
+  return `€ ${Math.round(n / 1000)}k`;
 }
 
 /**
@@ -208,7 +208,7 @@ export function CategoryMap({
       if (cluster.pins.length > 1) {
         el.className = "map-chip";
         el.textContent = String(cluster.pins.length);
-        el.title = `${cluster.pins.length} propiedades`;
+        el.title = svCategory.pinCount(cluster.pins.length);
         el.addEventListener("click", () => {
           // Zoom toward the chip rather than opening an arbitrary listing.
           map.easeTo({
@@ -227,7 +227,7 @@ export function CategoryMap({
         // The approximate case is the honest default, so only the exact one
         // is worth distinguishing in the tooltip.
         link.title = pin.approximate
-          ? `${pin.title} — ubicación aproximada`
+          ? `${pin.title}${svCategory.pinApprox}`
           : pin.title;
         if (pin.approximate) link.classList.add("map-pin--approx");
         el.appendChild(link);
@@ -246,12 +246,12 @@ export function CategoryMap({
       <div ref={containerRef} className="map-view__canvas" />
       <div className="map-view__status" aria-live="polite">
         {error
-          ? "No pudimos cargar el mapa. Movelo de nuevo para reintentar."
+          ? svCategory.mapError
           : loading
-            ? "Buscando…"
+            ? svCategory.mapLoading
             : capped
-              ? `Mostrando las ${pins.length} más económicas de esta zona — acercá para ver el resto.`
-              : `${pins.length} ${pins.length === 1 ? "propiedad" : "propiedades"} en esta zona`}
+              ? svCategory.mapCapped(pins.length)
+              : svCategory.pinCountZone(pins.length)}
       </div>
     </div>
   );

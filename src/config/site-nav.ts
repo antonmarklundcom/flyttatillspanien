@@ -140,8 +140,8 @@ export const HEADER_NAV: NavGroup[] = [
       },
       {
         label: "Annonsera ditt bestånd",
-        href: "/para-inmobiliarias",
-        desc: "Kostnadsfritt proffskonto",
+        href: "/for-maklare",
+        desc: "Nå svenska köpare, kostnadsfritt",
       },
       {
         label: "Planer och priser",
@@ -212,7 +212,7 @@ export const FOOTER_TOOLS: NavLink[] = [
 /** Footer column: the sell-side. This is the revenue lane — keep it visible. */
 export const FOOTER_PRO: NavLink[] = [
   { label: "Annonsera en bostad", href: "/publicar" },
-  { label: "För mäklare och byråer", href: "/para-inmobiliarias" },
+  { label: "För mäklare och byråer", href: "/for-maklare" },
   { label: "Planer och priser", href: "/planes" },
   { label: "Mäklarbyråer", href: "/inmobiliarias" },
   { label: "Mäklare", href: "/agentes" },
@@ -269,6 +269,7 @@ export const STATIC_SITEMAP_PATHS: string[] = [
   "/tasacion",
   "/como-funciona",
   "/preguntas-frecuentes",
+  "/for-maklare",
   "/para-inmobiliarias",
   "/planes",
   "/nosotros",
