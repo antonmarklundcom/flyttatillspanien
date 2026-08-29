@@ -48,7 +48,7 @@ import type { Locale } from "@/i18n";
 export type AlternateScope = "site" | "listing";
 
 export interface AlternateInput {
-  /** Path as served, with its leading slash: "/", "/venta/asuncion", … */
+  /** Path as served, with its leading slash: "/", "/kopa/marbella", … */
   path: string;
   scope: AlternateScope;
   /**
@@ -105,10 +105,11 @@ function doorPerLocale(doors: Door[], primaryHost: string): Map<Locale, Door> {
  * The `alternates.languages` map for a page, or `undefined` when there is
  * nothing honest to declare (a single language across every door — today).
  *
- * Keys are bare language codes rather than `es-PY`/`en-US`: the Spanish door
- * is written for Paraguay but serves any Spanish speaker, and the English door
- * is aimed at foreign buyers who are not in one country. Region-tagging either
- * would narrow who Google shows them to, for no gain.
+ * Keys are bare language codes rather than `sv-SE`/`en-GB`: the Swedish door
+ * is written for Swedes but serves any Swedish speaker — a Swede already
+ * living in Spain is precisely the reader it wants — and a future English door
+ * would be aimed at foreign buyers who are not in one country. Region-tagging
+ * either would narrow who Google shows them to, for no gain.
  *
  * `x-default` names the version for a visitor whose language matches neither —
  * the primary host, which is also what every unowned host canonicalises to.

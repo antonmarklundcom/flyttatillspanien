@@ -385,11 +385,8 @@ export async function updateListing(params: {
 }): Promise<number> {
   const { id, scope, input } = params;
 
-  // The cached cuota was computed from the old operation and price. Leaving it
-  // when either changes renders wrong money on the card until the nightly cron
-  // (a listing flipped venta→alquiler kept a purchase cuota forever). Cleared
-  // here, recomputed by cron:cuotas. The row's current status comes back in the
-  // same read, because the permission check below needs it.
+  // The row's current status and publish date, because the permission check
+  // and the first-publish stamp below both need them.
   const [current] = await db
     .select({ publishedAt: listings.publishedAt, status: listings.status })
     .from(listings)

@@ -216,7 +216,7 @@ export async function deleteListingImage(
 /**
  * Move one image one slot up or down. Reordering is a swap rather than a
  * drag-and-drop payload so it works without JavaScript — the panel is used on
- * phones over Paraguayan mobile data.
+ * phones over mobile data.
  */
 export async function moveListingImage(
   listingId: number,

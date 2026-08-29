@@ -7,7 +7,7 @@
  *
  *   DATABASE_URL=... npm run cron:sessions
  *
- * Wire as a Hostinger cron (daily) next to cron:cuotas. Uses idx_expires.
+ * Wire as a Hostinger cron (daily) next to cron:fx. Uses idx_expires.
  */
 import { lt } from "drizzle-orm";
 import { db } from "../src/db";
