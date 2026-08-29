@@ -7,6 +7,7 @@ import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
 import { approveAction, rejectAction } from "./actions";
+import { publishBlockReason } from "@/lib/publish-gate";
 
 export const metadata: Metadata = {
   title: `Cola de revisión`,
@@ -61,10 +62,22 @@ export default async function AdminReviewPage() {
               </div>
 
               <div className="panel-card__body">
+                {/* The publish gate, said out loud. `approveAction` refuses a
+                    row that fails it either way (publish-gate.ts); showing the
+                    reason here is what stops the refusal reading as a bug. */}
+                {publishBlockReason(row) && (
+                  <p className="panel-card__warning" role="note">
+                    {publishBlockReason(row)}
+                  </p>
+                )}
                 <div className="panel-actions">
                   <form action={approveAction}>
                     <input type="hidden" name="listingId" value={row.id} />
-                    <button className="panel-btn panel-btn--primary" type="submit">
+                    <button
+                      className="panel-btn panel-btn--primary"
+                      type="submit"
+                      disabled={Boolean(publishBlockReason(row))}
+                    >
                       {svPanel.approve}
                     </button>
                   </form>

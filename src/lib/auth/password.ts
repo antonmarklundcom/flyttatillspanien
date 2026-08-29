@@ -1,8 +1,14 @@
 /**
- * Password hashing (ARCHITECTURE.md §1). Email+password is the first auth pass;
- * WhatsApp OTP via GHL comes later. No bcrypt/argon dependency — Node's built-in
- * scrypt keeps the dependency list lean (the repo avoids libraries it can do
- * without) and is a sound KDF. Stored form: `scrypt$<saltHex>$<hashHex>`.
+ * Password hashing (ARCHITECTURE.md §1).
+ *
+ * Email+password is one of two ways in and both end at the same address: the
+ * emailed one-time code (src/lib/otp.ts) verifies the inbox that
+ * `users.email` names, and `password_hash` is NULL on an account that only
+ * ever uses codes. Neither is a fallback for the other.
+ *
+ * No bcrypt/argon dependency — Node's built-in scrypt keeps the dependency
+ * list lean (the repo avoids libraries it can do without) and is a sound KDF.
+ * Stored form: `scrypt$<saltHex>$<hashHex>`.
  */
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";

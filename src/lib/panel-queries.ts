@@ -20,7 +20,7 @@ import { uniqueAgencySlug } from "@/lib/agency-slug";
 import { hashPassword } from "@/lib/auth/password";
 import { slugify } from "@/lib/slug";
 import { listingScopeWhere, maySetStatus, type EditScope } from "@/lib/listing-edit";
-import { canPublish } from "@/lib/publish-gate";
+import { canPublish, publishBlockReason } from "@/lib/publish-gate";
 import { containsPattern } from "@/lib/sql-like";
 
 export type ListingStatus = (typeof listings.$inferSelect)["status"];
@@ -100,9 +100,33 @@ export async function countRecentLeads(hours = 24): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
-/** Approve a pending listing → published. Scoped to pending_review so it can't
- * resurrect a removed/sold row. Returns rows affected (0 = nothing to do). */
-export async function approveListing(id: number): Promise<number> {
+export type ApproveResult =
+  | { ok: true }
+  | { ok: false; reason: "not_pending" | "blocked"; message?: string };
+
+/**
+ * Approve a pending listing → published. Scoped to pending_review so it can't
+ * resurrect a removed/sold row.
+ *
+ * This is the review queue's transition, and therefore one of the three places
+ * the publish gate fires (src/lib/publish-gate.ts): an approval is exactly the
+ * moment a row becomes an advertisement, and RD 390/2021 requires the energy
+ * rating to be in one. Unlike the other two writers this returns WHY rather
+ * than a row count — an operator clicking Approve and getting a silent no-op
+ * would go looking for a bug instead of for the missing field.
+ */
+export async function approveListing(id: number): Promise<ApproveResult> {
+  const [current] = await db
+    .select({ status: listings.status, energyRating: listings.energyRating })
+    .from(listings)
+    .where(eq(listings.id, id))
+    .limit(1);
+  if (!current || current.status !== "pending_review")
+    return { ok: false, reason: "not_pending" };
+
+  const blocked = publishBlockReason(current);
+  if (blocked) return { ok: false, reason: "blocked", message: blocked };
+
   const [res] = await db
     .update(listings)
     .set({
@@ -116,7 +140,7 @@ export async function approveListing(id: number): Promise<number> {
       reviewNotes: null,
     })
     .where(and(eq(listings.id, id), eq(listings.status, "pending_review")));
-  return res.affectedRows;
+  return res.affectedRows === 1 ? { ok: true } : { ok: false, reason: "not_pending" };
 }
 
 /** Reject a pending listing → removed, recording the reason on the row. */
