@@ -777,6 +777,105 @@ adding the inputs is all that is missing). The route tree is still Spanish
 (`/propiedad`, `/inmobiliaria`, `/agente`) and moving it is Phase 3's, per
 `KNOWN-ISSUES.md`.
 
+### Phase 3 — public-facing pages (2026-08-29)
+
+Branch `phase/3`.
+
+**What now exists.** The whole public browsing path is wired to the Spain
+schema and shows the legal/compliance block: `ListingCard` renders an energy
+badge (RD 390/2021 — required in any advertisement, so it's on the card, not
+only the detail page), `formatSek` next to `formatEur`, and a VPO/landmine
+caution line; `/bostad/[slug]` (moved from `/propiedad`) adds the full legal
+block (legal_status as its own fact line, charges_status/nota_simple_seen_at
+as the "seller says"/"we verified" pair design doc §3.2 requires), energy
+detail, running costs (IBI/comunidad), tourist_licence, and the
+acquisition-cost estimate (`src/lib/acquisition-cost.ts`, gated on
+`operation === "venta"`) with its SEK line and `EUR/SEK rate · date`
+disclosure. The publish wizard collects the same legal block
+(`energy_rating`/`referencia_catastral`/`legal_status`/`charges_status`/
+`tourist_licence`, client-validated but server-gated via the existing
+`publish-gate.ts`) into the `DraftPayload` shape Phase 2 already accepted.
+Home, the operation hubs and category pages are re-pointed at Spain
+locations/URLs (`/kopa`, `/hyra`, `/korttidshyra`) — several were still
+linking `/venta/asuncion`-shaped paths that compiled but 404'd. New
+`/for-maklare` (design doc §1's one-page answer to "should agencies get a
+`.es` door") and `scripts/seed-dev-listings.ts` (`npm run seed:dev`, 20
+listings covering every operation × sensible property-type combination, both
+landmine cases by name, one FSBO/one relocation-agency/one inmobiliaria-agency
+listing, idempotent via `uq_catastral`).
+
+**Route tree decision (KNOWN-ISSUES §1).** `/propiedad → /bostad` is done, the
+one rename the design doc's handoff actually requires. `agencyUrl()`/
+`agentUrl()` keep their Spanish segments — decided to leave `/inmobiliaria` and
+`/agente` alone rather than move them: no SEO requirement forces it and moving
+route directories for two profile pages that aren't the category tree adds
+redirect risk for no design-doc benefit.
+
+**Decisions and deviations.**
+1. Content sweep: pages Phase 1's build log flagged as compiling but
+   Paraguayan (`nosotros`, `contacto`, `terminos`, `privacidad`, `planes`,
+   `para-inmobiliarias`, `como-funciona`, `datos`, `preguntas-frecuentes`,
+   `guias`×2, `agentes`, `inmobiliarias`, `proyectos`, `desarrolladoras`,
+   `SiteFooter`/`SiteHeader`/`MobileMenu`/`LeadForm`/`NewsletterSignup`/
+   `panel/PostForm`) are rewritten to Swedish, corrected facts (no guaraníes,
+   no WhatsApp-first buyer framing, `sv-SE` not `es-PY`, the deleted cuota
+   engine replaced by the acquisition-cost pitch everywhere it was mentioned).
+   Kept as plain inline literals rather than migrated into the `sv.ts`
+   dictionary system — that migration is real additional scope the phase
+   description doesn't ask for; Phase 5's editorial pass is the natural place
+   to fold them in if it decides to.
+2. Two more pages had the same "compiles, describes the wrong country" defect
+   Phase 1 warned about but weren't on anyone's list: `app/proyecto/[slug]` and
+   `app/desarrolladora/[slug]` (fully Spanish, `es-PY` dates, and — the
+   substantive bug — `STAGE_LABEL`/`STATE_LABEL` maps keyed to the old
+   Paraguay stage enum against the real `obra_nueva`/`sobre_plano`/
+   `en_construccion` schema, which would have printed raw enum values on any
+   real project). Fixed by reuse (`svListing.stateLabel`) plus a new
+   `svProject`/`svDeveloper` namespace pair. `app/layout.tsx`'s sitewide
+   default `openGraph.locale` was still `"es_PY"` — every page without its own
+   OpenGraph block was emitting the wrong locale; now `"sv_SE"`.
+3. `ListingCard` takes `fx: FxRate | null` as a required prop rather than
+   fetching its own — `getFxRate()` is a cheap single-row cached read, but a
+   grid renders up to 48 cards, and the codebase's own stated discipline
+   (`attachCovers()`, the whole-table `acquisition_costs` cache) is "fetch
+   once per page, not once per row." All six render sites (`page.tsx`, the
+   hub, the category grid, the detail page, and the agency/agent profiles —
+   the latter two weren't Phase 3's on anyone's list either, but render
+   `ListingCard` and were still fully Spanish) now fetch `fx` once and thread
+   it through.
+4. `IBI`/`community_monthly_eur` are NOT in the publish wizard —
+   `DraftPayload`/`saveDraft()`'s `DraftInput` never gained fields for them in
+   Phase 2 (only the other five legal fields did), and extending that file is
+   past a Sonnet phase's hard limits. Detail page still renders them when
+   present (import/admin-set). Full explanation in `KNOWN-ISSUES.md`.
+5. Zone-card images (`public/img/zona-{marbella,torrevieja,palma,javea}.webp`)
+   are the four inherited Paraguay photos renamed, not real photography — a
+   founder/content task, flagged rather than silently shipped as if real.
+6. `npm run cron:fx` still 403s in this build environment (same ECB-blocked
+   proxy Phase 1 found); verified the SEK/rate-note render path end-to-end by
+   inserting a manual `fx_rates` row locally rather than depending on the live
+   feed working here.
+
+**Verified.** `npm run verify:local` green (typecheck, build, all four pure
+verifies); `verify:import`, `verify:scopes` green against local MySQL;
+`seed:locations && seed:costs && seed:dev` clean and idempotent (re-run: 0
+inserted, 20 updated); `npm run build && npm run start` then curled home, the
+`/kopa` hub, a category page, both landmine `/bostad/[slug]` rows, `/for-maklare`
+and `/publicar` (307 → `/login?next=/publicar`, the correct gate) — all 200 or
+the one correct redirect, no server-log errors.
+
+**Where Phase 4 starts.** `/admin` and `/agencia` are still the inherited
+Spanish panels (KNOWN-ISSUES, several open items) — that's Phase 4's whole
+scope: energy/legal/charges editing, `nota_simple_seen_at` (operator-only,
+still not on any form), FX/acquisition-cost manual override UI
+(`setManualFxRate`/`updateAcquisitionCost` in `reference-queries.ts` already
+exist and are unused), agency `kind` selector, and the relocation "represents
+the buyer" label's own exit-criteria grep against a live seller card (the
+detail page already renders it — see point 3 in Phase 2's notes plus this
+phase's seller-card change). `IBI`/`community_monthly_eur` in the wizard
+(point 4 above) is fair game for whichever phase touches `publish-queries.ts`
+next.
+
 ## 10. Backlog
 
 Anything a phase session finds that is real but out of its scope goes here

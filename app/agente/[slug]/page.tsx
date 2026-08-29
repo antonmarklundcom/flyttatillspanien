@@ -14,9 +14,10 @@ import { listingCanonicalOrigin, siteOrigin } from "@/lib/origin";
 import { getIndexability } from "@/lib/indexability";
 import { breadcrumbJsonLd, itemListJsonLd } from "@/lib/jsonld";
 import { listingUrl } from "@/lib/urls";
-import { svAgentProfile, agentInquiryPrefillFor } from "@/i18n/sv";
+import { svAgentProfile, svListing, agentInquiryPrefillFor } from "@/i18n/sv";
 import { JsonLd } from "@/components/JsonLd";
 import { ListingCard } from "@/components/ListingCard";
+import { getFxRate } from "@/lib/reference-queries";
 import { ContactForm } from "@/components/ContactForm";
 import { safeImageUrl } from "@/lib/external-image";
 
@@ -62,9 +63,10 @@ export default async function AgentProfilePage({ params }: Params) {
   const ix = getIndexability({ listingCount });
   if (ix.state === "gone") notFound();
 
-  const [listings, agency] = await Promise.all([
+  const [listings, agency, fx] = await Promise.all([
     getAgentListings({ agentId: agent.id, limit: 24 }),
     agent.agencyId ? getAgencyById(agent.agencyId) : Promise.resolve(null),
+    getFxRate(),
   ]);
   const origin = await siteOrigin();
   // ItemList entries are listing detail URLs — canonical host may differ (F9).
@@ -77,7 +79,7 @@ export default async function AgentProfilePage({ params }: Params) {
     .join("");
 
   const crumbs = [
-    { name: "Inicio", url: "/" },
+    { name: svListing.breadcrumbHome, url: "/" },
     { name: agent.name, url: agentUrl(agent.slug) },
   ];
 
@@ -95,10 +97,10 @@ export default async function AgentProfilePage({ params }: Params) {
         />
       )}
 
-      <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
+      <nav className="breadcrumb-nav" aria-label={svListing.breadcrumbLabel}>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <Link className="breadcrumb-nav__link" href="/">
-            Inicio
+            {svListing.breadcrumbHome}
           </Link>
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -152,7 +154,7 @@ export default async function AgentProfilePage({ params }: Params) {
           <h2 className="similar-listings__title">{svAgentProfile.listingsTitle}</h2>
           <div className="similar-listings__grid">
             {listings.map((card) => (
-              <ListingCard key={card.id} card={card} />
+              <ListingCard key={card.id} card={card} fx={fx} />
             ))}
           </div>
         </section>

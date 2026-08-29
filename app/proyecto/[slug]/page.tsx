@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getProjectBySlug } from "@/lib/queries";
 import { listingUrl, categoryUrl } from "@/lib/urls";
 import { formatEur } from "@/lib/format";
-import { inquiryPrefillFor } from "@/i18n/sv";
+import { inquiryPrefillFor, svListing, svProject } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { ContactForm } from "@/components/ContactForm";
 import { ProjectCard } from "@/components/ProjectCard";
@@ -17,46 +17,30 @@ import { safeImageUrl } from "@/lib/external-image";
 
 type Params = { params: Promise<{ slug: string }> };
 
-const STAGE_LABEL: Record<string, string> = {
-  en_pozo: "En pozo",
-  en_construccion: "En construcción",
-  entrega_inmediata: "Entrega inmediata",
-};
-
-const TYPE_LABEL: Record<string, string> = {
-  edificio: "Edificio",
-  loteamiento: "Loteamiento",
-  condominio: "Condominio",
-  barrio_cerrado: "Barrio cerrado",
-};
-
-const STATE_LABEL: Record<string, string> = {
-  entrega_inmediata: "Entrega inmediata",
-  en_construccion: "En construcción",
-  en_pozo: "En pozo",
-  usado: "Usado",
-};
-
 function deliveryLabel(d: string | Date | null): string | null {
   if (!d) return null;
   const date = new Date(d);
   if (Number.isNaN(date.getTime())) return null;
-  return `Entrega ${date.toLocaleDateString("es-PY", { month: "long", year: "numeric" })}`;
+  return svProject.delivery(
+    date.toLocaleDateString("sv-SE", { month: "long", year: "numeric" }),
+  );
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const brand = await brandName();
   const { slug } = await params;
   const detail = await getProjectBySlug(slug);
-  if (!detail) return { title: `Proyecto no encontrado` };
+  if (!detail) return { title: svProject.notFoundTitle };
   const { project, developer } = detail;
   return {
     // No brand here — the layout's title.template appends it (F22: this was
     // the one page in the repo that doubled it).
     title: `${project.name}${developer ? ` — ${developer.name}` : ""}`,
+    // `projects` carries no Swedish description column (schema gap, not this
+    // phase's to add — see KNOWN-ISSUES.md); the Spanish source is the only
+    // body copy there is until a founder decision adds one.
     description:
-      project.descriptionEs?.slice(0, 160) ??
-      `${project.name}: proyecto inmobiliario en Paraguay.`,
+      project.descriptionEs?.slice(0, 160) ?? svProject.metaDescription(project.name),
     alternates: {
       canonical: `${await siteOrigin()}/proyecto/${project.slug}`,
     },
@@ -77,9 +61,9 @@ export default async function ProjectPage({ params }: Params) {
 
   return (
     <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1rem" }}>
-      <nav className="breadcrumb-nav" aria-label="Ruta de navegación">
+      <nav className="breadcrumb-nav" aria-label={svProject.breadcrumbLabel}>
         <Link className="breadcrumb-nav__link" href="/">
-          Inicio
+          {svProject.breadcrumbHome}
         </Link>
         {location && (
           <>
@@ -93,7 +77,7 @@ export default async function ProjectPage({ params }: Params) {
           </>
         )}
         <span aria-hidden>›</span>
-        <span className="breadcrumb-nav__current">Proyectos</span>
+        <span className="breadcrumb-nav__current">{svProject.breadcrumbProjects}</span>
         <span aria-hidden>›</span>
         <span className="breadcrumb-nav__current" aria-current="page">
           {project.name}
@@ -121,7 +105,7 @@ export default async function ProjectPage({ params }: Params) {
             <span className="project-hero__icon" aria-hidden>
               🏗️
             </span>
-            <span className="project-hero__label">Imágenes próximamente</span>
+            <span className="project-hero__label">{svProject.imagesComingSoon}</span>
           </>
         )}
       </div>
@@ -131,32 +115,32 @@ export default async function ProjectPage({ params }: Params) {
           <ul className="listing-facts">
             {project.stage && (
               <li className="listing-facts__item listing-facts__item--stage">
-                {STAGE_LABEL[project.stage] ?? project.stage}
+                {svListing.stateLabel[project.stage] ?? project.stage}
               </li>
             )}
             {delivery && <li className="listing-facts__item">📅 {delivery}</li>}
             <li className="listing-facts__item">
-              🏢 {TYPE_LABEL[project.projectType] ?? project.projectType}
+              🏢 {svProject.typeLabel[project.projectType] ?? project.projectType}
             </li>
             {units.length > 0 && (
               <li className="listing-facts__item">
-                🔑 {units.length} unidades disponibles
+                🔑 {svProject.unitsAvailable(units.length)}
               </li>
             )}
           </ul>
 
           {minPrice != null && (
             <div className="listing-price">
-              <span className="listing-price__label">Venta</span>{" "}
+              <span className="listing-price__label">{svProject.saleLabel}</span>{" "}
               <span className="listing-price__amount">
-                desde {formatEur(minPrice)}
+                {svProject.fromPrice(formatEur(minPrice))}
               </span>
             </div>
           )}
 
           {project.descriptionEs && (
             <section className="listing-section">
-              <h2 className="listing-section__title">🏙 Sobre el proyecto</h2>
+              <h2 className="listing-section__title">{svProject.aboutTitle}</h2>
               <p
                 style={{
                   lineHeight: 1.6,
@@ -171,7 +155,7 @@ export default async function ProjectPage({ params }: Params) {
 
           {project.lat && project.lng && (
             <section className="listing-section">
-              <h2 className="listing-section__title">📍 Ubicación</h2>
+              <h2 className="listing-section__title">{svProject.locationTitle}</h2>
               {location && (
                 <p className="listing-location__caption">{location.name}</p>
               )}
@@ -181,17 +165,17 @@ export default async function ProjectPage({ params }: Params) {
 
           {units.length > 0 && (
             <section className="listing-section">
-              <h2 className="listing-section__title">🔑 Unidades disponibles</h2>
+              <h2 className="listing-section__title">{svProject.unitsTitle}</h2>
               <div className="units-table__wrap">
                 <table className="units-table">
                   <thead>
                     <tr>
-                      <th>Unidad</th>
-                      <th>Hab.</th>
-                      <th>Baños</th>
-                      <th>Área</th>
-                      <th>Precio</th>
-                      <th>Estado</th>
+                      <th>{svProject.unitCol}</th>
+                      <th>{svProject.bedroomsCol}</th>
+                      <th>{svProject.bathroomsCol}</th>
+                      <th>{svProject.areaCol}</th>
+                      <th>{svProject.priceCol}</th>
+                      <th>{svProject.statusCol}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -209,8 +193,8 @@ export default async function ProjectPage({ params }: Params) {
                         <td>
                           <span className="units-table__state">
                             {u.propertyState
-                              ? STATE_LABEL[u.propertyState] ?? u.propertyState
-                              : "Disponible"}
+                              ? svListing.stateLabel[u.propertyState] ?? u.propertyState
+                              : svProject.statusAvailable}
                           </span>
                         </td>
                       </tr>
@@ -243,10 +227,10 @@ export default async function ProjectPage({ params }: Params) {
             )}
             <div>
               <div className="seller-card__name">
-                {developer?.name ?? `Publicado en ${brand}`}
+                {developer?.name ?? svProject.sellerFallback(brand)}
               </div>
               <div className="seller-card__kind">
-                {developer ? "Desarrolladora" : brand}
+                {developer ? svProject.developerKind : brand}
               </div>
             </div>
           </div>
@@ -262,7 +246,7 @@ export default async function ProjectPage({ params }: Params) {
       {otherProjects.length > 0 && (
         <section className="similar-listings">
           <h2 className="similar-listings__title">
-            Otros proyectos de {developer?.name ?? "esta desarrolladora"}
+            {svProject.otherProjectsFrom(developer?.name ?? svProject.otherProjectsFallback)}
           </h2>
           <div className="home-row">
             {otherProjects.map((p) => (
@@ -273,10 +257,8 @@ export default async function ProjectPage({ params }: Params) {
       )}
 
       <section className="contact-panel">
-        <h2 className="contact-panel__title">¿Interesado en este proyecto?</h2>
-        <p className="contact-panel__subtitle">
-          Contactanos hoy para más información o para agendar una visita.
-        </p>
+        <h2 className="contact-panel__title">{svProject.contactTitle}</h2>
+        <p className="contact-panel__subtitle">{svProject.contactSubtitle}</p>
         <ContactForm
           contactWhatsapp={developer?.phone ?? null}
           leadType="buyer"

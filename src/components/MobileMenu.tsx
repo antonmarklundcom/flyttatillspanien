@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HEADER_NAV, FOOTER_COMPANY } from "@/config/site-nav";
+import { sv } from "@/i18n/sv";
 
 /**
  * Phone navigation. Below 900px the desktop nav is hidden (globals.css) and
@@ -51,7 +52,7 @@ export function MobileMenu() {
         ref={buttonRef}
         type="button"
         className="site-header__burger"
-        aria-label={open ? "Cerrar menú" : "Abrir menú"}
+        aria-label={open ? sv.closeMenu : sv.openMenu}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
@@ -67,7 +68,7 @@ export function MobileMenu() {
           <div
             className="mobile-menu"
             role="dialog"
-            aria-label="Menú principal"
+            aria-label={sv.navLabel}
             style={{ top }}
           >
             <div className="mobile-menu__inner">
@@ -94,7 +95,7 @@ export function MobileMenu() {
 
             <div className="mobile-menu__group">
               <span className="mobile-menu__group-title">
-                {"Sobre nosotros"}
+                {sv.aboutUsLabel}
               </span>
               <ul className="mobile-menu__list">
                 {FOOTER_COMPANY.map((l) => (
@@ -108,7 +109,7 @@ export function MobileMenu() {
             </div>
 
             <Link className="mobile-menu__cta" href="/publicar">
-              Publicar propiedad
+              {sv.publishCta}
             </Link>
             </div>
           </div>,

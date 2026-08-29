@@ -364,6 +364,16 @@ h2 {
   padding: 6px 10px;
 }
 
+/* Second corner chip, directly under the operation chip (top-left) — the
+   featured flag already owns the top-right corner (.listing-card__flags).
+   Legally required in the ad itself (RD 390/2021), so it sits with the
+   operation chip rather than buried in the specs row. */
+.ds-photo-card__chip--energy {
+  top: 54px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-primary);
+}
+
 .ds-photo-card__price {
   font-family: var(--font-display);
   font-size: 22px;
@@ -1853,7 +1863,25 @@ body {
   border: 1px solid rgba(221, 188, 124, 0.9);
 }
 
-.listing-card__spec--cuota {
+/* Kronor approximation next to the euro price — never its own line, always
+   visibly secondary (opacity, not color) so EUR reads as the price. */
+.listing-card__sek {
+  opacity: 0.72;
+  font-size: 0.7em;
+}
+
+/* Machine-translation disclosure and the legal/VPO caution line share the
+   same small, muted treatment — neither is a selling point, both are a
+   disclosure, and neither should out-compete the price or the specs row. */
+.listing-card__machine-translated,
+.listing-card__caution {
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-top: 4px;
+}
+
+.listing-card__caution {
   color: var(--color-accent-hover);
 }
 
@@ -2083,52 +2111,93 @@ body {
   color: #fff;
 }
 
-/* Financing / cuota module — the differentiator, so it gets a real box. */
-.financing-box {
-  margin-top: 14px;
-  padding: 16px 18px;
-  border: 1px solid #eadfc8;
-  border-radius: 0;
-  background: var(--color-accent-soft);
+/* Acquisition-cost estimate — the slot the Paraguayan cuota box vacates
+   (design doc §4): what a Spanish purchase costs on top of the price. */
+.acquisition-block {
   max-width: 480px;
 }
 
-.financing-box__head {
-  font-size: 14px;
-  font-weight: 800;
-  color: #7a5a1c;
-}
-
-.financing-box__grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px 32px;
-  margin-top: 10px;
-}
-
-.financing-box__label {
-  font-size: 12px;
-  font-weight: 600;
+.acquisition-block__intro,
+.acquisition-block__basis,
+.acquisition-block__foot {
+  margin: 0 0 14px;
+  font-size: 13px;
   color: var(--color-ink-secondary);
 }
 
-.financing-box__value {
-  font-size: 18px;
+.acquisition-block__total dt,
+.acquisition-block__total dd,
+.acquisition-block__grand-total dt,
+.acquisition-block__grand-total dd {
   font-weight: 800;
+}
+
+.acquisition-block__grand-total {
+  border-top: 1px solid var(--color-border);
+  margin-top: 8px;
+  padding-top: 8px;
+  color: var(--color-primary);
+}
+
+.acquisition-block__foot {
+  margin-top: 16px;
+  margin-bottom: 0;
+  font-size: 12px;
+}
+
+/* The kronor approximation under the euro price, and its rate/date disclosure
+   — never its own headline figure, always visibly secondary to EUR. */
+.listing-price__sek {
+  flex-basis: 100%;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-ink-secondary);
+}
+
+.listing-price__sek-note {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.listing-price__rate-note {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--color-ink-secondary);
+  opacity: 0.8;
+}
+
+.listing-machine-translated {
+  margin-top: 6px;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--color-ink-secondary);
+}
+
+.legal-block__status {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.legal-block__warning {
+  margin: 14px 0 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--color-accent-hover);
+  background: var(--color-accent-soft);
+  font-size: 13px;
   color: var(--color-ink);
 }
 
-.financing-box__value--muted {
-  font-size: 14px;
-  font-weight: 600;
+.legal-block__note {
+  margin: 14px 0 0;
+  font-size: 13px;
   color: var(--color-ink-secondary);
-  padding-top: 4px;
 }
 
-.financing-box__foot {
-  margin-top: 10px;
+.seller-card__relocation-note {
+  margin-top: 4px;
   font-size: 12px;
-  color: #9b7c3c;
+  color: var(--color-ink-secondary);
 }
 
 /* "Avisame si baja" price alert next to the price. Spacing comes from the
@@ -2195,6 +2264,19 @@ body {
   margin: 0 0 14px;
   font-size: 18px;
   font-weight: 800;
+}
+
+.listing-section__subtitle {
+  margin: 20px 0 14px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-ink-secondary);
+}
+
+.listing-section__note {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--color-ink-secondary);
 }
 
 .listing-details-grid {
@@ -3824,6 +3906,18 @@ summary.panel-btn::-webkit-details-marker {
 }
 
 .wizard-otp__title {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.wizard-legal {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--color-border);
+}
+
+.wizard-legal__title {
   margin: 0 0 4px;
   font-size: 16px;
   font-weight: 800;

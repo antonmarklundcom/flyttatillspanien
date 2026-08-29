@@ -3,6 +3,7 @@ import { BRAND_KICKER } from "@/lib/brand";
 import { brandName } from "@/lib/brand-server";
 import { HEADER_NAV } from "@/config/site-nav";
 import { MobileMenu } from "@/components/MobileMenu";
+import { sv } from "@/i18n/sv";
 
 /**
  * Global top bar (portal shell). Brand + grouped nav + a "publish" CTA.
@@ -47,7 +48,7 @@ export async function SiteHeader() {
           </span>
         </Link>
 
-        <nav className="site-header__nav" aria-label="Principal">
+        <nav className="site-header__nav" aria-label={sv.navLabel}>
           {HEADER_NAV.map((group) => (
             <div key={group.label} className="site-header__group">
               <Link className="site-header__link" href={group.href}>
@@ -80,13 +81,13 @@ export async function SiteHeader() {
 
         <div className="site-header__actions">
           <Link className="site-header__login" href="/login">
-            Ingresar
+            {sv.loginCta}
           </Link>
           {/* Two labels, one shown at a time — on a 320px screen the full label
               plus the brand no longer fit on one line (globals.css @560px). */}
           <Link className="site-header__cta" href="/publicar">
-            <span className="site-header__cta-full">Publicar propiedad</span>
-            <span className="site-header__cta-short">Publicar</span>
+            <span className="site-header__cta-full">{sv.publishCta}</span>
+            <span className="site-header__cta-short">{sv.publishCtaShort}</span>
           </Link>
           <MobileMenu />
         </div>

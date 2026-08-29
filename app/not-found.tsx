@@ -4,6 +4,7 @@ import { listCities } from "@/lib/queries";
 import { SearchBar } from "@/components/SearchBar";
 import { currentLocale } from "@/i18n/server";
 import { POPULAR_SEARCHES } from "@/config/popular-searches";
+import { svNotFound } from "@/i18n/sv";
 
 // Renders per-request rather than at build time — the root layout reads the
 // Host header for the per-host brand, so nothing in this app prerenders
@@ -40,11 +41,10 @@ export default async function NotFound() {
         🏡
       </div>
       <h1 style={{ fontSize: 26, margin: "16px 0 8px", color: tokens.color.primary }}>
-        No encontramos propiedades para esa búsqueda
+        {svNotFound.title}
       </h1>
       <p style={{ fontSize: 16, color: tokens.color.inkSecondary, lineHeight: 1.6 }}>
-        Puede que no haya publicaciones disponibles en esa zona o combinación
-        todavía. Probá con otra ciudad o tipo de propiedad.
+        {svNotFound.body}
       </p>
 
       <div style={{ textAlign: "left" }}>
@@ -60,7 +60,7 @@ export default async function NotFound() {
           color: tokens.color.inkSecondary,
         }}
       >
-        BÚSQUEDAS POPULARES
+        {svNotFound.popularSearches}
       </p>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 8 }}>
         {POPULAR_SEARCHES.map((s) => (
@@ -93,7 +93,7 @@ export default async function NotFound() {
           color: tokens.color.primary,
         }}
       >
-        Volver al inicio
+        {svNotFound.backHome}
       </Link>
     </main>
   );

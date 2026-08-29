@@ -10,10 +10,21 @@
  * actions.ts — this component only collects and previews.
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { svPanel, svPublish } from "@/i18n/sv";
+import { svPanel, svPublish, svListing, svCard } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { NearbyProject, PublishLocation } from "@/lib/publish-queries";
-import type { Operation, PropertyType } from "@/lib/import/types";
+import type {
+  Operation,
+  PropertyType,
+  EnergyRating,
+  LegalStatus,
+  ChargesStatus,
+} from "@/lib/import/types";
+import {
+  ENERGY_RATINGS,
+  LEGAL_STATUSES,
+  CHARGES_STATUSES,
+} from "@/lib/import/types";
 import {
   publishDraftAction,
   requestOtpAction,
@@ -29,9 +40,9 @@ import { imageThumbUrl } from "@/lib/format";
 import type { ListingImageRow } from "@/lib/listing-images";
 
 const OPERATION_OPTIONS: { value: Operation; label: string }[] = [
-  { value: "venta", label: "Venta" },
-  { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_vacacional", label: "Alquiler vacacional" },
+  { value: "venta", label: svCard.operationBadge.venta },
+  { value: "alquiler", label: svCard.operationBadge.alquiler },
+  { value: "alquiler_vacacional", label: svCard.operationBadge.alquiler_vacacional },
 ];
 
 /** Terrenos have no rooms; every other type does. */
@@ -56,6 +67,17 @@ interface WizardState {
   /** EUR — the only stored price, so there is no currency to pick. */
   priceEur: string;
   videoUrl: string;
+  /**
+   * The Spain legal block. `nota_simple_seen_at` is deliberately absent from
+   * this state — it is the portal's own attestation and a lister cannot set
+   * it (design doc §3.2); an operator sets it from /admin.
+   */
+  energyRating: EnergyRating | "";
+  referenciaCatastral: string;
+  legalStatus: LegalStatus;
+  chargesStatus: ChargesStatus;
+  /** Only meaningful (and only sent) for `alquiler_vacacional`. */
+  touristLicence: string;
 }
 
 export interface InitialDraft extends Partial<WizardState> {
@@ -91,6 +113,11 @@ const EMPTY: WizardState = {
   projectId: null,
   priceEur: "",
   videoUrl: "",
+  energyRating: "",
+  referenciaCatastral: "",
+  legalStatus: "desconocido",
+  chargesStatus: "desconocido",
+  touristLicence: "",
 };
 
 const LS_KEY = "ftse:publish-draft";
@@ -224,11 +251,19 @@ export function PublishWizard({
       locationId: state.locationId,
       projectId: state.projectId,
       videoUrl: state.videoUrl,
+      referenciaCatastral: state.referenciaCatastral,
+      energyRating: state.energyRating,
+      legalStatus: state.legalStatus,
+      chargesStatus: state.chargesStatus,
+      // Sent only for a holiday let — a licence number on any other operation
+      // would render a compliance claim about the wrong thing (the server
+      // enforces this too; see draftFields() in publish-queries.ts).
+      touristLicence:
+        state.operation === "alquiler_vacacional" ? state.touristLicence : "",
       /**
-       * The Spain legal block is deliberately absent from this payload until
-       * Phase 3 adds its inputs. The server treats an omitted key as "this
-       * form did not ask" rather than "the seller cleared it", so a rating an
-       * operator filled in from /admin survives a save here.
+       * `nota_simple_seen_at` is deliberately absent from this payload: it is
+       * the portal's own attestation and a lister cannot set it — see the
+       * type comment on WizardState above.
        */
     }),
     [state],
@@ -314,6 +349,11 @@ export function PublishWizard({
         if (!state.operation) return svPublish.errors.operation;
         if (!state.propertyType) return svPublish.errors.propertyType;
         if (state.title.trim().length < 8) return svPublish.errors.title;
+        // The real gate lives server-side (src/lib/publish-gate.ts) and fires
+        // at the actual publish transition — this is UX only, so a seller who
+        // genuinely doesn't know yet still has "Under handläggning" to reach
+        // for rather than being stuck.
+        if (!state.energyRating) return svPublish.errors.energyRating;
       }
       if (i === 1 && !state.locationId) return svPublish.errors.location;
       if (i === 2 && !(Number(state.priceEur) > 0)) return svPublish.errors.price;
@@ -536,6 +576,108 @@ export function PublishWizard({
               </>
             )}
             <NumField label={svPublish.plotLabel} value={state.plotM2} onChange={(v) => set("plotM2", v)} />
+          </div>
+
+          {/* The Spain legal block — the site's whole editorial premise.
+              `nota_simple_seen_at` is intentionally not here: it is the
+              portal's own attestation, never a lister's self-report. */}
+          <div className="wizard-legal">
+            <h3 className="wizard-legal__title">{svPublish.legalTitle}</h3>
+            <p className="wizard-hint">{svPublish.legalIntro}</p>
+
+            <div className="wizard-field">
+              <label className="wizard-label" htmlFor="energy">
+                {svPublish.energyRatingLabel}
+              </label>
+              <select
+                id="energy"
+                className="wizard-input"
+                value={state.energyRating}
+                onChange={(e) => set("energyRating", e.target.value as EnergyRating)}
+              >
+                <option value="">—</option>
+                {ENERGY_RATINGS.map((r) => (
+                  <option key={r} value={r}>
+                    {r === "en_tramite"
+                      ? svListing.energyPending
+                      : r === "exento"
+                        ? svListing.energyExempt
+                        : svCard.energy(r)}
+                  </option>
+                ))}
+              </select>
+              <p className="wizard-hint">{svPublish.energyRatingHint}</p>
+            </div>
+
+            <div className="wizard-field">
+              <label className="wizard-label" htmlFor="catastral">
+                {svPublish.catastralLabel}
+              </label>
+              <input
+                id="catastral"
+                className="wizard-input"
+                value={state.referenciaCatastral}
+                maxLength={20}
+                onChange={(e) => set("referenciaCatastral", e.target.value.toUpperCase())}
+              />
+              <p className="wizard-hint">{svPublish.catastralHint}</p>
+            </div>
+
+            <div className="wizard-grid">
+              <div className="wizard-field">
+                <label className="wizard-label" htmlFor="legalStatus">
+                  {svPublish.legalStatusLabel}
+                </label>
+                <select
+                  id="legalStatus"
+                  className="wizard-input"
+                  value={state.legalStatus}
+                  onChange={(e) => set("legalStatus", e.target.value as LegalStatus)}
+                >
+                  {LEGAL_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {svListing.legalStatusLabel[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="wizard-field">
+                <label className="wizard-label" htmlFor="chargesStatus">
+                  {svPublish.chargesStatusLabel}
+                </label>
+                <select
+                  id="chargesStatus"
+                  className="wizard-input"
+                  value={state.chargesStatus}
+                  onChange={(e) => set("chargesStatus", e.target.value as ChargesStatus)}
+                >
+                  {CHARGES_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {svListing.chargesStatusLabel[s]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Only meaningful for a holiday let — several comunidades
+                require the number in the advertisement itself. */}
+            {state.operation === "alquiler_vacacional" && (
+              <div className="wizard-field">
+                <label className="wizard-label" htmlFor="touristLicence">
+                  {svPublish.touristLicenceLabel}
+                </label>
+                <input
+                  id="touristLicence"
+                  className="wizard-input"
+                  value={state.touristLicence}
+                  maxLength={40}
+                  onChange={(e) => set("touristLicence", e.target.value)}
+                />
+                <p className="wizard-hint">{svPublish.touristLicenceHint}</p>
+              </div>
+            )}
           </div>
         </div>
       )}

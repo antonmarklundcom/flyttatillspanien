@@ -9,8 +9,8 @@ import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Preguntas frecuentes";
-const DESCRIPTION = (brand: string) => `Todo sobre ${brand}: cómo buscar, cómo publicar, qué es la cuota estimada, comisiones y cómo contactar a un vendedor o inmobiliaria.`;
+const TITLE = "Vanliga frågor";
+const DESCRIPTION = (brand: string) => `Allt om ${brand}: hur du söker, hur du annonserar, vad kostnadsuppskattningen visar, provisioner och hur du kontaktar en säljare eller mäklarbyrå.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
@@ -32,7 +32,7 @@ export default async function FaqPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/preguntas-frecuentes" },
           ]),
           faqJsonLd(faqAll(brand)),
@@ -40,9 +40,9 @@ export default async function FaqPage() {
       />
 
       <PageHero
-        kicker="Ayuda"
-        title="Preguntas frecuentes"
-        subtitle="Si tu duda no está acá, escribinos y te respondemos por WhatsApp."
+        kicker="Hjälp"
+        title="Vanliga frågor"
+        subtitle="Hittar du inte svaret här, hör av dig så svarar vi."
       />
 
       {sections.map((section, i) => (
@@ -66,16 +66,16 @@ export default async function FaqPage() {
 
       <Section width="narrow">
         <p className="mk-note">
-          Más información: <Link href="/como-funciona">cómo funciona</Link>,{" "}
-          <Link href="/para-inmobiliarias">para inmobiliarias</Link>.
+          Mer information: <Link href="/como-funciona">så fungerar det</Link>,{" "}
+          <Link href="/para-inmobiliarias">för mäklarbyråer</Link>.
         </p>
       </Section>
 
       <CtaBand
-        title="¿No encontraste lo que buscabas?"
-        text="Escribinos y te contestamos por WhatsApp."
-        primary={{ label: "Contactarnos", href: "/contacto" }}
-        secondary={{ label: "Ver propiedades", href: "/venta/asuncion" }}
+        title="Hittade du inte det du sökte?"
+        text="Hör av dig så svarar vi."
+        primary={{ label: "Kontakta oss", href: "/contacto" }}
+        secondary={{ label: "Se bostäder", href: "/kopa" }}
       />
     </main>
   );

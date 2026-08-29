@@ -16,8 +16,8 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatEur, imageUrl, imageThumbUrl } from "@/lib/format";
-import { servedTitle } from "@/lib/listing-copy";
+import { formatEur, formatSek, formatRateNote, imageUrl, imageThumbUrl } from "@/lib/format";
+import { servedTitle, isMachineTranslated } from "@/lib/listing-copy";
 import type { ListingCard as ListingCardRow } from "@/lib/queries";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
@@ -26,7 +26,7 @@ import {
   listingJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
-import { svPrecios, inquiryPrefillFor } from "@/i18n/sv";
+import { svPrecios, svListing, inquiryPrefillFor } from "@/i18n/sv";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import {
@@ -40,6 +40,8 @@ import { recordListingView } from "@/lib/stats-queries";
 import { currentVertical } from "@/lib/vertical-context";
 import { isBotUserAgent } from "@/lib/view-tracking";
 import { waLink } from "@/lib/wa";
+import { getFxRate, getAcquisitionRatesFor } from "@/lib/reference-queries";
+import { acquisitionCost } from "@/lib/acquisition-cost";
 import { JsonLd } from "@/components/JsonLd";
 import { ContactForm } from "@/components/ContactForm";
 import { ListingCard } from "@/components/ListingCard";
@@ -47,6 +49,14 @@ import { ListingMapLazy } from "@/components/ListingMapLazy";
 import { PriceAlert } from "@/components/PriceAlert";
 import { RecentlyViewedRecorder } from "@/components/RecentlyViewed";
 import { safeImageUrl } from "@/lib/external-image";
+
+/** New-build tax basis (IVA+AJD) vs. resale (ITP) — src/lib/acquisition-cost.ts. */
+const NEW_BUILD_STATES = new Set(["obra_nueva", "sobre_plano", "en_construccion"]);
+
+/** Public lookup on Spain's official cadastre, by referencia catastral. */
+function catastroUrl(ref: string): string {
+  return `https://www1.sedecatastro.gob.es/CYCBienInmueble/OVCConsultaDNPRC.aspx?RefC=${encodeURIComponent(ref)}`;
+}
 
 // Canonical URLs are derived from the Host header (one deployment, several
 // domains — src/lib/origin.ts), which is a dynamic API, so this route can no
@@ -225,7 +235,16 @@ export default async function ListingPage({ params }: Params) {
   const similarLocationIds = city ? await subtreeIds(city.id) : null;
   const vertical = await currentVertical();
 
-  const [similar, fromAgency, cityPrices] = await Promise.all([
+  // The comunidad this listing's acquisition tax is computed against —
+  // materialised down the location tree at seed time (locations.acquisition_region),
+  // so the deepest node in the chain already carries it; no tree walk here.
+  const acquisitionRegion =
+    barrio?.acquisitionRegion ?? city?.acquisitionRegion ?? null;
+  const isNewBuild = Boolean(
+    listing.propertyState && NEW_BUILD_STATES.has(listing.propertyState),
+  );
+
+  const [similar, fromAgency, cityPrices, fx, acquisitionRates] = await Promise.all([
     city && similarLocationIds
       ? getSimilarListings({
           excludeId: listing.id,
@@ -242,7 +261,22 @@ export default async function ListingPage({ params }: Params) {
     // Market context for the internal link module below — independent of the
     // three above, so it belongs inside this block, not before it.
     city ? getCityPrices(city.slug) : Promise.resolve(null),
+    getFxRate(),
+    getAcquisitionRatesFor(acquisitionRegion),
   ]);
+
+  const sek = formatSek(listing.priceEur, fx);
+  // The rate/date disclosure only ever accompanies a SEK line that actually
+  // rendered — showing it beside a hidden line would disclose a number the
+  // page isn't printing (§2 display rules).
+  const rateNote = sek ? formatRateNote(fx) : null;
+  // Rentals have no acquisition tax to estimate — the block is a purchase-cost
+  // figure, and `alquiler`/`alquiler_vacacional` never reach acquisitionCost()
+  // because there is nothing honest to itemise for them.
+  const acquisition =
+    listing.operation === "venta"
+      ? acquisitionCost(listing.priceEur, acquisitionRates, isNewBuild)
+      : null;
 
   const cityHasPrices = (cityPrices?.reliableSample ?? 0) > 0;
 
@@ -445,16 +479,206 @@ export default async function ListingPage({ params }: Params) {
               listingTitle={listing.title}
               leadType={leadType}
             />
+            {/* SEK is always an approximation, always marked as one, and
+                simply absent when the cached rate is stale (§2 display rules) —
+                never a zero, never a confidently wrong number. */}
+            {sek && (
+              <div className="listing-price__sek">
+                {sek}
+                <span className="listing-price__sek-note"> {t.priceSekNote}</span>
+                {rateNote && (
+                  <div className="listing-price__rate-note">{rateNote}</div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/*
-            The Paraguayan financing module is gone with its programme layer.
-            Its replacement is the acquisition-cost block — ITP/AJD, notary,
-            registry and legal on top of the price, computed at render from
-            `src/lib/acquisition-cost.ts` — and building it is Phase 3's, along
-            with the SEK line and the energy badge. The copy is already in
-            `svListing.acquisition*`.
-          */}
+          {isMachineTranslated(listing) && (
+            <p className="listing-machine-translated">{t.machineTranslatedNote}</p>
+          )}
+
+          {/* The acquisition-cost estimate — what a purchase costs on top of
+              the price (ITP/IVA/AJD, notary, registry, legal), computed at
+              render from src/lib/acquisition-cost.ts. `null` means there is
+              nothing honest to say (a rental, or no active rate row for this
+              comunidad) and the whole block omits itself — never a zero. */}
+          {acquisition && (
+            <section className="listing-section acquisition-block">
+              <h2 className="listing-section__title">{t.acquisitionTitle}</h2>
+              <p className="acquisition-block__intro">
+                {t.acquisitionIntro(acquisition.regionName)}
+              </p>
+              <dl className="listing-details-grid">
+                {acquisition.lines.map((l) => (
+                  <div className="listing-details-grid__row" key={l.key}>
+                    <dt className="listing-details-grid__label">
+                      {t.acquisitionLineLabel[l.key]} ({l.pct.toFixed(2)}%)
+                    </dt>
+                    <dd className="listing-details-grid__value">
+                      {formatEur(l.amountEur)}
+                    </dd>
+                  </div>
+                ))}
+                <div className="listing-details-grid__row acquisition-block__total">
+                  <dt className="listing-details-grid__label">{t.acquisitionTotal}</dt>
+                  <dd className="listing-details-grid__value">
+                    {formatEur(acquisition.totalEur)}
+                  </dd>
+                </div>
+                <div className="listing-details-grid__row acquisition-block__grand-total">
+                  <dt className="listing-details-grid__label">{t.acquisitionGrandTotal}</dt>
+                  <dd className="listing-details-grid__value">
+                    {formatEur(acquisition.grandTotalEur)}
+                  </dd>
+                </div>
+              </dl>
+              <p className="acquisition-block__basis">
+                {acquisition.basis === "obra_nueva"
+                  ? t.acquisitionBasisNew
+                  : t.acquisitionBasisResale}
+              </p>
+              <p className="acquisition-block__foot">{t.acquisitionFoot}</p>
+            </section>
+          )}
+
+          {/* The legal block — the whole editorial premise of the site.
+              legal_status is a single fact line (its own label already says
+              "the seller didn't state it" for `desconocido`); charges_status
+              vs. nota_simple_seen_at is kept as two lines on purpose — the
+              seller's declaration is never laundered into the portal's own
+              verification (design doc §3.2). */}
+          <section className="listing-section legal-block">
+            <h2 className="listing-section__title">{t.legalTitle}</h2>
+            {/* legal_status stands alone: its own enum label already says
+                "the seller didn't state it" for `desconocido`, so it needs no
+                seller/verified framing of its own — that framing is what
+                charges_status vs. nota_simple_seen_at exists for, just below. */}
+            <p className="legal-block__status">
+              {t.legalStatusLabel[listing.legalStatus] ?? listing.legalStatus}
+            </p>
+            <dl className="listing-details-grid">
+              <div className="listing-details-grid__row">
+                <dt className="listing-details-grid__label">{t.legalSellerSays}</dt>
+                <dd className="listing-details-grid__value">
+                  {t.chargesStatusLabel[listing.chargesStatus] ?? listing.chargesStatus}
+                </dd>
+              </div>
+              <div className="listing-details-grid__row">
+                <dt className="listing-details-grid__label">{t.legalWeVerified}</dt>
+                <dd className="listing-details-grid__value">
+                  {listing.notaSimpleSeenAt
+                    ? t.notaSimpleSeen(formatShortDate(listing.notaSimpleSeenAt))
+                    : t.notaSimpleUnseen}
+                </dd>
+              </div>
+              {listing.referenciaCatastral && (
+                <div className="listing-details-grid__row">
+                  <dt className="listing-details-grid__label">{t.catastralLabel}</dt>
+                  <dd className="listing-details-grid__value">
+                    <a
+                      href={catastroUrl(listing.referenciaCatastral)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={t.catastralHint}
+                    >
+                      {listing.referenciaCatastral}
+                    </a>
+                  </dd>
+                </div>
+              )}
+            </dl>
+            {(listing.legalStatus === "sin_lpo" ||
+              listing.legalStatus === "en_regularizacion") && (
+              <p className="legal-block__warning">{t.legalStatusWarning}</p>
+            )}
+
+            {listing.energyRating && (
+              <>
+                <h3 className="listing-section__subtitle">{t.energyTitle}</h3>
+                <dl className="listing-details-grid">
+                  <div className="listing-details-grid__row">
+                    <dt className="listing-details-grid__label">{t.energyRatingLabel}</dt>
+                    <dd className="listing-details-grid__value">
+                      {listing.energyRating === "en_tramite"
+                        ? t.energyPending
+                        : listing.energyRating === "exento"
+                          ? t.energyExempt
+                          : listing.energyRating}
+                    </dd>
+                  </div>
+                  {listing.energyEmissions && (
+                    <div className="listing-details-grid__row">
+                      <dt className="listing-details-grid__label">{t.energyEmissionsLabel}</dt>
+                      <dd className="listing-details-grid__value">{listing.energyEmissions}</dd>
+                    </div>
+                  )}
+                  {listing.energyKwhM2 && (
+                    <div className="listing-details-grid__row">
+                      <dt className="listing-details-grid__label">{t.energyRatingLabel} (kWh/m²)</dt>
+                      <dd className="listing-details-grid__value">
+                        {t.energyConsumption(String(listing.energyKwhM2))}
+                      </dd>
+                    </div>
+                  )}
+                  {listing.energyCo2M2 && (
+                    <div className="listing-details-grid__row">
+                      <dt className="listing-details-grid__label">CO₂</dt>
+                      <dd className="listing-details-grid__value">
+                        {t.energyCo2(String(listing.energyCo2M2))}
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              </>
+            )}
+
+            {listing.isVpo && <p className="legal-block__warning">{t.vpoWarning}</p>}
+
+            {listing.landClassification && (
+              <p className="legal-block__note">
+                {t.landClassificationLabel[listing.landClassification]}
+                {listing.buildableM2 && ` — ${t.factArea(Math.round(Number(listing.buildableM2)))}`}
+              </p>
+            )}
+            {listing.landClassification === "rustico" && (
+              <p className="legal-block__warning">{t.landRusticWarning}</p>
+            )}
+
+            {listing.operation === "alquiler_vacacional" && (
+              <p className="legal-block__note">
+                {listing.touristLicence
+                  ? `${t.touristLicenceLabel}: ${listing.touristLicence}`
+                  : t.touristLicenceNone}
+              </p>
+            )}
+          </section>
+
+          {(listing.ibiAnnualEur || listing.communityMonthlyEur) && (
+            <section className="listing-section">
+              <h2 className="listing-section__title">{t.runningCostsTitle}</h2>
+              <dl className="listing-details-grid">
+                {listing.ibiAnnualEur && (
+                  <div className="listing-details-grid__row">
+                    <dt className="listing-details-grid__label">{t.ibiLabel}</dt>
+                    <dd className="listing-details-grid__value">
+                      {formatEur(listing.ibiAnnualEur)}
+                      {t.ibiPeriod}
+                    </dd>
+                  </div>
+                )}
+                {listing.communityMonthlyEur && (
+                  <div className="listing-details-grid__row">
+                    <dt className="listing-details-grid__label">{t.communityLabel}</dt>
+                    <dd className="listing-details-grid__value">
+                      {formatEur(listing.communityMonthlyEur)}
+                      {t.communityPeriod}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              <p className="listing-section__note">{t.runningCostsNote}</p>
+            </section>
+          )}
 
           {details.length > 0 && (
             <section className="listing-section">
@@ -528,13 +752,25 @@ export default async function ListingPage({ params }: Params) {
               </div>
               <div className="seller-card__kind">
                 {agency
-                  ? t.sellerKindAgency
+                  ? agency.kind === "relocation"
+                    ? t.sellerKindRelocation
+                    : t.sellerKindAgency
                   : agent
                     ? t.sellerKindAgent
                     : ownerUser
                       ? t.sellerKindOwner
                       : brand}
               </div>
+              {/* Represents the BUYER, not the seller, and earns from the
+                  introduction — materially different to a selling agency, so
+                  it is labelled rather than blurred into "byrå" (design doc
+                  §3.3; plan §6 Phase 4 exit criterion greps for this on the
+                  rendered page). */}
+              {agency?.kind === "relocation" && (
+                <div className="seller-card__relocation-note">
+                  {t.sellerRelocationNote}
+                </div>
+              )}
             </div>
           </div>
           <ContactForm
@@ -607,7 +843,7 @@ export default async function ListingPage({ params }: Params) {
           <h2 className="similar-listings__title">{t.similarTitle}</h2>
           <div className="similar-listings__grid">
             {similar.map((card: ListingCardRow) => (
-              <ListingCard key={card.id} card={card} />
+              <ListingCard key={card.id} card={card} fx={fx} />
             ))}
           </div>
         </section>
@@ -625,7 +861,7 @@ export default async function ListingPage({ params }: Params) {
           </h2>
           <div className="similar-listings__grid">
             {fromAgency.map((card: ListingCardRow) => (
-              <ListingCard key={card.id} card={card} />
+              <ListingCard key={card.id} card={card} fx={fx} />
             ))}
           </div>
         </section>
@@ -687,7 +923,7 @@ export default async function ListingPage({ params }: Params) {
   );
 }
 
-/** "Publicado hace N días/semanas/meses" — coarse freshness, es-PY voseo-neutral. */
+/** Coarse freshness — "Publicerad för N dagar/veckor/månader sedan". */
 function formatPublishedAgo(
   publishedAt: Date | string,
   t: Dictionary["listing"],
@@ -701,4 +937,13 @@ function formatPublishedAgo(
   if (days < 14) return t.publishedDaysAgo(days);
   if (days < 60) return t.publishedWeeksAgo(Math.floor(days / 7));
   return t.publishedMonthsAgo(Math.floor(days / 30));
+}
+
+/** "27 aug 2026" — sv-SE, for the nota_simple sighting date (t.notaSimpleSeen). */
+function formatShortDate(d: Date | string): string {
+  return new Intl.DateTimeFormat("sv-SE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(d));
 }

@@ -27,6 +27,13 @@
 export const sv = {
   searchPlaceholder: "Var vill du bo?",
   publishCta: "Annonsera gratis",
+  /** The header CTA's narrow-screen label — see SiteHeader's two-label rule. */
+  publishCtaShort: "Annonsera",
+  loginCta: "Logga in",
+  navLabel: "Huvudmeny",
+  openMenu: "Öppna menyn",
+  closeMenu: "Stäng menyn",
+  aboutUsLabel: "Om oss",
   contactEmail: "Kontakta via e-post",
   priceAlert: "Meddela mig om priset sänks",
   wizardNext: "Nästa →",
@@ -36,6 +43,103 @@ export const sv = {
     "Det finns inga bostäder här ännu — skapa en bevakning så hör vi av oss",
   inquiryPrefill: "Hej, jag är intresserad av den här bostaden.",
   quickQuestions: ["Är den ledig?", "Kan jag boka visning?", "Vad krävs?"],
+} as const;
+
+/**
+ * Project detail — `/proyecto/[slug]`. `stage`/unit `propertyState` share
+ * `svListing.stateLabel`'s enum (obra_nueva/sobre_plano/en_construccion),
+ * read directly rather than duplicated here.
+ *
+ * `project_type` (edificio/loteamiento/condominio/barrio_cerrado) is an
+ * inherited enum the design doc never revisits for Spain — see
+ * KNOWN-ISSUES.md. These are working glosses, not a researched Spanish
+ * real-estate taxonomy.
+ */
+export const svProject = {
+  typeLabel: {
+    edificio: "Flerbostadshus",
+    loteamiento: "Tomtområde",
+    condominio: "Bostadsanläggning",
+    barrio_cerrado: "Inhägnat område",
+  } as Record<string, string>,
+  notFoundTitle: "Projektet hittades inte",
+  metaDescription: (name: string) => `${name}: nyproduktionsprojekt i Spanien.`,
+  breadcrumbHome: "Start",
+  breadcrumbLabel: "Brödsmulor",
+  breadcrumbProjects: "Nyproduktion",
+  imagesComingSoon: "Bilder kommer",
+  delivery: (date: string) => `Inflyttning ${date}`,
+  unitsAvailable: (n: number) => `${n} lediga enheter`,
+  saleLabel: "Till salu",
+  fromPrice: (price: string) => `från ${price}`,
+  aboutTitle: "🏙 Om projektet",
+  locationTitle: "📍 Läge",
+  unitsTitle: "🔑 Lediga enheter",
+  unitCol: "Enhet",
+  bedroomsCol: "Sovrum",
+  bathroomsCol: "Badrum",
+  areaCol: "Yta",
+  priceCol: "Pris",
+  statusCol: "Status",
+  statusAvailable: "Ledig",
+  developerKind: "Byggherre",
+  sellerFallback: (brand: string) => `Publicerad på ${brand}`,
+  otherProjectsFrom: (developer: string) => `Fler projekt från ${developer}`,
+  otherProjectsFallback: "denna byggherre",
+  contactTitle: "Intresserad av det här projektet?",
+  contactSubtitle: "Hör av dig i dag för mer information eller för att boka ett besök.",
+} as const;
+
+/** Public developer profile — `/desarrolladora/[slug]`. */
+export const svDeveloper = {
+  notFoundTitle: "Byggherren hittades inte",
+  metaDescription: (name: string, n: number) =>
+    `${name}: ${n === 1 ? "1 projekt" : `${n} projekt`} i Spanien. Byggskede, inflyttningsdatum och lediga enheter.`,
+  metaTitle: (name: string) => `${name} — projekt i Spanien`,
+  breadcrumbHome: "Start",
+  breadcrumbDevelopers: "Byggherrar",
+  kicker: "Byggherre",
+  projectCount: (n: number) => `${n} ${n === 1 ? "projekt" : "projekt"}`,
+  unitCount: (n: number) =>
+    `${n.toLocaleString("sv-SE")} ${n === 1 ? "publicerad enhet" : "publicerade enheter"}`,
+  waPrefill: (developer: string, brand: string) =>
+    `Hej, jag såg ${developer}s projekt på ${brand}.`,
+  contactWhatsapp: "Kontakta via WhatsApp",
+  website: "Webbplats",
+  projectsTitle: "Projekt",
+  empty: "Den här byggherren har inga publicerade projekt ännu.",
+  emptyCta: "Se alla projekt",
+  preBookingNote: (brand: string) => (
+    `Innan du reserverar en enhet på ritning: be om bygglovet, det avtalade inflyttningsdatumet och vad som gäller om bygget försenas. ${brand} publicerar projekten men kontrollerar inte självständigt hur bygget fortskrider eller om tidsplanerna håller.`
+  ),
+  preBookingLinkText: "Mer om att köpa på ritning",
+  ctaTitle: "Utforska all nyproduktion",
+  ctaText: "Flerbostadshus, bostadsanläggningar och tomtprojekt under utveckling.",
+  ctaPrimary: "Se projekt",
+  ctaSecondary: "Se byggherrar",
+} as const;
+
+/** Branded 404 — also the zero-match category surface (app/not-found.tsx). */
+export const svNotFound = {
+  title: "Vi hittade inga bostäder för den sökningen",
+  body: "Det kanske inte finns några annonser i det området eller den kombinationen ännu. Prova en annan ort eller bostadstyp.",
+  popularSearches: "POPULÄRA SÖKNINGAR",
+  backHome: "Tillbaka till startsidan",
+} as const;
+
+/** Global footer (SiteFooter.tsx) — the site's second nav and its "is this a real business?" answer. */
+export const svFooter = {
+  tagline:
+    "Portalen för svenska köpare av bostad i Spanien. Villor, lägenheter, tomter och nyproduktion till salu och uthyres — med pris i euro, ungefärligt pris i kronor och en uppskattning av vad köpet kostar utöver priset.",
+  writeToUs: "✉️ Skriv till oss",
+  columnBuy: "Köpa och hyra",
+  columnTools: "Verktyg",
+  columnPro: "För proffs",
+  columnLocations: "Orter",
+  columnTypes: "Per bostadstyp",
+  copyright: (brand: string) => `${brand} — Spansk bostad för svenska köpare.`,
+  disclaimer: (brand: string) =>
+    `Referenspriserna och köpkostnadsuppskattningarna som publiceras är vägledande beräkningar utifrån portalens annonser och de skattesatser och avgiftsuppskattningar som gäller per region. De utgör inte en officiell värdering, ett kreditbesked eller finansiell rådgivning. ${brand} deltar inte i förhandlingar mellan parterna och kontrollerar inte självständigt äganderätten till varje publicerad bostad.`,
 } as const;
 
 /**
@@ -829,6 +933,31 @@ export const svAgentProfile = {
     `${n === 1 ? "1 publicerad bostad" : `${n} publicerade bostäder`} av ${agentName} på ${brand}.`,
 } as const;
 
+/** Public agency profile — `/inmobiliaria/[slug]`. Mirrors svAgentProfile. */
+export const svAgencyProfile = {
+  notFoundTitle: "Byrån hittades inte",
+  /**
+   * The three lister kinds (`agencies.kind`). `relocation` represents the
+   * BUYER's side and earns from the introduction — materially different to a
+   * selling agency, so it gets its own label rather than blurring into
+   * "byrå" (design doc §3.3).
+   */
+  kindLabel: {
+    inmobiliaria: "Mäklarbyrå",
+    relocation: "Relocation-partner",
+    developer: "Byggherre",
+  } as Record<string, string>,
+  verified: "Verifierad",
+  listingsTitle: "Publicerade bostäder",
+  listingCount: (n: number) =>
+    n === 1 ? "1 publicerad bostad" : `${n} publicerade bostäder`,
+  empty: "Den här byrån har inga publicerade bostäder ännu.",
+  breadcrumbHome: "Start",
+  metaTitle: (agencyName: string) => `${agencyName} — bostäder i Spanien`,
+  metaDescription: (brand: string, agencyName: string, n: number) =>
+    `${n === 1 ? "1 publicerad bostad" : `${n} publicerade bostäder`} av ${agencyName} på ${brand}.`,
+} as const;
+
 /**
  * Agent-profile inquiry prefill: names the agent and links back to their
  * profile, mirroring inquiryPrefillFor above for listings.
@@ -840,6 +969,67 @@ export function agentInquiryPrefillFor(
 ): string {
   return `Hej, jag såg din profil på ${brand} och vill komma i kontakt med dig: ${agentName}\n${url}`;
 }
+
+/**
+ * `/for-maklare` — the Swedish-language "list with us" pitch to Spanish
+ * agencies. Design doc §1: a `.es` door for agency acquisition is a one-page
+ * problem, not a second vertical, and this route is that one page. (Its
+ * Spanish-language sibling `/es/inmobiliarias` is §10 backlog.)
+ */
+export const svForMaklare = {
+  metaTitle: (brand: string) => `Annonsera hos ${brand} — för mäklare och byråer`,
+  metaDescription: (brand: string) =>
+    `${brand} förmedlar spanska bostäder till svenska köpare. Lägg upp ditt bestånd gratis och nå en köpargrupp som redan letar bostad i Spanien.`,
+
+  heroKicker: "För mäklare och byråer",
+  heroTitle: "Nå svenska köpare — direkt, utan mellanhänder",
+  heroSubtitle: (brand: string) =>
+    `${brand} är en portal byggd för svenska köpare av spansk bostad: pris i euro med omräkning till kronor, och de juridiska uppgifterna en svensk köpare frågar efter innan en spansk säljare hinner tänka på dem. Lägg upp ditt bestånd och nå dem direkt.`,
+  heroCta: "Kom igång gratis",
+  heroSecondaryCta: "Logga in",
+
+  whyTitle: "Varför svenska köpare, och varför just nu",
+  whyText:
+    "Svenska köpare av spansk bostad söker på svenska, jämför i kronor och vill ha de juridiska frågorna besvarade innan de bokar en visning — inte efter. En portal på spanska eller engelska talar inte det språket, bokstavligen eller i sak. Det är den lucka den här sajten fyller, och den lucka ditt bestånd får synas i.",
+
+  features: [
+    {
+      icon: "🆓",
+      title: "Ingen kostnad för att annonsera",
+      text: "Lägg upp hela ditt bestånd utan kostnad per annons och utan provision på affärerna. Intäkten kommer från valfri utvald placering, aldrig från att gömma dina annonser bakom en betalvägg.",
+    },
+    {
+      icon: "🇸🇪",
+      title: "Rätt köpargrupp",
+      text: "Varje besökare kom hit för att den letar bostad i Spanien och läser svenska. Du slipper leads som egentligen sökte något annat.",
+    },
+    {
+      icon: "⚖️",
+      title: "Juridiken byggd in i annonsen",
+      text: "Energiklass, referencia catastral, lagfartsstatus och belastningar visas strukturerat på varje annons — de uppgifter som bygger förtroende hos en köpare som inte kan det spanska regelverket.",
+    },
+    {
+      icon: "📥",
+      title: "Importera ditt bestånd",
+      text: "Ladda upp ett kalkylblad eller klistra in en länk till en egen annons — ingen manuell inmatning rad för rad.",
+    },
+    {
+      icon: "💬",
+      title: "Förfrågningar direkt till dig",
+      text: "Köparen kontaktar dig direkt, från din panel eller på WhatsApp. Portalen mellanhandsförhandlar aldrig.",
+    },
+    {
+      icon: "✓",
+      title: "En verifierad profil",
+      text: "En publik profilsida för byrån och för varje mäklare bygger förtroende hos en köpare som aldrig hört talas om er innan.",
+    },
+  ],
+
+  ctaTitle: "Kom igång på några minuter",
+  ctaText: "Skapa ett gratis konto och lägg upp din första annons idag.",
+  ctaPrimary: "Skapa konto",
+  ctaSecondary: "Så fungerar importen",
+} as const;
 
 /* ========================================================================== *
  * Buyer-facing surfaces
@@ -906,6 +1096,9 @@ export const svCard = {
   energyExempt: "Undantagen från energicertifikat",
   /** Set when the Swedish text came from cron:translate, not from a human. */
   machineTranslated: "Maskinöversatt från spanska",
+  /** Shown only for a genuine landmine (`sin_lpo` / `en_regularizacion`) — never for `desconocido`, which is the common, non-alarming default. */
+  legalCaution: "⚠ Juridiskt läge kräver koll",
+  vpo: "VPO",
 } as const;
 
 /** Home page. */
@@ -1173,6 +1366,15 @@ export const svCategory = {
   paginationNext: "Nästa →",
   paginationStatus: (page: number, total: number) =>
     `Sida ${page} av ${total}`,
+  /** The map view (CategoryMap.tsx). */
+  pinCount: (n: number) => `${n} ${n === 1 ? "bostad" : "bostäder"}`,
+  pinCountZone: (n: number) =>
+    `${n} ${n === 1 ? "bostad" : "bostäder"} i det här området`,
+  pinApprox: " — ungefärligt läge",
+  mapLoading: "Söker…",
+  mapError: "Vi kunde inte läsa in kartan. Flytta den för att försöka igen.",
+  mapCapped: (n: number) =>
+    `Visar de ${n} billigaste bostäderna i det här området — zooma in för att se fler.`,
 } as const;
 
 /** Property detail: /bostad/[slug]. */

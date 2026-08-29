@@ -16,8 +16,8 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Sobre nosotros";
-const DESCRIPTION = (brand: string) => `${brand} es el portal inmobiliario de Paraguay: buscar es gratis, publicar también, y cada aviso muestra precio de referencia de la zona y cuota estimada.`;
+const TITLE = "Om oss";
+const DESCRIPTION = (brand: string) => `${brand} är bostadsportalen för svenskar som vill köpa eller hyra i Spanien: att söka är gratis, att annonsera är gratis, och varje annons visar referenspris för området och vad köpet kostar utöver priset.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
@@ -32,23 +32,23 @@ export async function generateMetadata(): Promise<Metadata> {
 const PRINCIPLES = [
   {
     icon: "🔍",
-    title: "Información antes que avisos",
-    text: "Un portal no debería ser solo un tablón. Publicamos medianas de precio por ciudad y por m², cuota estimada en cada propiedad en venta y tasación online gratuita, para que quien busca pueda comparar y no solo mirar.",
+    title: "Fakta före annonser",
+    text: "En portal ska inte bara vara en anslagstavla. Vi visar referenspriser per område och per kvadratmeter, en uppskattning av vad köpet kostar utöver priset på varje bostad till salu och energiklass och juridisk status på varje objekt — så att du kan jämföra, inte bara titta.",
   },
   {
     icon: "🤝",
-    title: "Contacto directo, sin peaje",
-    text: "Las consultas van directo de quien busca a quien publica. No cobramos por lead, no revendemos contactos y no nos metemos en la negociación.",
+    title: "Direktkontakt, ingen mellanhand",
+    text: "Din förfrågan går direkt till den som annonserar — mäklarbyrå, privatperson eller relocation-partner. Vi tar inte betalt per lead, säljer inga kontaktuppgifter och lägger oss inte i förhandlingen.",
   },
   {
-    icon: "🇵🇾",
-    title: "Hecho para Paraguay",
-    text: "Precios en guaraníes y dólares, barrios reales, WhatsApp como canal principal y programas de financiamiento locales — no un portal extranjero traducido.",
+    icon: "🇪🇸",
+    title: "Byggt för att köpa i Spanien, från Sverige",
+    text: "Pris i euro med en ungefärlig kronsumma bredvid, spanska bostadstyper förklarade på svenska, och de avgifter — överlåtelseskatt, moms, stämpelskatt, notarie, lagfart — som ingen svensk bostadsaffär förberett dig på.",
   },
   {
     icon: "📐",
-    title: "Números que se pueden auditar",
-    text: "Nuestras estimaciones salen de avisos publicados y de condiciones vigentes de financiamiento, y decimos siempre sobre qué muestra están calculadas. Si el dato es flojo, lo decimos en vez de inventarlo.",
+    title: "Siffror du kan granska",
+    text: "Våra uppskattningar bygger på publicerade annonser och på de regionala skattesatser vi lagt in för varje spansk region, och vi säger alltid vad de bygger på. Är underlaget svagt visar vi hellre ingenting än en gissning.",
   },
 ];
 
@@ -74,9 +74,9 @@ export default async function NosotrosPage() {
       />
 
       <PageHero
-        kicker="Quiénes somos"
-        title="Buscar propiedad en Paraguay debería ser transparente"
-        subtitle={`${brand} nació de una molestia concreta: buscar casa en Paraguay significa recorrer avisos repetidos, sin precio de referencia, sin saber si el número cierra con lo que uno puede pagar por mes. Armamos el portal que nos hubiera gustado usar.`}
+        kicker="Vilka vi är"
+        title="Att leta bostad i Spanien borde vara begripligt"
+        subtitle={`${brand} föddes ur en konkret frustration: som svensk köpare möter du spanska avgifter och juridiska begrepp du inte vuxit upp med, utan att något ställe förklarar vad du faktiskt betalar för. Vi byggde portalen vi själva hade velat använda.`}
       />
 
       {stats.listings > 0 && (
@@ -84,73 +84,72 @@ export default async function NosotrosPage() {
           <StatRow
             stats={[
               {
-                value: stats.listings.toLocaleString("es-PY"),
-                label: "Propiedades publicadas",
+                value: stats.listings.toLocaleString("sv-SE"),
+                label: "Publicerade bostäder",
               },
               {
-                value: stats.cities.toLocaleString("es-PY"),
-                label: "Zonas con inventario",
+                value: stats.cities.toLocaleString("sv-SE"),
+                label: "Orter med utbud",
               },
               {
-                value: stats.agencies.toLocaleString("es-PY"),
-                label: "Inmobiliarias publicando",
+                value: stats.agencies.toLocaleString("sv-SE"),
+                label: "Annonserande mäklarbyråer",
               },
               {
-                value: stats.projects.toLocaleString("es-PY"),
-                label: "Proyectos en desarrollo",
+                value: stats.projects.toLocaleString("sv-SE"),
+                label: "Projekt under utveckling",
               },
             ]}
           />
         </Section>
       )}
 
-      <Section title="En qué creemos" tone="muted">
+      <Section title="Vad vi tror på" tone="muted">
         <FeatureGrid items={PRINCIPLES} columns={2} />
       </Section>
 
-      <Section title="Cómo ganamos plata" width="narrow">
+      <Section title="Hur vi tjänar pengar" width="narrow">
         <Prose>
           <p>
-            Preferimos decirlo de entrada, porque define cómo funciona todo lo
-            demás. Buscar es gratis para quien busca y publicar es gratis para
-            quien vende o alquila, incluidas las inmobiliarias. No cobramos
-            comisión sobre las operaciones ni cobramos por consulta recibida.
+            Vi säger det direkt, eftersom det avgör hur allt annat fungerar.
+            Att söka är gratis för dig som köpare, och att annonsera är gratis
+            för den som säljer eller hyr ut — mäklarbyråer inkluderade. Vi tar
+            ingen provision på affärer och inget för mottagna förfrågningar.
           </p>
           <p>
-            Nuestros ingresos vienen de la visibilidad preferente que contratan
-            algunas inmobiliarias y desarrolladoras — avisos destacados,
-            posiciones en la portada y en las páginas de ciudad. Eso significa
-            que un aviso puede aparecer más arriba porque su publicante contrató
-            destaque, y cuando pasa se muestra identificado como tal. Lo que
-            nunca cambia por pagar es el precio, la superficie ni ningún otro
-            dato de la propiedad.
+            Våra intäkter kommer från den prioriterade synlighet som vissa
+            mäklarbyråer och byggherrar köper till — utvalda annonser,
+            placeringar på förstasidan och på ortssidorna. Det betyder att en
+            annons kan hamna högre upp för att annonsören betalat för det, och
+            då syns det tydligt. Det som aldrig ändras för pengar är priset,
+            ytan eller någon annan uppgift om bostaden.
           </p>
-          <h2>Qué no hacemos</h2>
+          <h2>Vad vi inte gör</h2>
           <p>
-            No somos una inmobiliaria y no representamos a ninguna de las
-            partes. No participamos de las negociaciones, no intervenimos en las
-            señas ni en los contratos y no verificamos de forma independiente la
-            titularidad de cada inmueble publicado. Antes de cualquier pago o
-            firma, verificá la documentación con un escribano.
+            Vi är ingen mäklarbyrå och representerar ingen av parterna. Vi
+            deltar inte i förhandlingar, hanterar inga handpenningar eller
+            kontrakt, och kontrollerar inte självständigt äganderätten till
+            varje objekt. Kontrollera alltid dokumentationen med en spansk
+            jurist eller notarie innan du betalar eller skriver under något.
           </p>
-          <h2>De dónde salen los datos</h2>
+          <h2>Var uppgifterna kommer ifrån</h2>
           <p>
-            Los avisos los cargan sus dueños, inmobiliarias y agentes desde el
-            panel del portal. Las medianas de precio se calculan sobre los
-            avisos publicados de cada ciudad y tipo de propiedad, y solo
-            publicamos la cifra cuando la muestra alcanza un mínimo razonable.
-            Las cuotas estimadas usan las condiciones de programas de
-            financiamiento vigentes en Paraguay y son orientativas: la cuota
-            real depende de la entidad, del plazo y de tu perfil crediticio.
+            Annonserna läggs in av ägare, mäklarbyråer och agenter via
+            portalens panel. Referenspriserna beräknas på de publicerade
+            annonserna för varje ort och bostadstyp, och vi visar bara siffran
+            när underlaget är tillräckligt stort. Uppskattningen av vad ett
+            köp kostar utöver priset bygger på de regionala skattesatser vi
+            lagt in för varje spansk region — orienterande, inte en exakt
+            offert.
           </p>
         </Prose>
       </Section>
 
       <CtaBand
-        title="¿Querés publicar tu propiedad?"
-        text="Cargala en minutos y llegá a quienes están buscando en tu zona."
-        primary={{ label: "Publicar gratis", href: "/publicar" }}
-        secondary={{ label: "Contactarnos", href: "/contacto" }}
+        title="Vill du annonsera din bostad?"
+        text="Lägg upp den på några minuter och nå svenska köpare som letar i ditt område."
+        primary={{ label: "Annonsera gratis", href: "/publicar" }}
+        secondary={{ label: "Kontakta oss", href: "/contacto" }}
       />
     </main>
   );

@@ -35,6 +35,7 @@ import {
 } from "@/lib/urls";
 import { getIndexability } from "@/lib/indexability";
 import { formatEur } from "@/lib/format";
+import { getFxRate } from "@/lib/reference-queries";
 import {
   bestMedianFor,
   getCityPrices as cityPricesFor,
@@ -305,12 +306,13 @@ export default async function CategoryPage({ params, searchParams }: Params) {
   const filters = parseFilters(sp);
   const page = parsePage(sp.page);
   const hasActiveFilters = hasUserFacets(filters);
-  const [{ listings, filteredCount }, cities] = await Promise.all([
+  const [{ listings, filteredCount }, cities, fx] = await Promise.all([
     getFilteredCategoryListings(
       { ...baseQuery, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE },
       filters,
     ),
     listCities(),
+    getFxRate(),
   ]);
   const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
 
@@ -496,7 +498,7 @@ export default async function CategoryPage({ params, searchParams }: Params) {
           }}
         >
           {listings.map((card) => (
-            <ListingCard key={card.id} card={card} />
+            <ListingCard key={card.id} card={card} fx={fx} />
           ))}
         </div>
       )}

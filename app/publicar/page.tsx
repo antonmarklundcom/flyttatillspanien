@@ -18,7 +18,7 @@ import { OPERATIONS, PROPERTY_TYPES } from "@/lib/import/types";
 import { listListingImages, type ListingImageRow } from "@/lib/listing-images";
 
 export const metadata: Metadata = {
-  title: `Publicá tu propiedad`,
+  title: svPublish.pageTitle,
   robots: { index: false, follow: false },
 };
 
@@ -116,6 +116,11 @@ export default async function PublishPage({
         projectId: row.projectId,
         priceEur: String(row.priceEur),
         videoUrl: row.videoUrl ?? "",
+        referenciaCatastral: row.referenciaCatastral ?? "",
+        energyRating: row.energyRating ?? "",
+        legalStatus: row.legalStatus,
+        chargesStatus: row.chargesStatus,
+        touristLicence: row.touristLicence ?? "",
       };
       // Same owner scope the upload action uses, so a resumed draft shows the
       // photos already stored for it.
