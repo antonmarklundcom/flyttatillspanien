@@ -13,6 +13,7 @@ import { adminTabs } from "../tabs";
 import {
   createUserAction,
   deleteUserAction,
+  identityVerifiedAction,
   linkAgencyAction,
   updateUserAction,
 } from "./actions";
@@ -33,6 +34,20 @@ const ROLE_OPTIONS = [
   "admin",
 ] as const;
 
+/** `sv` is the site's own locale and the schema default. */
+const LOCALE_OPTIONS = [
+  { value: "sv", label: "Svenska" },
+  { value: "en", label: "English" },
+  { value: "es", label: "Español" },
+] as const;
+
+const IDENTITY_DOC_TYPE_OPTIONS = [
+  "nie",
+  "dni",
+  "passport",
+  "personnummer",
+] as const;
+
 /** Flash messages keyed by the ?msg= code the actions redirect with. */
 const FLASH: Record<string, { text: string; error?: boolean }> = {
   created: { text: svPanel.userCreated },
@@ -40,6 +55,7 @@ const FLASH: Record<string, { text: string; error?: boolean }> = {
   deleted: { text: svPanel.userDeleted },
   password_reset: { text: svPanel.userPasswordReset },
   agency_linked: { text: svPanel.userAgencyLinked },
+  identity_saved: { text: svPanel.identitySaved },
   email_taken: { text: svPanel.userEmailTaken, error: true },
   self_role: { text: svPanel.userSelfRoleError, error: true },
   self_delete: { text: svPanel.userSelfDeleteError, error: true },
@@ -113,9 +129,12 @@ export default async function AdminUsersPage({
             </label>
             <label className="panel-form__field">
               <span className="auth-field__label">{svPanel.localeLabel}</span>
-              <select className="panel-select" name="locale" defaultValue="es">
-                <option value="es">Español</option>
-                <option value="en">English</option>
+              <select className="panel-select" name="locale" defaultValue="sv">
+                {LOCALE_OPTIONS.map((l) => (
+                  <option key={l.value} value={l.value}>
+                    {l.label}
+                  </option>
+                ))}
               </select>
             </label>
             <div className="panel-form__field panel-form__field--action">
@@ -216,16 +235,96 @@ function UserCard({
           <label className="panel-form__field">
             <span className="auth-field__label">{svPanel.localeLabel}</span>
             <select className="panel-select" name="locale" defaultValue={row.locale}>
-              <option value="es">Español</option>
-              <option value="en">English</option>
+              {LOCALE_OPTIONS.map((l) => (
+                <option key={l.value} value={l.value}>
+                  {l.label}
+                </option>
+              ))}
             </select>
           </label>
+
+          {/*
+            Identity verification (users.identity_*, design doc §3.4).
+            Operator-only, and it says so on the form: never a self-report
+            from the wizard or registration, only ever set here after an
+            operator has actually sighted the document.
+          */}
+          <h3 className="panel-form__section" style={{ flexBasis: "100%" }}>
+            {svPanel.identityTitle}
+          </h3>
+          <p className="panel-card__meta" style={{ flexBasis: "100%" }}>
+            {svPanel.identityHint}
+          </p>
+          <label className="panel-form__field">
+            <span className="auth-field__label">
+              {svPanel.identityDocTypeLabel}
+            </span>
+            <select
+              className="panel-select"
+              name="identityDocType"
+              defaultValue={row.identityDocType ?? ""}
+            >
+              <option value="">{svPanel.identityDocTypeNone}</option>
+              {IDENTITY_DOC_TYPE_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {svPanel.identityDocTypeOption[t]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="panel-form__field">
+            <span className="auth-field__label">
+              {svPanel.identityLast4Label}
+            </span>
+            <input
+              className="auth-field__input"
+              name="identityRefLast4"
+              type="text"
+              maxLength={4}
+              defaultValue={row.identityRefLast4 ?? ""}
+            />
+          </label>
+
           <div className="panel-form__field panel-form__field--action">
             <button className="panel-btn panel-btn--primary" type="submit">
               {svPanel.saveUser}
             </button>
           </div>
         </form>
+
+        <p className="panel-card__meta">
+          {row.identityVerifiedAt
+            ? svPanel.identityVerifiedOn(
+                row.identityVerifiedAt.toLocaleDateString("sv-SE"),
+              )
+            : svPanel.identityUnverified}
+        </p>
+        <div className="panel-actions">
+          <form action={identityVerifiedAction}>
+            <input type="hidden" name="userId" value={row.id} />
+            <input type="hidden" name="name" value={row.name ?? ""} />
+            <input type="hidden" name="email" value={row.email ?? ""} />
+            <input type="hidden" name="role" value={row.role} />
+            <input type="hidden" name="locale" value={row.locale} />
+            <input type="hidden" name="op" value="mark" />
+            <button className="panel-btn" type="submit">
+              {svPanel.identityMarkVerified}
+            </button>
+          </form>
+          {row.identityVerifiedAt ? (
+            <form action={identityVerifiedAction}>
+              <input type="hidden" name="userId" value={row.id} />
+              <input type="hidden" name="name" value={row.name ?? ""} />
+              <input type="hidden" name="email" value={row.email ?? ""} />
+              <input type="hidden" name="role" value={row.role} />
+              <input type="hidden" name="locale" value={row.locale} />
+              <input type="hidden" name="op" value="clear" />
+              <button className="panel-btn" type="submit">
+                {svPanel.identityClearVerified}
+              </button>
+            </form>
+          ) : null}
+        </div>
 
         <div className="panel-actions">
           <form action={linkAgencyAction} className="panel-form">

@@ -12,6 +12,7 @@ import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
   ADMIN_STATUSES,
   deleteListing,
+  getEditableListing,
   updateListing,
   type ListingStatusValue,
 } from "@/lib/listing-edit";
@@ -39,6 +40,66 @@ export async function adminUpdateListingAction(formData: FormData): Promise<void
   redirect(
     `/admin/propiedades/${parsed.id}?msg=${affected ? "saved" : "not_found"}`,
   );
+}
+
+/**
+ * Flip `nota_simple_seen_at` — the portal's own attestation that an operator
+ * has sighted the charges search, not a field a lister can reach (design doc
+ * §3.2). There is deliberately no separate write path for it: this action
+ * re-hydrates the row's other fields via `getEditableListing()` and resubmits
+ * them through the same `updateListing()` every other panel edit uses, with
+ * only this one column changed, rather than adding a second UPDATE statement
+ * for a single column.
+ */
+export async function adminSetNotaSimpleAction(formData: FormData): Promise<void> {
+  await requireSuperAdmin();
+
+  const id = Number(formData.get("listingId"));
+  const clear = formData.get("op") === "clear";
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  const listing = await getEditableListing(id, { kind: "admin" });
+  if (!listing) {
+    revalidatePath(`/admin/propiedades/${id}`);
+    redirect(`/admin/propiedades/${id}?msg=not_found`);
+  }
+
+  await updateListing({
+    id,
+    scope: { kind: "admin" },
+    input: {
+      title: listing.title,
+      descriptionEs: listing.descriptionEs,
+      operation: listing.operation,
+      propertyType: listing.propertyType,
+      priceEur: listing.priceEur,
+      bedrooms: listing.bedrooms,
+      bathrooms: listing.bathrooms,
+      parking: listing.parking,
+      builtM2: listing.builtM2,
+      usableM2: listing.usableM2,
+      plotM2: listing.plotM2,
+      yearBuilt: listing.yearBuilt,
+      locationId: listing.locationId,
+      videoUrl: listing.videoUrl,
+      status: listing.status,
+      referenciaCatastral: listing.referenciaCatastral,
+      energyRating: listing.energyRating,
+      energyEmissions: listing.energyEmissions,
+      legalStatus: listing.legalStatus,
+      chargesStatus: listing.chargesStatus,
+      ibiAnnualEur: listing.ibiAnnualEur,
+      communityMonthlyEur: listing.communityMonthlyEur,
+      isVpo: listing.isVpo,
+      landClassification: listing.landClassification,
+      buildableM2: listing.buildableM2,
+      touristLicence: listing.touristLicence,
+      notaSimpleSeenAt: clear ? null : new Date(),
+    },
+  });
+
+  revalidatePath(`/admin/propiedades/${id}`);
+  redirect(`/admin/propiedades/${id}?msg=saved`);
 }
 
 export async function adminDeleteListingAction(formData: FormData): Promise<void> {

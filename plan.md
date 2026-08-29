@@ -876,6 +876,103 @@ phase's seller-card change). `IBI`/`community_monthly_eur` in the wizard
 (point 4 above) is fair game for whichever phase touches `publish-queries.ts`
 next.
 
+### Phase 4 — admin & agency panels (2026-08-29)
+
+Branch `phase/4`. Also merged Phase 3's own PR (#8), which had been left open
+on the branch with a complete build-log entry but never merged — see the
+first decision below.
+
+**What now exists.** Most of the energy/legal/charges editing Phase 3's build
+log flagged as "Phase 4's" turned out already built: Phase 2's mechanical
+compile-fix pass had already wired the whole legal block into `ListingForm`
+(shared by `/admin` and `/agencia`), so this phase's real gap was the pieces
+Phase 2 deliberately left for "its own action" — `nota_simple_seen_at`
+(**new** `adminSetNotaSimpleAction`, re-hydrates the row via
+`getEditableListing()` and resubmits through the existing `updateListing()`,
+per the phase's "extend, don't add a second write path" rule) and the
+FX/acquisition-cost admin surface (**new** `/admin/referens`: current rate +
+manual override calling `setManualFxRate()` + `revalidateFx()`; all seven
+comunidad rows editable, calling `updateAcquisitionCost()` +
+`revalidateAcquisitionCosts()`). Also new: identity verification on
+`/admin/usuarios` (doc type + last-4 on the main form, a one-click "mark
+verified now"/"clear" pair mirroring the nota-simple pattern); an
+`agencies.kind` selector at creation and a per-row edit control on
+`/admin/inmobiliarias` (**new** `setAgencyKind()`/`updateAgencyKindAction`);
+a read-only kind badge plus editable `tax_id`/`tax_id_country` on
+`/agencia/perfil` (extended `profile-queries.ts` — kind stays operator-set,
+same trust level as `isVerified`); a relocation agency labelled distinctly in
+`/admin/leads` (extended `listAllLeads`/`AdminLeadRow` with `agencyKind`);
+and `ibi_annual_eur`/`community_monthly_eur` wired into the publish wizard
+end to end (`DraftInput` → `DraftPayload` → `PublishWizard` state and
+inputs), closing the KNOWN-ISSUES gap Phase 3 left. The CSV template already
+carried every legal column (Phase 2) — nothing to do there.
+
+**Decisions and deviations.**
+1. **Phase 3's PR (#8) was still open**, with its own build-log entry
+   committed to this branch but never merged, and no reply on the PR
+   explaining why. Per §4.9's handoff gates, a phase isn't done until its PR
+   is merged. Audited it before starting: `typecheck`/`build`/all four pure
+   verifies green, `db:migrate` clean with zero drift, `seed:locations &&
+   seed:costs && seed:dev` clean, and curled the two landmine `/bostad/[slug]`
+   rows plus a category page and `/for-maklare` — all 200, the acquisition-cost
+   block and the legal fields rendering real numbers. Merged it, then branched
+   Phase 4 from the resulting `main`.
+2. **`agencies.plan`'s three pre-existing "destacado" bugs**, found while
+   adding the `kind` selector to the same admin page: the create form saved
+   an enum member the schema does not have (silently coerced to `free` by
+   `toPlan()`'s fallback), and `directory-queries.ts`'s `planRank` sorted
+   every real `premium` agency *last* — worse than `free` — via its `?? 9`
+   fallback. Fixed all three call sites (mechanical rename to `premium`, not
+   a schema or algorithm change); full diagnosis in `KNOWN-ISSUES.md`.
+3. **`users.locale`'s admin picker only offered `es`/`en`**, inherited from
+   propia.node — an operator could never set the schema's own `sv` default,
+   and `defaultValue={row.locale}` silently showed the wrong option selected
+   for every `sv` user (which, post-Phase-1, is all of them). Fixed in the
+   same file already being extended for identity fields.
+4. **Five `toLocaleDateString("es-PY")`/`Intl.DateTimeFormat("es-PY")` calls**
+   across `/admin/leads`, `/admin/guias`, `/admin/importar`, `/agencia/equipo`
+   and `/agencia/leads` — the same class of bug Phase 3 fixed in the sitewide
+   OpenGraph locale, just not swept from the panels. `CLAUDE.md`'s "numbers
+   are not copy" rule extends to dates; fixed to `sv-SE` everywhere found.
+5. **`DATABASE_URL=<local> npm run verify:import`'s rollback exercise
+   fails**, confirmed pre-existing (`git stash` back to the merged Phase 3
+   tree reproduces the identical failure and row counts) and out of reach
+   under §4.7 — `rollbackImportJob()` lives in `src/lib/import/jobs.ts`,
+   core logic. Full symptom description in `KNOWN-ISSUES.md`; every other
+   `verify:import` check, including the rest of the database half, is green,
+   and the pre-push hook's own `verify:import` run never sets `DATABASE_URL`
+   so this does not block a push.
+
+**Verified.** `npm run verify:local` green (typecheck, build, all four pure
+verifies — matches exactly what `.githooks/pre-push` runs, so this branch
+pushes without `--no-verify`); `db:status` reports no drift; `verify:scopes`
+green, 50 assertions. Against `npm run start` + Phase 3's `seed:dev` data,
+over authenticated HTTP (a real `/login` session, Next's no-JS
+progressive-enhancement form protocol replicated with `curl -F`, not a
+bypass script): the FX override and an acquisition-cost region override each
+render on the affected public `/bostad/[slug]` page **immediately** after
+the admin POST — confirmed by grep before/after, not by trusting the code —
+proving the in-process `revalidateFx()`/`revalidateAcquisitionCosts()` path
+rather than the TTL; the `nota_simple_seen_at` flip renders the "vi har läst
+en nota simple…" line on the same public page immediately; the relocation
+seed agency's listing already carried the "represents the buyer" seller-card
+label (Phase 2/3's work, re-confirmed); the same relocation agency now
+labels distinctly in `/admin/leads` (verified with one throwaway local-DB
+lead row, deleted after); the `agencies.kind` selector, the identity
+verification mark/clear pair, and the `/agencia/perfil` kind badge +
+`tax_id` save all round-tripped through their own authenticated POST and a
+`SELECT` against the local DB.
+
+**Where Phase 5 starts.** Everything Phase 5's scope lists is still
+untouched by this phase: the editorial Swedish pass over `sv.ts` (this phase
+added ~35 new panel/wizard strings in working-draft voice, same standard as
+Phase 1's — not final), and the four-doc rewrite (`CLAUDE.md`,
+`ARCHITECTURE.md`, `README.md`, `PLAN.md`) is still 100% outstanding — this
+file (`plan.md`) is not one of the four, but note that `KNOWN-ISSUES.md` now
+also names two defects (§9.4, §9.5 above) that are neither this phase's
+scope nor Phase 5's — they need a session with core-logic/query-layer
+license, which is a founder call on sequencing, not an automatic next step.
+
 ## 10. Backlog
 
 Anything a phase session finds that is real but out of its scope goes here

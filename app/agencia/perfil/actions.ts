@@ -36,6 +36,8 @@ export async function updateAgencyProfileAction(
     logoUrl: String(formData.get("logoUrl") ?? ""),
     phone: String(formData.get("phone") ?? ""),
     email: String(formData.get("email") ?? ""),
+    taxId: String(formData.get("taxId") ?? ""),
+    taxIdCountry: String(formData.get("taxIdCountry") ?? ""),
   });
   finish(ok ? "agency_saved" : "invalid");
 }

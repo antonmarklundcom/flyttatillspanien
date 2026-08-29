@@ -64,7 +64,7 @@ async function requestOrigin(): Promise<string> {
 }
 
 function fmtDate(d: Date): string {
-  return new Intl.DateTimeFormat("es-PY", {
+  return new Intl.DateTimeFormat("sv-SE", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

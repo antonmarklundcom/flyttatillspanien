@@ -26,7 +26,7 @@ const FLASH: Record<string, string> = {
 
 function formatDate(d: Date | null): string {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("es-PY", {
+  return new Date(d).toLocaleDateString("sv-SE", {
     day: "2-digit",
     month: "short",
     year: "numeric",

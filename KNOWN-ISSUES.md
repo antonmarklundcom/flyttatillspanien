@@ -159,3 +159,38 @@ Format: `- [phase found] area — what, and what would fix it.`
   is still in `STATIC_SITEMAP_PATHS` and reachable by direct link, but no
   longer linked from the header or footer. Consolidating or redirecting one
   into the other is an editorial call for Phase 5, not a Phase 3 fix.
+
+- [4] **`DATABASE_URL=<local> npm run verify:import`'s rollback exercise fails,
+  pre-existing.** The check `rollback restored the old prices` reports six
+  rows for the three `Flat` fixtures (`["299000.00" × 3, "285000.00" × 3]`)
+  instead of three rows all back at 285000 — as if the batch's price-update
+  rollback restored the old value onto three *extra* rows rather than the
+  three it updated, while the three rows still at the new price were left
+  untouched. Confirmed **not** caused by this phase: `git stash` back to the
+  merged Phase 3 tree and re-running the same command reproduces the
+  identical failure and the identical row counts. `rollbackImportJob()`'s
+  `updated`-outcome path (`src/lib/import/jobs.ts`) does the right shape of
+  thing at a glance — an `UPDATE … WHERE id = row.listingId` keyed off the
+  snapshot in `previous_json`, not an insert — so the six-row count needs a
+  session with license to touch `src/lib/import/jobs.ts` (core logic, out of
+  a Sonnet phase's reach per §4.7) tracing why the `updated` restore leaves
+  two generations of the row instead of one. Every other `verify:import`
+  check, including the pure half and the rest of the database half (dedup on
+  both paths, the publish gate, re-import idempotency), is green. Every
+  `verify:local`/`verify:scopes` run in this phase used a persistent local
+  MySQL the phase's own build never reset, so a stale fixture from an earlier
+  invocation cannot be ruled out as a contributing factor either — the
+  cleanest next step is reproducing it once against a freshly
+  `docker compose up`'d database before touching `jobs.ts`.
+
+- [4] `agencies.plan`'s enum is `free | premium | partner`; three pre-existing
+  surfaces spelled the middle tier `"destacado"` instead, so selecting or
+  reading that plan silently fell back to the wrong thing: the admin
+  agency-creation `<select>` (`app/admin/inmobiliarias/page.tsx`) saved
+  `"destacado"` as an unrecognised value, which `toPlan()` coerced to
+  `free`; the directory's `planRank` (`src/lib/directory-queries.ts`) had no
+  entry for `"premium"` and sorted every real premium agency last via its
+  `?? 9` fallback — worse than a free one; `app/planes/page.tsx`'s pricing
+  page used it only as a React `key`, harmless functionally but the file's
+  own comment claimed it "mirrors the `agencies.plan` enum". All three fixed
+  in this phase (mechanical rename, not a schema or algorithm change).

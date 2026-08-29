@@ -501,6 +501,8 @@ async function main() {
       logoUrl: "https://example.test/logo.png",
       phone: "952100000",
       email: "hola@example.test",
+      taxId: "",
+      taxIdCountry: "",
     });
     const renamed = await getAgencyProfile(agencyId);
     check("agency rename applies", renamed?.name === "Verify Renamed");
@@ -515,6 +517,8 @@ async function main() {
       logoUrl: "",
       phone: "",
       email: "",
+      taxId: "",
+      taxIdCountry: "",
     });
     check(
       "cleared field becomes NULL",
@@ -527,6 +531,8 @@ async function main() {
         logoUrl: "",
         phone: "",
         email: "",
+        taxId: "",
+        taxIdCountry: "",
       })) === false,
     );
 

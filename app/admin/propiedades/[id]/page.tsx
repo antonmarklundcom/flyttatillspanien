@@ -18,7 +18,11 @@ import { listPublishLocations } from "@/lib/publish-queries";
 import { svPanel } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { adminTabs } from "../../tabs";
-import { adminDeleteListingAction, adminUpdateListingAction } from "../actions";
+import {
+  adminDeleteListingAction,
+  adminSetNotaSimpleAction,
+  adminUpdateListingAction,
+} from "../actions";
 import {
   adminDeletePhotoAction,
   adminMovePhotoAction,
@@ -125,6 +129,40 @@ export default async function AdminListingEditPage({
           />
         </article>
 
+        {/*
+          nota_simple_seen_at is the portal's own attestation, never the
+          lister's — it has no place on ListingForm (shared with /agencia) and
+          gets its own admin-only control here, per svPanel.notaSimpleHint.
+        */}
+        <article className="panel-card">
+          <h3 className="panel-section__title" style={{ marginTop: 0 }}>
+            {svPanel.notaSimpleLabel}
+          </h3>
+          <p className="panel-card__meta">{svPanel.notaSimpleHint}</p>
+          <p>
+            {listing.notaSimpleSeenAt
+              ? svPanel.notaSimpleSeenOn(
+                  listing.notaSimpleSeenAt.toLocaleDateString("sv-SE"),
+                )
+              : svPanel.notaSimpleNotSeen}
+          </p>
+          <form action={adminSetNotaSimpleAction} className="panel-actions">
+            <input type="hidden" name="listingId" value={listing.id} />
+            <input type="hidden" name="op" value="mark" />
+            <button className="panel-btn panel-btn--primary" type="submit">
+              {svPanel.notaSimpleMark}
+            </button>
+          </form>
+          {listing.notaSimpleSeenAt ? (
+            <form action={adminSetNotaSimpleAction} className="panel-actions">
+              <input type="hidden" name="listingId" value={listing.id} />
+              <input type="hidden" name="op" value="clear" />
+              <button className="panel-btn" type="submit">
+                {svPanel.notaSimpleClear}
+              </button>
+            </form>
+          ) : null}
+        </article>
 
         <PhotoManager
           listingId={listing.id}

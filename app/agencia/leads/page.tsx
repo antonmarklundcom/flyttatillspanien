@@ -36,7 +36,7 @@ function replyHref(email: string): string {
 }
 
 function formatWhen(d: Date): string {
-  return new Intl.DateTimeFormat("es-PY", {
+  return new Intl.DateTimeFormat("sv-SE", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",

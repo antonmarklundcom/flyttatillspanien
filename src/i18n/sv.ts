@@ -337,6 +337,7 @@ export const svPanel = {
   profileTaxIdLabel: "Organisationsnummer / CIF",
   profileTaxIdHint:
     "CIF/NIF för ett spanskt bolag, organisationsnummer för ett svenskt.",
+  countryLabel: "Land (landskod, t.ex. ES eller SE)",
   profileRegistryLabel: "Mäklarregisternummer",
   profileRegistryHint:
     "Bara vissa regioner har ett obligatoriskt mäklarregister (AICAT i Katalonien, egna register i Madrid och Andalusien). Att fältet är tomt är normalt.",
@@ -421,6 +422,41 @@ export const svPanel = {
   verifiedBadge: "✓ Verifierad",
   notVerifiedBadge: "Overifierad",
 
+  // Admin — referensdata (EUR/SEK-kurs och förvärvskostnader)
+  adminReferenceTitle: "Referensdata",
+  referenceFxTitle: "EUR/SEK-kurs",
+  referenceFxHint:
+    "Hämtas normalt en gång per dygn från ECB (npm run cron:fx). Ett manuellt värde gäller tills nästa körning skriver över det, och syns på sajten direkt — inte efter timmens cache.",
+  referenceFxNone:
+    "Ingen kurs är sparad ännu. Sidorna visar inget SEK-pris förrän en finns.",
+  referenceFxStale:
+    "Äldre än 7 dagar — sajten visar inget SEK-pris just nu.",
+  referenceFxRateLabel: "Kurs (SEK per EUR)",
+  referenceFxObservedLabel: "Avser datum",
+  referenceFxSourceLabel: "Källa",
+  referenceFxSourceEcb: "ECB",
+  referenceFxSourceManual: "Manuellt",
+  referenceFxFetchedLabel: "Senast sparad",
+  referenceFxSave: "Spara kurs",
+  referenceFxSaved: "Kursen är sparad och syns på sajten direkt.",
+  referenceFxInvalid: "Ange en kurs större än noll.",
+  referenceCostsTitle: "Förvärvskostnader per region",
+  referenceCostsHint:
+    "Varje region i seedningen är en PLACEHOLDER-siffra (scripts/seed-acquisition-costs.ts). Verifiera mot regionens egen skala innan du litar på den, och länka källan nedan när du gör det — annars ser en ogranskad siffra granskad ut.",
+  referenceCostsItpLabel: "Överlåtelseskatt ITP (%)",
+  referenceCostsIvaLabel: "Moms IVA, nyproduktion (%)",
+  referenceCostsAjdLabel: "Stämpelskatt AJD, nyproduktion (%)",
+  referenceCostsNotaryLabel: "Notarie, uppskattning (%)",
+  referenceCostsRegistryLabel: "Fastighetsregister, uppskattning (%)",
+  referenceCostsLegalLabel: "Juridiskt ombud, uppskattning (%)",
+  referenceCostsSourceLabel: "Källa (länk till regionens egen skala)",
+  referenceCostsActiveLabel: "Aktiv (visas på sajten)",
+  referenceCostsUpdatedLabel: (date: string) => `Senast ändrad ${date}`,
+  referenceCostsUpdatedNever: "Aldrig ändrad sedan seedningen",
+  referenceCostsSave: "Spara",
+  referenceCostsSaved: "Regionens kostnader är sparade och syns på sajten direkt.",
+  referenceCostsInvalid: "Regionen kunde inte hittas — inget sparades.",
+
   // Admin — användare
   adminUsersTitle: "Användare",
   /** Labels for the two panel tab rows — see PanelBar's `group`. */
@@ -461,9 +497,19 @@ export const svPanel = {
   identityHint:
     "Fyll bara i det här efter att du sett ID-handlingen. Vi sparar de fyra sista tecknen — aldrig hela numret — så att du känner igen vilken handling som ligger till grund för kontrollen.",
   identityDocTypeLabel: "Typ av handling",
+  identityDocTypeNone: "—",
+  identityDocTypeOption: {
+    nie: "NIE",
+    dni: "DNI",
+    passport: "Pass",
+    personnummer: "Svenskt personnummer",
+  } as Record<string, string>,
   identityLast4Label: "Fyra sista tecknen",
   identityVerifiedLabel: "Kontrollerad",
+  identityVerifiedOn: (date: string) => `Kontrollerad ${date}.`,
   identityUnverified: "Inte kontrollerad",
+  identityMarkVerified: "Markera som kontrollerad nu",
+  identityClearVerified: "Ta bort markeringen",
   identitySaved: "Identitetskontrollen är sparad.",
 
   // Admin — mäklare och byråer
@@ -550,6 +596,10 @@ export const svPanel = {
   notaSimpleLabel: "Nota simple granskad av oss",
   notaSimpleHint:
     "Sätts bara av oss, aldrig av annonsören: det är portalens egen kontroll, och hela poängen är att säljaren inte kan sätta den själv.",
+  notaSimpleSeenOn: (date: string) => `Granskad av oss ${date}.`,
+  notaSimpleNotSeen: "Ingen nota simple är granskad av oss ännu.",
+  notaSimpleMark: "Markera som granskad nu",
+  notaSimpleClear: "Ta bort markeringen",
   ibiLabel: "IBI, kommunal fastighetsskatt (€/år)",
   communityLabel: "Samfällighetsavgift (€/månad)",
   isVpoLabel: "VPO — prisreglerad bostad",
