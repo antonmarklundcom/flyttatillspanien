@@ -699,6 +699,84 @@ Phase 2 owns one of them by subject rather than by content: `src/lib/wa.ts`,
 `crm.ts`, `otp.ts` and `auth/password.ts` narrate WhatsApp-first delivery as
 current fact (§5.2.4 already calls this out).
 
+### Phase 2 — core logic: query layer, import, auth, leads, verify (2026-08-29)
+
+Branch `phase/2`.
+
+**What now exists.** The whole read/write layer speaks the Spain schema:
+`facet-sql` filters on `price_eur` (SEK never enters a WHERE — `verify:facets`
+asserts the absence of a conversion, not just the presence of the column), the
+five-level locations tree replaces ciudad/barrio everywhere, and cards carry
+`title_sv`, `energy_rating`, `legal_status` and `is_vpo` so Phase 3 can render
+a compliant advertisement without reaching back into the query layer. **Import:
+`referencia_catastral` is an EXACT dedup key that skips the fuzzy path
+entirely**, and `dedupKey()` is the unchanged fallback when a row carries none,
+`null`-means-do-not-merge included; a row with a reference deliberately stores
+NO fuzzy key beside it. **New `src/lib/publish-gate.ts`**: `energy_rating` is
+required to reach `published`, enforced in the three writers that can make that
+transition (`approveListing`, `updateListing`, `commitImport(publish:true)`),
+never in a form. **Email-first** end to end: `crm.ts` gained a nodemailer SMTP
+transport behind the same optional-by-construction interface, `otp_codes` is
+keyed by destination+channel, and the wizard verifies the *account's own* inbox
+rather than a client-supplied address. Also new: `src/lib/listing-copy.ts` (the
+one home for `title_sv ?? title` and the machine-translation marker) and
+`src/lib/reference-queries.ts`.
+
+**Verified.** `npm run verify:local` green (typecheck, build, and the four pure
+verifies); `verify:import` green against local MySQL with **both** dedup paths
+covered by fixtures that can only pass through the path they name; `verify:scopes`
+green — 50 assertions, including a `relocation`-kind agency scoped identically
+to an `inmobiliaria` one; `db:status` reports no drift.
+
+**Decisions and deviations.**
+1. **`fx_rates` and `acquisition_costs` had a cache tag, a cron and no reader.**
+   Nothing in the app read either table, so Phase 3's SEK line and
+   acquisition-cost block and Phase 4's FX/cost overrides had no query layer to
+   call — and §4.7 forbids the Sonnet phases from adding one. Added
+   `src/lib/reference-queries.ts` with the readers *and* the two operator
+   writers (`setManualFxRate`, `updateAcquisitionCost`). Smoke-tested end to
+   end: a manual rate renders through `formatSek`, a region itemises through
+   `acquisitionCost()`.
+2. `verify:i18n` had to change shape, not purpose. Its arity check fell out of
+   walking two dictionaries; with one, it calls every copy function with
+   sentinel arguments and asserts that changing an argument changes the output.
+   That is stronger than the pairwise walk — it also catches a function that
+   drops an argument in *both* locales. Negative-tested before shipping.
+3. `ListingOwner` (public FSBO seller card) exposes `phone` and
+   `emailVerifiedAt` but deliberately NOT the owner's email: it is the account
+   identity now, and rendering it publicly would publish a private person's
+   inbox to every scraper. `/admin/leads` may select it — that surface is
+   staff-only — and the buyer's route to an FSBO seller is the lead form.
+4. `requestOtpAction` takes no destination. The address is the session's, so the
+   endpoint cannot be turned into a relay that mails a six-digit code anywhere
+   a script asks.
+5. Draft and user writes only touch the legal / identity columns when the
+   caller actually carried them (`undefined` = "this form did not ask", an
+   explicit `null` still clears). Without that, an operator's energy rating or
+   identity verification would be wiped by the next save from a form that has
+   no such field — which is every form until Phases 3 and 4 add them.
+6. The importer's CSV template example row was positional and the column set
+   grew by eleven; the generated template misaligned. Keyed by column name now
+   and round-tripped through `readIntake()` as part of this phase's audit.
+7. `waPhone()` had a hardcoded `595`. It now reads a leading zero as Sweden's
+   trunk prefix and a bare nine digits as Spain, and leaves anything already
+   international alone — a relocation partner's +46 must not get 34 in front.
+
+**Where Phase 3 starts.** `main` is green again, so the pre-push gate is back
+and no phase after this one may use `--no-verify`. Everything Phase 3 needs is
+in the query layer: `ListingCard` carries the compliance fields, `getFxRate()`
+feeds `formatSek`/`formatRateNote`, `getAcquisitionRatesFor(region)` feeds
+`acquisitionCost()` (the region is on every `locations` row as
+`acquisition_region`), and `servedTitle`/`isMachineTranslated` in
+`listing-copy.ts` are the `title_sv ?? title` rule. Two things are stubbed on
+purpose and are Phase 3's first jobs: the listing detail page has a commented
+slot where the Paraguayan financing box was, for the acquisition-cost block
+(`svListing.acquisition*` is already written), and the publish wizard does not
+yet collect the legal block (`DraftPayload` and `saveDraftAction` accept it —
+adding the inputs is all that is missing). The route tree is still Spanish
+(`/propiedad`, `/inmobiliaria`, `/agente`) and moving it is Phase 3's, per
+`KNOWN-ISSUES.md`.
+
 ## 10. Backlog
 
 Anything a phase session finds that is real but out of its scope goes here
