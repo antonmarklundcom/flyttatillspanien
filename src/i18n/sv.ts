@@ -139,7 +139,7 @@ export const svFooter = {
   columnTypes: "Per bostadstyp",
   copyright: (brand: string) => `${brand} — Spansk bostad för svenska köpare.`,
   disclaimer: (brand: string) =>
-    `Referenspriserna och köpkostnadsuppskattningarna som publiceras är vägledande beräkningar utifrån portalens annonser och de skattesatser och avgiftsuppskattningar som gäller per region. De utgör inte en officiell värdering, ett kreditbesked eller finansiell rådgivning. ${brand} deltar inte i förhandlingar mellan parterna och kontrollerar inte självständigt äganderätten till varje publicerad bostad.`,
+    `Referenspriserna och köpkostnadsuppskattningarna vi publicerar är vägledande beräkningar, baserade på portalens annonser och de skattesatser och avgifter som gäller per region. De är ingen officiell värdering, inget kreditbesked och ingen finansiell rådgivning. ${brand} deltar inte i förhandlingarna mellan parterna och kontrollerar inte självständigt äganderätten till varje bostad som publiceras.`,
 } as const;
 
 /**
@@ -175,7 +175,7 @@ export const svTasacion = {
   resultBandNote: (pct: number) =>
     `Intervallet är ±${pct}%: ju färre jämförbara annonser, desto bredare gör vi det. Vi är hellre ärliga än exakta.`,
   disclaimer:
-    "Viktigt: detta är en referens beräknad på utropspriser, inte på slutpriser, och det är ingen officiell värdering. Det som avgör det verkliga värdet är bostadens skick, det exakta läget och marknadsläget just nu.",
+    "Kom ihåg: det här är en referens baserad på utropspriser, inte slutpriser, och ingen officiell värdering. Vad bostaden faktiskt är värd avgörs av skicket, det exakta läget och marknadsläget just nu.",
   errorBadArea: "Kontrollera antalet m²: ange ett tal mellan 10 och 100 000.",
   errorUnknownCity: "Välj en ort i listan.",
   errorNoData:
@@ -218,7 +218,7 @@ export const svPrecios = {
     "Få annonser — se det som en referens, inte som ett marknadspris.",
   methodTitle: "Så räknar vi",
   methodBody: (brand: string) =>
-    `Vi använder medianen (inte medelvärdet) av de priser som publiceras på ${brand}, per ort och bostadstyp. Medianen tål enstaka extrempriser bättre. En grupp med färre än 8 annonser visas med en varning: det är en referens, inte ett marknadspris. Priserna är dessutom utropspriser, inte slutpriser. Ytan vi räknar på är byggd yta (superficie construida) — samma mått som spanska portaler anger, så att siffrorna går att jämföra.`,
+    `Vi räknar med medianen, inte medelvärdet, av priserna som publiceras på ${brand}, per ort och bostadstyp — medianen påverkas mindre av enstaka extrempriser. Är det färre än 8 annonser i en grupp visar vi en varning: siffran är en referens, inte ett marknadspris. Kom också ihåg att det är utropspriser, inte slutpriser, och att ytan vi räknar på är byggd yta (superficie construida) — samma mått som spanska portaler använder, så att siffrorna går att jämföra.`,
   emptyCity:
     "Vi har ännu inte tillräckligt många annonser på den här orten för att räkna fram ett pris.",
   backToPrices: "← Alla priser",
@@ -259,7 +259,7 @@ export const svPrecios = {
  */
 export const svPanel = {
   loginTitle: "Logga in i din panel",
-  loginSubtitle: "Använd din e-postadress och ditt lösenord.",
+  loginSubtitle: "Ange din e-postadress och ditt lösenord.",
   emailLabel: "E-post",
   passwordLabel: "Lösenord",
   loginSubmit: "Logga in",
@@ -284,7 +284,7 @@ export const svPanel = {
   registerSubmit: "Skapa konto",
   registerToLogin: "Har du redan ett konto? Logga in",
   registerPendingNote:
-    "Ditt konto blir aktivt direkt. Verifieringen (✓ på din profil) godkänner vi manuellt efter att vi granskat dina uppgifter.",
+    "Ditt konto aktiveras direkt. Verifieringsmärket (✓ på din profil) sätter vi manuellt, när vi har gått igenom dina uppgifter.",
   registerErrorName: "Skriv ditt fullständiga namn.",
   registerErrorEmail: "Kontrollera e-postadressen.",
   registerErrorEmailTaken:
@@ -408,7 +408,7 @@ export const svPanel = {
   adminAgenciesTitle: "Byråer och mäklare",
   adminAgencyNewTitle: "Skapa byrå",
   adminAgencyNewHint:
-    "Skapar byråns profil. Den börjar overifierad: använd knappen i listan för att ge den ✓. Det skapar ingen användare — det gör du under Användare, med ”Koppla”. Byrån syns i den publika katalogen först när den har en publicerad annons.",
+    "Det här skapar bara byråns profil, overifierad från start — ge den ✓ med knappen i listan när ni är redo. Ingen användare skapas här; det gör du under Användare, med ”Koppla”. Byrån blir synlig i den publika katalogen först när den har en publicerad annons.",
   agencyNameLabel: "Byråns namn",
   agencyPhoneLabel: "Telefon",
   agencyEmailLabel: "Kontakt-e-post",
@@ -495,7 +495,7 @@ export const svPanel = {
    */
   identityTitle: "Identitetskontroll",
   identityHint:
-    "Fyll bara i det här efter att du sett ID-handlingen. Vi sparar de fyra sista tecknen — aldrig hela numret — så att du känner igen vilken handling som ligger till grund för kontrollen.",
+    "Fyll bara i det här efter att du har sett legitimationen. Vi sparar bara de fyra sista tecknen — aldrig hela numret — så att du kan se vilken handling kontrollen bygger på.",
   identityDocTypeLabel: "Typ av handling",
   identityDocTypeNone: "—",
   identityDocTypeOption: {
@@ -676,9 +676,9 @@ export const svPanel = {
   // Massimport (/admin/importar)
   adminImportTitle: "Importera kalkylblad",
   adminImportSubtitle:
-    "Ladda upp en byrås kalkylblad (.csv eller .xlsx). Först visar vi vad som händer med varje rad; först därefter skrivs något.",
+    "Ladda upp en byrås kalkylblad (.csv eller .xlsx). Vi visar vad som händer med varje rad innan något skrivs till databasen.",
   importRollbackHint:
-    "Varje sats går att återställa efteråt: bostäderna den skapade raderas och de den ändrade återställs. De som redan fått förfrågningar eller är publicerade behålls, och vi talar om vilka.",
+    "Varje sats går att återställa i efterhand: bostäderna den skapade tas bort, och de den ändrade får sina gamla värden tillbaka. De som redan fått förfrågningar eller är publicerade behålls ändå, och vi visar vilka det gäller.",
   importJobsTitle: "Importerade satser",
   importJobsEmpty: "Du har inte importerat något kalkylblad ännu.",
   importJobRollback: "Återställ den här satsen",
@@ -767,7 +767,7 @@ export const svPanel = {
    * to publish rather than as a step that leads nowhere.
    */
   statusReviewNote:
-    "För att publicera en annons sätter du den till ”Under granskning”: vi granskar den och publicerar den. Det är det som gör att vi kan lova köparen att varje annons passerat en människa.",
+    "Sätt annonsen till ”Under granskning” för att publicera den: vi går igenom den och publicerar den. Det är så vi kan lova köparen att en människa har sett varje annons.",
   /** The publish gate (schema.ts, energy_rating). Server-side, not form-only. */
   statusEnergyRequired:
     "Annonsen kan inte publiceras utan energiklass: spansk lag kräver att den står i själva annonsen. Välj ”Under handläggning” eller ”Undantagen” om certifikatet inte är klart.",
@@ -795,7 +795,7 @@ export const svOwner = {
    * listing. Worded for someone who has never used a portal panel.
    */
   statusReviewNote:
-    "För att din annons ska bli publicerad sätter du den till ”Under granskning”: vi granskar den och publicerar den. Det är det som gör att vi kan lova köparen att varje annons passerat en människa.",
+    "Sätt din annons till ”Under granskning” för att den ska publiceras: vi går igenom den och publicerar den. Det är så vi kan lova köparen att en människa har sett varje annons.",
 
   editListing: "Redigera",
   backToListings: "← Tillbaka till dina annonser",
@@ -903,7 +903,7 @@ export const svPublish = {
   // OTP
   otpTitle: "Bekräfta din e-postadress för att publicera",
   otpSubtitle:
-    "Vi skickar en kod till din e-post. Verifierade annonser visar ✓ och inger mer förtroende.",
+    "Vi skickar en kod till din e-post. Verifierade annonser har en ✓ och känns mer pålitliga för köparen.",
   emailLabel: "E-postadress",
   codeLabel: "Sexsiffrig kod",
   sendCode: "Skicka kod",
@@ -1164,7 +1164,7 @@ export const svHome = {
   heroSubtitle:
     "Villor, lägenheter och tomter längs kusten och på öarna — med pris i euro, ungefärligt pris i kronor och en uppskattning av vad köpet kostar utöver priset.",
   heroSeeListings: "Se bostäder",
-  heroSellCta: "Sälja min bostad",
+  heroSellCta: "Sälj min bostad",
   heroStatCount: (total: string) => `${total} publicerade bostäder`,
   heroStatCountEmpty: "Bostäder i hela Spanien",
   heroStatUpdated: "Uppdateras dagligen",
@@ -1322,7 +1322,7 @@ export const svHome = {
 
   newsletterTitle: "Bostadstips från Spanien, en gång i veckan",
   newsletterText:
-    "Utvalda bostäder, signaler från marknaden och det senaste från branschen — i din inkorg. Ingen spam, avsluta när du vill.",
+    "Utvalda bostäder, nyheter om marknaden och branschen — direkt i din inkorg. Ingen spam, avsluta när du vill.",
 
   faqTitle: "Vanliga frågor",
   faqSubtitle: (brand: string) => `Allt du behöver veta om ${brand}.`,

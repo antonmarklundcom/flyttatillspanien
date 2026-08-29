@@ -2,411 +2,485 @@
 
 `ARCHITECTURE.md` is the design contract. **This file is the state of the
 world.** Where the two disagree, this file wins and ARCHITECTURE.md describes
-an intention that has not happened yet. Read both before building.
+an intention that has not happened yet. Read both before building, and read
+`docs/SPAIN-PORTAL-DESIGN.md` too — it is the design pass that turned this repo
+from a byte-for-byte copy of `propia.node` (a Paraguay real-estate portal) into
+flyttatillspanien.se, and it is the source of truth for *why* every decision
+below was made, not just what it is.
 
-Last verified against the code: 2026-08-20.
+Last verified against the code: 2026-08-29 (Phase 5 of the build).
 
-## Domains — read this before touching canonicals, metadata or BRAND_NAME
+## What this site is
+
+**flyttatillspanien.se** — Spanish property, for Swedish buyers. One domain,
+one vertical, `locale: "sv"`. Three kinds of lister sell through it: Spanish
+estate agencies (`inmobiliaria`), Swedish relocation intermediaries who
+represent the buyer rather than the seller (`relocation`), developers
+(`developer`), and private sellers publishing their own listing with no agency
+at all (FSBO, `listings.owner_user_id`). The site's whole editorial premise is
+surfacing the legal and compliance facts a Spanish buyer reads automatically
+and a Swedish buyer has never heard of — see "Legal & compliance block" below.
+
+## Domain — read this before touching `verticals.ts`, `CANONICAL_HOST` or `BRAND_NAME`
+
+`src/config/verticals.ts` has **exactly one entry**, and that is a decision,
+not a stub:
 
 | Domain | Reality |
 | --- | --- |
-| `realestateinparaguay.com` | **This app, live, today**, and the current `CANONICAL_HOST` default. Serves the Spanish marketplace. Slated to become the **English** site once `inmobiliaria.com.py` takes over as Spanish primary — its `verticals.ts` entry still says `locale: "es"` and must not be flipped alone (see the flip checklist in PLAN.md D6). |
-| `inmobiliaria.com.py` (singular) | **Owned, enabled, and as of 2026-08-16 the Spanish marketplace primary in waiting** — the founder reversed the earlier "his own agency brand only, never wire it in" call (PLAN.md D6). Same app, same database, same `/admin` and `/agencia`. It ships with `ownsListingDetail: false` while both hosts serve identical Spanish rows, so its `/propiedad` pages canonicalise to `realestateinparaguay.com` and its sitemap omits them; every other page type there indexes normally. |
-| `propia.com.py` | **NOT owned, and as of 2026-08-17 no longer in the code.** Its `verticals.ts` entry (and the `"propia"` vertical key) is deleted, the `hola@propia.com.py` contact fallback is gone, and the founder has ruled out *propia* as a brand name anywhere a client or realtor can see it. ARCHITECTURE.md and README.md still name it — that is stale prose, not a fact. `inmobiliaria.com.py` is the `.com.py` domain it was standing in for; do **not** reintroduce it as a fallback for anything. |
-| `inmobiliarios.com.py` (plural) | Not owned. The future agent-directory vertical already declared in `verticals.ts`. Distinct from the singular above — do not conflate them. |
-| `*.hostingersite.com` | Hostinger's raw deploy host. Never a canonical target. |
+| `flyttatillspanien.se` | The only domain, live today, `CANONICAL_HOST` default, `locale: "sv"`, `ownsListingDetail: true`. |
+
+There is no second door, disabled or otherwise, and adding one without first
+reading `docs/SPAIN-PORTAL-DESIGN.md` §1 is how the `propia.com.py` mistake
+happens again: that lesson (an unowned domain in the code gets read as a fact
+and fallback chains get built on it) is why the English door — the one
+genuinely worth pre-planning, since Norwegian/Danish/Finnish/Dutch buyers of
+Spanish property read English and are a real second audience for the same
+inventory — is documented only in `PLAN.md` as a future decision with its own
+flip checklist, and is **not** written into `verticals.ts` until the domain is
+bought. A `.es` door for Spanish agencies was considered and rejected: it would
+duplicate the listing set across two hosts (forcing one to canonicalise
+`/bostad` away, the same duplicate-content trap `inmobiliaria.com.py` existed
+to demonstrate on the Paraguay portal), double every dictionary change, and
+fight Idealista/Fotocasa on their own turf for a benefit that is really a
+one-page problem — solved by `/for-maklare` instead.
 
 Consequences that bite:
 
 - `siteOrigin()` / `listingCanonicalOrigin()` in `src/lib/origin.ts` emit
   `PRIMARY_ORIGIN` (= `https://${CANONICAL_HOST}`) for any host that is not an
   `enabled` vertical — preview deploys and `*.hostingersite.com` included.
-- A host's sitemap only lists URLs that host owns: `app/sitemap.ts` skips
-  `/propiedad` entries when `hostOwnsListingDetail()` is false. Keep any new
-  host-specific page type on that same rule — submitting a URL you
-  canonicalise elsewhere is a Search Console error, not a neutral extra.
-- **The vertical table's SEO invariants are a check, not a convention.**
-  `npm run verify:seo` refuses a push where two served doors would own their
-  `/propiedad` pages in the same language (that is the duplicate-content trap
-  `inmobiliaria.com.py`'s `ownsListingDetail: false` exists to avoid — and
-  flipping that one flag alone is how it happens), where two doors share a
-  vertical key (`currentVertical()` resolves the header by first match), or
-  where a host key is spelled in a form `resolveVertical()` never looks up.
+- `npm run verify:seo` refuses a push where two served doors would own their
+  `/bostad` pages in the same language, where two doors share a vertical key,
+  or where a host key is spelled in a form `resolveVertical()` never looks up.
+  With one door these checks are trivially satisfied; they exist so that
+  adding the English door later is a mechanical, safe change rather than an
+  SEO incident — do not weaken or bypass them to make a "quick" second entry
+  work.
 - **hreflang is derived, not hand-maintained.** `languageAlternates()`
-  (`src/lib/alternates.ts`) builds a page's language map from the same
-  `verticals.ts` entries, so the D6 flip turns the tags on with no separate
-  commit. Two rules it encodes and a new call site must not break: a set is
-  emitted only when two doors serve **different locales** (two Spanish doors
-  are a duplicate, which is the canonical tag's job, not hreflang's), and only
-  a host that owns the page type appears in it — `/propiedad` alternates are
-  gated on `hostOwnsListingDetail()`, and a noindex category page gets none.
-  Checked by `npm run verify:seo`, which runs the rule against a synthetic
-  post-flip vertical table.
+  (`src/lib/alternates.ts`) builds a page's language map from `verticals.ts`.
+  With one door it emits nothing, correctly — a set is only emitted when two
+  doors serve **different locales**. The day the English door is added, this
+  starts working with no separate commit.
 - `CANONICAL_HOST` is not just an origin string: `verticals.ts` derives
-  `DEFAULT` from it (`VERTICALS[CANONICAL_HOST]`), so it decides the locale,
-  filters and copy of every request that arrives without a known host. Moving
-  it to `inmobiliaria.com.py` and leaving `realestateinparaguay.com` at
-  `locale: "es"` leaves two Spanish primaries; flipping that entry to
-  `locale: "en"` + `filters.foreign_exposure` without moving the env var
-  silently switches the whole live site to English and filters the listing
-  set. **Change the env var and the vertical entries together, never one
-  alone** — PLAN.md D6 has the full flip checklist.
+  `DEFAULT` from it, so it decides the locale, filters and copy of every
+  request that arrives without a known host.
 
-## Brand name — DECIDED: the domain is the brand
+## Brand — the domain is the brand
 
-Resolved 2026-08-16. There is no separate wordmark and no "Homes Paraguay" —
-that name is gone from the codebase. **Each host is branded as its own
-domain**, declared as `brand` on the vertical:
+There is no separate wordmark. `brand` is per-vertical config
+(`"Flytta till Spanien"` today), read through:
 
-| Host | Brand |
-| --- | --- |
-| `realestateinparaguay.com` | Real Estate in Paraguay |
-| `inmobiliaria.com.py` | Inmobiliaria Paraguay |
-
-How to read it, and the one mistake to avoid:
-
-- `brandName()` / `brandMeta()` from **`src/lib/brand-server.ts`** — async,
-  request-scoped, **correct on every public page**, in `generateMetadata` and
-  in the component body alike.
-- `BRAND_NAME` from `src/lib/brand.ts` — the CANONICAL_HOST's brand, resolved
-  once at module load. Correct **only** on `/admin` and `/agencia` (staff
-  surfaces reached on one host), in client components, and in scripts. On a
-  public page it pins that page to one domain's name regardless of which
-  domain the visitor typed.
+- `brandName()` from **`src/lib/brand-server.ts`** — async, request-scoped,
+  correct on every public page, in `generateMetadata` and in the component
+  body alike. With one door this always resolves to the same string today,
+  but use it anyway on public pages — it is what makes the English door a
+  no-op change on this front.
+- `BRAND_NAME` from **`src/lib/brand.ts`** — the `CANONICAL_HOST`'s brand,
+  resolved once at module load. Correct only on `/admin` and `/agencia`
+  (staff surfaces reached on one host), in client components, and in scripts.
+- `BRAND_KICKER` (`src/lib/brand.ts`) is `"Spanien"` — the small uppercase line
+  under the wordmark, deliberately not a name so it stays true on every door.
 - `brand.ts` must never import `next/headers`, directly or transitively:
-  `src/i18n/es.ts` imports it and six client components import that. The
-  request-scoped half lives in `brand-server.ts` for exactly this reason.
-- **The brand suffix on page titles is set once**, as a `title.template` in
-  `app/layout.tsx`. A page returns only its own segment (`"Casas en Asunción"`)
-  and Next appends `" — <brand>"`. Do not put the brand back into a page's own
-  title — it will double. OG titles do *not* inherit the template, so those
-  spell the brand out.
+  `src/i18n/sv.ts` imports it and several client components import that.
 - Copy that names the brand is brand-parameterised, not constant:
-  `faqSections(brand)`, `esSiteNotice.body(brand)`, `esPrecios.methodBody(brand)`,
-  `inquiryPrefillFor(brand, …)`, and friends.
-- **No *propia* in anything a visitor, realtor or staff user sees** (founder
-  decision, 2026-08-17). The `propia.com.py` vertical and its `brand: "Propia"`
-  are deleted; the admin CSV template downloads as `plantilla-avisos.csv`.
-- **There is no portal email, on purpose.** `CONTACT_EMAIL` / `CONTACT_WHATSAPP`
-  in `src/config/contact.ts` are `string | null` with **no fallback** — the old
-  `hola@propia.com.py` default opened a compose window to a domain nobody owns.
-  Until the founder has a real mailbox (he wants it outside Hostinger, ideally
-  through VenderCRM), the contact channels are **the on-site lead form and
-  WhatsApp**. Every consumer already handles null: the footer and `/contacto`
-  hide the address, the privacy policy drops the "or write to" clause, the
-  Organization JSON-LD omits the email `contactPoint`, the homepage publish CTA
-  routes to `/publicar`, and `NewsletterSignup` falls back to WhatsApp and then
-  to a `/contacto` link. **Do not add a placeholder address back.**
-- Still *propia*-flavoured and deliberately left alone (backend only, never
-  rendered): the session cookie `propia_session`, the localStorage keys
-  `propia:recently-viewed` / `propia:publish-draft`, the docker-compose DB
-  name/user, `package.json`'s name, and the import User-Agent in
-  `src/lib/safe-fetch.ts` (that file is being rewritten in the security PR —
-  change the UA there, not on a parallel branch).
-- The site is **Spanish-only** for now. Both hosts serve `locale: "es"`; the
-  English vertical waits until the Spanish site is finished.
+  `brandTaglineFor(locale)` and the copy functions in `src/i18n/sv.ts` that
+  take `brand` as an argument. Do not hardcode the brand name into a string
+  that also has a parameterised version.
 
-## Import pipeline — read before touching intake or dedup
+## Currency and FX — EUR is the only stored price, SEK is never stored
 
-Two intakes exist and they are different products, not two versions of one:
+**`listings.price_eur`** is the only price column and the only column any
+filter or index runs against. There is no `price_sek` column, and there must
+never be one: a stored kronor snapshot is correct on the day it is written and
+goes stale invisibly (EUR/SEK moved roughly 10% inside 2022–2023), and a card
+confidently printing an eighteen-month-old kronor figure is not a rounding
+error, it is a lie the site tells with total confidence.
+
+- `src/lib/format.ts` — `formatEur()`, `formatSek(eur, rate | null)` (rounds
+  to the nearest 10 000 kr), `formatRateNote(rate, observedOn)`
+  (`"EUR/SEK 11,42 · 27 aug 2026"`), `isFxFresh()`. All `sv-SE` formatted
+  (U+00A0 thousands separator, comma decimal) — numbers are not copy, this
+  locale is derived from the request, never from the dictionary.
+- **`fx_rates`** is a two-row-per-day reference table written only by
+  `npm run cron:fx` (ECB daily XML, no API key, no rate limit). The app never
+  writes to it except through the `/admin` manual-override action
+  (`setManualFxRate()` in `src/lib/reference-queries.ts`, which also calls
+  `revalidateFx()` — the one in-process writer).
+- **Staleness guard**: if the newest `fx_rates` row is older than
+  `FX_MAX_AGE_DAYS` (default 7, env-overridable), `formatSek()`/
+  `formatRateNote()` return `null` and every SEK line disappears from the
+  site. The EUR price is unaffected. A missing SEK figure is a small
+  disappointment; a confidently wrong one is a complaint — same rule
+  `sendOtp()` follows for delivery claims.
+- **SEK filter bounds convert to EUR in the caller, before `facetConds()`.**
+  Never `price_eur * :rate` in a WHERE clause — an expression over a column is
+  not sargable, the same class of mistake `coalesce(listings.lat,
+  locations.lat)` was in the map-coordinates audit below.
+- `cron:fx` can fail to reach the ECB feed (this build environment's egress
+  proxy 403s it) and is designed to: on fetch failure it writes nothing and
+  the previous rate stands, rather than writing a bad or empty row. A silent
+  crash would be the actual bug; a graceful skip is the sanctioned outcome.
+
+## Legal & compliance block — the whole editorial premise of the site
+
+A Spanish buyer reads these signals automatically; a Swedish buyer has never
+heard of most of them and finds out from a lawyer after paying a reservation
+deposit. Surfacing them, honestly, is what makes this portal worth more to a
+Swede than Idealista with Google Translate.
+
+- **`referencia_catastral`** — the Catastro's 20-character identifier for the
+  physical property. `uniqueIndex("uq_catastral")` **over a nullable column,
+  on purpose**: MySQL treats NULLs in a unique index as all-distinct, so most
+  listings (no reference) never collide, while any two rows that share a real
+  reference *are* the same property. Never "fix" this by making the column
+  required or by inventing a fallback for the null case.
+- **Import consequence**: when a row carries `referencia_catastral`, dedup on
+  it exactly and skip the fuzzy path entirely. When it is absent — which will
+  be most rows — fall back to the pre-existing `dedupKey()` (bucketed
+  price/area/phone) completely unchanged, including its `null`-means-do-not-
+  merge rule. A row with a reference deliberately stores no fuzzy key beside
+  it.
+- **`energy_rating`** (`A`–`G`, `en_tramite`, `exento`) — Spain's RD 390/2021
+  requires the energy rating to appear in *any* advertisement offering a
+  property for sale or rent; without it the ad is non-compliant, not merely
+  thin. **`src/lib/publish-gate.ts`** enforces this: a listing cannot reach
+  `status: "published"` with `energy_rating` NULL. The gate is called from the
+  three server-side writers that can make that transition
+  (`approveListing()`, `updateListing()`, `commitImport(..., {publish:
+  true})`) — **never only in a form**, because the importer is the other
+  write path and is where most listings will come from. `draft` and
+  `pending_review` are deliberately not gated, so a lister waiting on a
+  certificate can still save and submit.
+- **`legal_status`** (`escritura_registrada` / `obra_nueva_lpo` / `sin_lpo` /
+  `en_regularizacion` / `desconocido`) — the landmine field. A meaningful
+  share of coastal and rural Spanish property has no first-occupation licence
+  or sits on unlicensed rustic land; `desconocido` is the honest default and
+  must never be silently upgraded to "fine".
+- **`charges_status`** (the lister's declaration) and **`nota_simple_seen_at`**
+  (the portal's own verification, operator-set only, never by the lister) are
+  two separate columns on purpose — the UI must say "seller states: free of
+  charges — not yet verified by us", never launder a claim into a fact.
+- **`ibi_annual_eur`** / **`community_monthly_eur`** — the running-cost
+  question Swedish buyers most consistently fail to budget for (a `comunidad`
+  fee on a pool-and-garden urbanisation routinely exceeds the annual IBI).
+  Both optional, both shown on the detail page when present.
+- **`is_vpo`** — price-capped, resale-restricted housing, in practice not
+  purchasable by a non-resident foreign buyer. One boolean that heads off a
+  category of wasted inquiry.
+- **`land_classification`** (`urbano` / `urbanizable` / `rustico`) +
+  `buildable_m2` — `terreno`/`finca` only. `rustico` means you very probably
+  cannot build a house on it, the single most common misunderstanding in a
+  foreign land purchase.
+- **`tourist_licence`** — the comunidad's holiday-let registration number
+  (VFT/… in Andalucía, VT-… in Valencia); `alquiler_vacacional` ships at MVP
+  and the wizard and detail page both carry it. Several comunidades require it
+  in the advertisement, and Balearic/Catalan enforcement fines the platform,
+  not only the owner.
+- **Areas**: `built_m2` (superficie construida) is the **only** faceted,
+  indexed, median-eligible area column — a buyer comparing this site to
+  Idealista must be comparing the same number. `usable_m2` (superficie útil,
+  10–15% smaller, interior only) is display-only. Replaces the old single
+  `area_m2`.
+
+## Listers — three kinds, one table, no forked scope machinery
+
+| Lister | Mechanism |
+| --- | --- |
+| Spanish estate agency (`inmobiliaria`) | `agencies` + `agents` + `agency_invites`, `agencies.kind = "inmobiliaria"` |
+| Swedish relocation intermediary | Same mechanism, `agencies.kind = "relocation"` — represents the **buyer**, not the seller, and every seller-card render must label it distinctly rather than blur it into "agency" |
+| Developer | `agencies.kind = "developer"`, project-linked listings |
+| Private seller (FSBO) | `listings.owner_user_id`, **no `agents` row** — a private seller never lands in the agent directory carrying a professional's trust signal |
+
+`agencies.kind` is a value on the existing enum, not a new table —
+`listingScopeWhere()`/`panelScope()` are not forked for `relocation`, and
+`npm run verify:scopes` asserts a `relocation`-kind agency is scoped
+identically to an `inmobiliaria`-kind one. `agencies.tax_id` +
+`tax_id_country` hold a CIF (Spanish company) or a Swedish
+organisationsnummer in the same column, disambiguated by country — publicly
+filed information, stored in full. `users.identity_doc_type` +
+`identity_ref_last4` (last four characters only, never the full number) +
+`identity_verified_at` are the equivalent for a private seller: a NIE/DNI is
+GDPR Art. 9 / LOPDGDD-sensitive data with no lawful basis to store in full
+here, so the portal stores enough to recognise which document is on file and
+nothing more, set only by an operator who has sighted it.
+
+**The FSBO inbox is built.** `leads.routed_to` has an `owner` lane (schema
+comment: "PLAN.md D8") for a listing with no agent and no agency; any scope's
+`getPanelLeads()` includes `owner`-routed leads whenever the WHERE guard
+already restricts to that owner's own listings, so a private seller sees their
+own leads in the same panel shape an agency does, with no separate build.
+
+## Import pipeline — two intakes, still different products
 
 | Path | What it is |
 | --- | --- |
-| `/agencia/importar` | An agent pastes a link to **their own** listing, attests to it, gets a draft. One page, structured data only, no per-site selectors. |
+| `/agencia/importar` | An agent pastes a link to **their own** listing, attests to it, gets a draft. |
 | `/admin/importar` | Super-admin uploads an agency's spreadsheet (.csv/.xlsx), previews, commits, can roll the whole batch back. |
 
-Rules that are load-bearing:
+Everything `propia.node`'s import pipeline established still holds and is
+currency/country-independent:
 
-- **`dedupKey()` returns `null` when there is no contact phone, and that is
-  correct.** The key is bucketed (5k USD, 10 m²) so a re-listed flat still
-  collapses; the phone is the only thing stopping those buckets from describing
-  every unit in a building. A phone-less batch used to fold twenty flats into
-  one and report success. Never "fix" the null by inventing a fallback key.
+- **`dedupKey()` returns `null` when there is no contact phone, and that stays
+  correct** for a row with no `referencia_catastral` either — never invent a
+  fallback key for either null.
 - **`listing_sources.scope_agency_id` is `NOT NULL DEFAULT 0`, 0 = unscoped.**
-  It is half of `uq_source`; MySQL treats NULLs in a unique index as
-  all-distinct, so making it nullable silently switches off the "re-importing
-  the same file changes nothing" guarantee. Both `dedupKey()` and the
-  external-id lookup are scoped by it.
-- **Always pass an agency.** `importListings({ agencyId })` stamps ownership;
-  without it the listings belong to nobody and their leads are unattributable.
-  The CLI warns when you omit `--agency`.
+  Still load-bearing: MySQL treats NULLs in a unique index as all-distinct, so
+  a nullable column would silently switch off the "re-importing the same file
+  changes nothing" guarantee.
+- **Always pass an agency.** Listings imported without one are unattributable.
 - **The dry run and the commit share one planner** (`planImport` /
-  `commitImport`). Do not add a separate validation path — it will drift from
-  what actually runs, and the preview is the only reason the feature is safe.
-- Every batch writes `import_jobs` + `import_rows`, with the pre-update values
-  in `previous_json`. That is what makes rollback real rather than a delete.
-- Permission is a **column**, and `commitImportAction` refuses to write without
-  it. Scraping a competitor's catalogue wholesale is the thing this must not
-  become; the gate is in the server action, not the form.
+  `commitImport`) — do not add a second validation path for the catastral
+  case or any other.
+- Permission to commit an import is a **column**, checked in the server
+  action, not the form.
 
-Verify with `npm run verify:import` (pure checks, no DB). With a local database
-up it also exercises plan → commit → re-run → rollback:
-`docker compose up -d && npm run db:migrate && DATABASE_URL="mysql://propia:propia@127.0.0.1:3306/propia" npm run verify:import`
+Verify with `npm run verify:import` (pure checks). With a local database up it
+also exercises plan → commit → re-run → rollback, with fixtures covering
+**both** dedup paths (catastral-exact and phone-bucket fallback):
+`docker compose up -d && npm run db:migrate && DATABASE_URL="mysql://ftse:ftse@127.0.0.1:3306/ftse" npm run verify:import`
 
-`npm run cron:resync` pauses listings whose sources have gone quiet (30 days by
-default, `--dry` first). It records itself as a revertible import job.
+**Known defect, not caused by this build's own phases**: the rollback
+exercise's `updated`-outcome path restores a batch's price update onto more
+rows than it changed (six rows instead of three for a three-row fixture).
+Confirmed pre-existing across multiple merged phases. Full symptom trace in
+`KNOWN-ISSUES.md`; fixing it needs a session with license to touch
+`src/lib/import/jobs.ts` (core logic, out of a Sonnet phase's reach).
+
+`npm run cron:resync` pauses listings whose sources have gone quiet (30 days
+by default, `--dry` first), recorded as a revertible import job, unchanged in
+mechanism.
+
+## Leads, auth & messaging — Sweden is email-first, and Paraguay was not
+
+The inverse of the inherited design: `users.email` and `leads.email` are
+`NOT NULL`; phone is optional. `otp_codes` is keyed by `destination` +
+`channel` (`email` | `sms`, default `email`). `src/lib/crm.ts` sends OTPs and
+transactional mail over SMTP (nodemailer, `SMTP_HOST`/`SMTP_PORT`/
+`SMTP_USER`/`SMTP_PASS`/`EMAIL_FROM`), all optional in dev with a
+dev-console fallback. **The one rule that outranks the rest, carried forward
+verbatim: never log or return a line that says a message was delivered when
+it was not.**
+
+WhatsApp has not disappeared — it changed sides. Spanish agencies live on it,
+so `CONTACT_WHATSAPP` and `agencies.phone` are the **agency-facing** channel
+now, never the buyer's. `CONTACT_EMAIL` (`src/config/contact.ts`) is
+`string | null` with **no fallback**, same reasoning as before (a hard-coded
+address is a compose window aimed at a mailbox nobody owns), but is now a
+**required-before-launch** value, not an optional nicety — a Swedish consumer
+portal with no address on its contact page is not credible. Every consumer
+already handles `null`.
+
+The outbound operator webhook (`alertOperator()` in `crm.ts`, `LEAD_WEBHOOK_URL`)
+is unchanged: optional, silent when unset, with `/admin`'s own badges as the
+zero-config signal.
 
 ## Backlog state (verified, not remembered)
 
-1. **R2 image storage** — code is complete (`src/lib/r2.ts`,
-   `src/lib/listing-images.ts`, both photo panels gate on `isR2Configured()`).
-   Blocked purely on the founder creating the Cloudflare account/bucket and
-   setting `R2_*` env vars. **Do not build around it or re-implement it.**
-2. **`NEXT_PUBLIC_CANONICAL_HOST`** — see the domain trap above. It moves to
-   `inmobiliaria.com.py` on flip day, as one item in the PLAN.md D6 checklist,
-   never on its own.
-3. **Individual agent profile pages** — done (`/agente/[slug]`, PR #32,
-   2026-07-31). Mirrors `/inmobiliaria/[slug]` (PR #28): same indexability
-   rule, same DB-backed no-static-cache pattern. `app/agente/[slug]/page.tsx`.
-4. **Reviews/ratings** — does not exist. Needs a migration and a moderation /
-   anti-fake-review design. **Ask the founder before starting.**
-5. **Import image pipeline** — **not built, on purpose.** `syncImages()` writes
-   the *remote source URL* into `listing_images.r2_key` as an interim, and
-   `imageUrl()` passes it through while `R2_PUBLIC_BASE_URL` is unset. Fetching,
-   deduping, WebP-converting and resizing imported photos waits on backlog item
-   1 above. **Do not build a stub around it** — the R2 code is written.
-6. **Financing rates** — `afd_primera_vivienda` (9.00%) in
-   `scripts/seed-financing.ts` is a **placeholder**. It feeds
-   `npm run cron:cuotas`, which caches `listings.cuota_gs`, which is printed on
-   every venta card. Wrong rates = wrong money sitewide. Verifying it against
-   published AFD/MUVH terms is a research task, not a code task.
-7. **Che Róga Porã is `active: false`** (founder decision, 2026-08-16): it is
-   approved per development, not per portal, so quoting it on every venta
-   listing implied an eligibility the seller had not established. With only AFD
-   active, cuotas are ~19% higher and listings above ~US$107k show no cuota
-   line at all (AFD's 700M Gs cap). Applying it to a live database is two
-   commands in order — `npm run seed:financing && npm run cron:cuotas` — the
-   second clears cuotas still cached from the programme. **Per-project opt-in
-   is not built**: it needs a column on `projects` plus an `/admin/proyectos`
-   screen that does not exist yet. Flipping `active` back to `true` site-wide
-   is NOT the intended path.
-
-8. **FSBO loop — half built, on purpose.** As of 2026-08-20 (PRs #62–#64) a
-   listing published through `/publicar` has a working contact: the chain on
-   the detail page is agent → agency → **owner** (`ListingDetail.ownerUser`,
-   resolved only when there is no agency and no agent), the seller card labels
-   them "Particular", and `/admin/leads` names that publisher behind an
-   `internal` lead and offers a one-tap WhatsApp forward. An FSBO publisher
-   does **not** get an `agents` row — that would put a private seller into
-   `/agente/[slug]` and the agent directory with a professional's trust
-   signal. What is still missing is their own inbox: **PLAN.md D8**, a founder
-   decision. Until it lands the operator forwards, which is why the forward
-   button exists. `routed_to` has no `owner` lane and adding one is a schema
-   change — do not add it without D8.
-9. **Operator alerts are optional and silent when unset.** `alertOperator()`
-   in `src/lib/crm.ts` posts `{"event":"operator_alert"}` to
-   `LEAD_WEBHOOK_URL` on a new lead and a new review submission. With no
-   webhook there is no alert and no fake one — the zero-config signal is the
-   `/admin` badges (review queue, and leads from the last 24 h). Same rule as
-   `sendOtp`: never log a line that pretends a message was delivered.
+1. **Spanish mortgage calculator — not built, on purpose.**
+   `frenchAmortization()` in `src/lib/amortization.ts` is the surviving half
+   of the old Paraguayan cuota engine and is unused. There is no published
+   non-resident mortgage rate scale to seed — a non-resident buyer's LTV and
+   spread are negotiated per applicant and per bank — so any printed quote
+   would be an invention. Blocked on a lender partnership, which is a founder
+   decision, not a code task (`PLAN.md`, `D-mortgage`). What ships instead is
+   the acquisition-cost estimate (`acquisition_costs`,
+   `src/lib/acquisition-cost.ts`), which is deterministic and needs no rate
+   feed. **Do not build a stub around it.**
+2. **Every `acquisition_costs` rate is a PLACEHOLDER**, `source_url` NULL on
+   all seven comunidad rows on purpose (a source link next to an unverified
+   number makes the number look verified). These print money figures on every
+   detail page. Verifying each comunidad's published ITP/AJD scale and the
+   notary/registry/legal estimates is a founder research task, not a code
+   task — the same status the old Paraguayan AFD rate had.
+3. **R2 image storage** — code is complete (`src/lib/r2.ts`,
+   `src/lib/listing-images.ts`, both gate on `isR2Configured()`). Blocked
+   purely on the founder creating the Cloudflare account/bucket and setting
+   `R2_*` env vars. **Do not build around it or re-implement it.**
+4. **Import image pipeline — not built, on purpose.** Imported photos keep the
+   remote source URL as an interim `r2_key`; fetching, deduping,
+   WebP-converting and resizing them waits on item 3. Do not build a stub.
+5. **English door** — `verticals.ts` has one entry and stays that way until
+   the domain is bought (see "Domain" above). `PLAN.md` carries the flip
+   checklist.
+6. **Zone-card photography** (`public/img/zona-{marbella,torrevieja,palma,javea}.webp`)
+   is the four inherited Paraguay zone photos, renamed rather than replaced —
+   none of them actually depict their Spanish city. Real location photography
+   is a founder/content task.
+7. **Reviews/ratings** — does not exist. Needs a migration and a moderation /
+   anti-fake-review design. Ask the founder before starting.
+8. **`registry_number` UI** — the estate-agent registry column exists
+   (AICAT-style registers, where a comunidad operates one) but has no
+   consumer at MVP; v1.1 per the design doc's MVP/wait table.
+9. **Full NIE/DNI capture** — explicitly out of scope; a founder decision plus
+   a data-processing agreement, not a schema task.
+10. **`inmobiliaria`/`agente` route segments stay Spanish.** `agencyUrl()`/
+    `agentUrl()` deliberately still emit `/inmobiliaria/{slug}` and
+    `/agente/{slug}` rather than Swedish segments — a decision, not an
+    oversight: these are not the SEO-load-bearing category tree, and moving
+    them would add redirect risk for no ranking benefit. `/bostad` (the one
+    rename the design doc's handoff requires) is done.
 
 ## Caching — the data cache is the only cache this portal has
 
 Every public route is `ƒ (Dynamic)`. The root layout reads the `Host` header
-for the per-host brand, so no route holds a full route cache and none ever will
-without moving the vertical into the URL (PLAN.md, "F17, re-measured"). A
-`export const revalidate` at route level is therefore silently dead — don't add
-one.
+for the per-host brand, so no route holds a full route cache and none ever
+will without moving the vertical into the URL. An `export const revalidate`
+at route level is therefore silently dead — don't add one.
 
-What does work is `unstable_cache`: the page still renders per request, but its
-queries don't run. Tags, TTLs and the invalidation helpers live in
-**`src/lib/cache.ts`**. Two rules:
+What does work is `unstable_cache` — tags, TTLs and invalidation helpers live
+in **`src/lib/cache.ts`**. Two rules:
 
-- **Every tag has a writer.** `revalidatePath()` does NOT clear
-  `unstable_cache` entries — they are separate caches. A new cached query
-  without a matching `revalidateListings()` / `revalidateDirectory()` /
-  `revalidateGuides()` call in the actions that write it means an operator
-  saves a change and the public page keeps showing the old one until the TTL
-  expires, which reads as "the save didn't work". The TTL is the backstop.
-- **Dates do not survive the boundary.** Entries are serialized, so a `Date`
-  comes back as an ISO string and `string > Date` is silently false (this is
-  why `ListingCard` re-wraps `featuredUntil`). A cached query returning Dates
-  re-wraps them in its exported wrapper — see `listFinancingPrograms` and the
-  `revive*` helpers in `post-queries.ts` — not in each consumer.
+- **Every tag has a writer** — `revalidatePath()` does NOT clear
+  `unstable_cache` entries. A new cached query without a matching
+  `revalidateListings()` / `revalidateDirectory()` / `revalidateGuides()` /
+  `revalidateFx()` / `revalidateAcquisitionCosts()` call in the actions that
+  write it means an operator saves a change and the public page keeps
+  showing the old one until the TTL expires — reads as "the save didn't
+  work". **One documented exception**: `fx_rates` and `acquisition_costs`
+  are also written by out-of-process crons (`cron:fx`; `acquisition_costs`
+  only by the in-process `/admin` override) whose `revalidateTag()` calls, if
+  any, cannot reach the running server's data cache — for those, **the TTL is
+  the invalidation mechanism, not a backstop**. Pick the TTL to match the
+  publication cadence of the upstream data (`fx`: 3600s, ECB publishes once a
+  business day; `acquisitionCosts`: 86 400s, regional tax scales move with an
+  annual budget), not how fast an operator expects a save to appear.
+- **Dates do not survive the boundary.** A cached query returning Dates
+  re-wraps them in its exported wrapper (see `listFinancingPrograms`'s
+  successor readers in `reference-queries.ts` and the `revive*` helpers in
+  `post-queries.ts`), not in each consumer.
 
 **The sitemap has two halves and they are not interchangeable.**
 `src/lib/sitemap.ts` decides *what* is listed — the half that must agree with
-`getIndexability()` and `hostOwnsListingDetail()`, and where a new page type
-goes. `src/lib/sitemap-xml.ts` decides how it is served: the hour-long cache
-every chunk shares, the 10 000-URL chunking, and the XML. `/sitemap.xml`
-renders a `<urlset>` while the site fits in one chunk and a `<sitemapindex>`
-past it, so `robots.txt` keeps pointing at one address either way. It is a
-route handler rather than Next's `generateSitemaps()` **because that
-enumerates its chunk ids at build time and this build has no database** — the
-same constraint that keeps every route dynamic.
-
-`app/not-found.tsx` deliberately does `listCities().catch(() => [])`: a 404 is
-also the zero-match category surface, and it must not become a 500 during the
-exact incident where MySQL is the thing that is unwell.
+`getIndexability()` and `hostOwnsListingDetail()`. `src/lib/sitemap-xml.ts`
+decides how it is served: the hour-long cache every chunk shares, the
+10 000-URL chunking, and the XML. It is a route handler rather than Next's
+`generateSitemaps()` because that enumerates chunk ids at build time and this
+build has no database at build time — the same constraint that keeps every
+route dynamic.
 
 ## Listing filters — one vocabulary, two files
 
-Every surface that narrows a listing set goes through the same layer. Adding a
-facet in a page or a route handler instead is how the grid and its map start
-disagreeing about what the visitor asked for.
-
-- **`src/lib/facets.ts`** — pure. The `ListingFacets` type, the query-string
-  names (`precio_min`, `dormitorios`, `orden`, `ciudad`, …), `parseFacetParams`
-  and its inverse `facetSearchParams`. No `next/*`, no drizzle: the filter bar
-  is a client component and shares this. Same split as `brand.ts`.
+- **`src/lib/facets.ts`** — pure. `ListingFacets`, the Swedish query-string
+  names (`FACET_PARAM`: `affar`, `typ`, `ort`, `omrade`, `pris_min`,
+  `pris_max`, `sovrum`, `sortering`), `parseFacetParams` and its inverse. No
+  `next/*`, no drizzle — the filter bar is a client component and shares this.
 - **`src/lib/facet-sql.ts`** — `server-only`. `facetConds()`, `verticalConds()`
-  and `publishedFacetWhere()`. The only place a facet becomes a WHERE clause,
-  and the only place that knows price filters run on `price_usd` (the
-  normalized, indexed column) rather than `price_amount`.
+  and `publishedFacetWhere()` — the only place a facet becomes a WHERE
+  clause, and the only place that knows price filters run on `price_eur`
+  (never a computed SEK expression — see "Currency and FX" above).
 
 Two rules that bite:
 
-- **`VerticalConfig.filters` is now read** (it was declared and consumed by
-  nothing until 2026-08-21). It narrows the grid, the count that decides
-  indexability, the map pins, the home rails, the operation hub, similar
-  listings and the sitemap. A door may only ever *narrow* what a visitor asked
-  for — the conditions are ANDed, never merged over the visitor's choice.
-- **A cached query that filters by vertical must put the vertical key in its
-  cache key.** The home payload and the sitemap entries do; a new one that
-  forgets will serve one door's listing set to another. No enabled vertical
-  declares filters today, so a mistake here is silent until flip day.
+- `VerticalConfig.filters` narrows the grid, the count that decides
+  indexability, the map pins, the home rails, similar listings and the
+  sitemap — ANDed, never merged over the visitor's own choice. No enabled
+  vertical declares filters today.
+- A cached query that filters by vertical must put the vertical key in its
+  cache key, or a mistake here is silent until the day the English door adds
+  a second one.
 
-`npm run verify:facets` covers the pure half (parse ∘ build is the identity,
-every facet maps to its own column, every filter value declared in
-`verticals.ts` is a real enum member). It runs in the pre-push hook.
+`npm run verify:facets` covers the pure half and runs in the pre-push hook.
 
 ## Map coordinates — materialized at write time, never coalesced in a query
 
-A listing is plotted at its own `lat`/`lng` when it has one and at its
-barrio/city centroid when it does not. That answer lives in
-`listings.display_lat` / `display_lng`, and `idx_geo` is
-`(status, display_lat, display_lng)`.
+Unchanged in mechanism from the pattern this repo inherited, and still
+correct: a listing is plotted at its own `lat`/`lng` when it has one and at
+its zona/municipio centroid when it does not, in `listings.display_lat` /
+`display_lng`, indexed by `idx_geo (status, display_lat, display_lng)`.
 
 - **The rule has one home: `src/lib/geo.ts`.** `syncDisplayCoords(conn, id)`
-  after any write that touched `lat`, `lng` or `location_id` — that is
-  `saveDraft`, `updateListing`, `createClaimedDraft`, both import writers and
-  the import rollback. A writer that only changes status, price or ownership
-  does not need it. `syncAllDisplayCoords()` is the same statement over the
-  whole table.
+  runs after any write that touches `lat`, `lng` or `location_id`.
 - **Do not put the coalesce back into a query.** `coalesce(listings.lat,
-  locations.lat)` in a WHERE is a function of two columns across a join: not
-  sargable, so the bounding box could not use `idx_geo` and every map pan
-  scanned the published set (audit F38). Measured on 3 000 rows: `ALL` + a
-  block-nested-loop join before, `range` on `idx_geo` (key_len 13, 130 index
-  entries) after.
+  locations.lat)` in a WHERE is a function of two columns across a join, not
+  sargable — the bounding box could not use `idx_geo` and every map pan
+  scanned the published set.
 - **`display_lat BETWEEN …` already excludes NULL — never add `IS NOT NULL`
-  next to it.** The redundant predicate is what made MariaDB fall back from
-  `range` to `ref` on `status` alone (734 entries instead of 130). It reads
-  like harmless defensiveness and costs the index.
-- **A centroid that moves is the one staleness no write hook can see.**
-  `npm run cron:geo` (`--dry` first) repairs the table and names published
-  listings with no position at all — those render everywhere except the map,
-  and nothing else in the app will ever mention it. Run it after
-  `npm run seed:locations` or any edit to `locations.lat/lng`.
-- The sync runs raw SQL rather than `db.update()` on purpose: `updatedAt`
-  carries a JS-side `$onUpdate`, and a recomputation a visitor cannot see must
-  not move a listing's sitemap `lastmod`.
+  next to it.** The redundant predicate makes MariaDB fall back from `range`
+  to `ref` on `status` alone.
+- `npm run cron:geo` (`--dry` first) repairs the table and names published
+  listings with no position at all. Run it after `npm run seed:locations` or
+  any edit to `locations.lat/lng`.
 
-## i18n — read this before touching any visitor-facing string
+## i18n — one dictionary, `sv`, and that is a decision not a gap
 
-The site is **Spanish-only** and stays that way until the Spanish site is
-finished (both live hosts are `locale: "es"`). `src/i18n/en.ts` exists as of
-2026-08-21 (Batch 3 layer 2) but **no host serves it** — a door renders
-English only once its `verticals.ts` entry says `locale: "en"`, and that is
-the whole D6 flip checklist, never a one-line change.
+The site is Swedish-only. **`src/i18n/en.ts` was deleted at MVP** (design doc
+handoff) rather than kept disabled: keeping a second dictionary preserves
+`verify:i18n`'s pairwise check, but doubles the cost of every copy change for
+a door no host serves and no domain exists for. The `Widen<>` machinery —
+`Dictionary = Widen<typeof svDictionary>`, the `satisfies` assembly in
+`index.ts`, `dict()` in `server.ts`, `getDictionary(locale)` in `index.ts` —
+is deliberately kept anyway, unused today, because it is what makes
+reintroducing `en.ts` a file addition later rather than a refactor.
 
-- **Strings live in `src/i18n/es.ts`.** Buyer-facing copy — home, the operation
-  hubs, the category grid, `SearchBar`, `CategoryFilterBar`, `ListingCard` and
-  the `/propiedad` detail page — was inline JSX until 2026-08-20 and is now in
-  the `esHome` / `esHub` / `esCategory` / `esSearchBar` / `esFilters` /
-  `esCard` / `esListing` namespaces. **Do not add a new visitor-facing literal
-  to a page or component**; add it to the namespace and read it back.
-- **Reach them through the dictionary, not by importing the namespace.**
-  Two ways in, and picking the wrong one is the mistake to avoid — the same
-  split as `brand.ts` / `brand-server.ts`, for the same reason:
-  - `dict()` from **`@/i18n/server`** — async, request-scoped, reads the
-    `x-locale` header the middleware sets. **Correct on every public page**,
-    in `generateMetadata` and in the component body alike.
-  - `getDictionary(locale)` from **`@/i18n`** — pure. For **client components**
-    (which take `locale` as a prop — `SearchBar` is the only buyer-facing one)
-    and for callers that already hold a locale.
+- **Strings live in `src/i18n/sv.ts`** (~1,600 lines), namespaced (`svHome`,
+  `svHub`, `svCategory`, `svSearchBar`, `svFilters`, `svCard`, `svListing`,
+  `svPrecios`, `svTasacion`, `svPanel`, `svPublish`, `svProject`,
+  `svDeveloper`, `svForMaklare`, and others). **Do not add a new
+  visitor-facing literal to a page or component** — add it to the namespace
+  and read it back. The namespace identifiers keep their inherited
+  Spanish-flavoured suffixes (`svTasacion`, `svPrecios`) rather than being
+  renamed to English — a mechanical, diffable rename, not a design choice to
+  revisit lightly.
+- Reach them through the dictionary, not by importing the namespace directly:
+  `dict()` from **`@/i18n/server`** (async, request-scoped, correct on every
+  public page and in `generateMetadata`) or `getDictionary(locale)` from
+  **`@/i18n`** (pure, for client components, which take `locale` as a prop).
 - **`src/i18n/index.ts` must never import `next/headers`**, directly or
-  transitively. `SearchBar` and five other client components consume it. The
-  request-scoped half is `server.ts`, which is `server-only`.
-- **`en.ts` is a peer of `es.ts`, not a copy of its sentences.** The English
-  door is pitched at foreign buyers (PLAN.md D6), so *cuota* is "estimated
-  monthly payment", *en pozo* is "pre-construction", and `enCategory.title`
-  puts the operation where English wants it. Translate intent; never invent a
-  fact the Spanish does not state.
-- `Dictionary` is `Widen<typeof esDictionary>` — the Spanish shape with its
-  literal strings widened to `string`. Widening is what makes a second locale
-  satisfiable at all (`as const` would otherwise require the exact Spanish
-  sentence); the structure is not widened, so a missing key or a wrong leaf
-  type is still a type error. Both dictionaries are checked with `satisfies`
-  where they are assembled in `index.ts`.
-- **Add a key to `es.ts` ⇒ add it to `en.ts` in the same commit.** The type
-  gate catches a missing key; it does *not* catch a function that quietly takes
-  fewer arguments (TypeScript allows that), which is what `npm run verify:i18n`
-  is for — keys, arity, array lengths, empty strings, both dictionaries walked
-  side by side. It runs in the pre-push hook.
+  transitively — several client components consume it.
+- **`verify:i18n` calls every copy function with sentinel arguments and
+  asserts changing an argument changes the output** — stronger than a
+  pairwise dictionary walk, and it also catches a function that silently
+  drops an argument. It runs in the pre-push hook.
 - **The English *data* layer is `cron:translate`, and it is not a hook.**
-  `listings.title_en` / `description_en` are written only by
-  `npm run cron:translate` (`src/lib/translate.ts` + `scripts/translate-listings.ts`),
-  never by a form and never in a request. What needs work is decided by
-  `listings.translation_hash` — a sha256 of the title and Spanish description
-  the stored English came from — so an edit is picked up by the next run
-  without any publish-path hook. **Do not add one:** a publish must not depend
-  on a third party being up, and a multi-second outbound call inside a server
-  action is the exact shape of the 503 post-mortem in PLAN.md. Without
-  `ANTHROPIC_API_KEY` the job refuses to run and writes nothing; the site is
-  unaffected either way, because no host serves `locale: "en"` yet.
-- **Nothing reads `title_en`/`description_en` yet** — wiring the detail page,
-  the card and the metadata to prefer them on an English door is flip-day work
-  (PLAN.md D6), listed in the checklist there. The columns being populated is
-  the *precondition* for the flip, not the flip.
-- **Numbers are not copy.** `toLocaleString` takes a number locale derived from
-  the request (`es-PY` / `en-US`), not the dictionary — the thousands separator
-  differs even where the words don't.
-- Copy that names the brand stays brand-parameterised: `faqSubtitle(brand)`,
-  `discoverTitle(brand)`, `sellerFallback(brand)` and friends take it as an
-  argument rather than baking one host's name in.
+  `listings.title_sv` / `description_sv` are written only by
+  `npm run cron:translate` (inverted to es→sv), decided by
+  `listings.translation_hash_sv`, never by a form and never in a request.
+  Without `ANTHROPIC_API_KEY` the job refuses to run and writes nothing.
+  `title_sv ?? title` (via `src/lib/listing-copy.ts`'s `servedTitle`) is read
+  from day one — unlike the old `title_en`, `sv` is a **served** locale — with
+  a visible "maskinöversatt från spanska" marker where the Swedish came from
+  the cron rather than a human.
+- Numbers are not copy: `toLocaleString`/`Intl` calls use `sv-SE`, derived
+  from the request, never the dictionary.
 
 ## CI — local, never GitHub Actions
 
 Deploys run on Hostinger's build servers; GitHub's whole job is to hold the
-code and fire a **webhook**, which is free and unmetered. Actions minutes bill
-**per account across every repo**, so a workflow here spends the founder's
+code and fire a **webhook**, free and unmetered. Actions minutes bill per
+account across every repo, so a workflow here would spend the founder's
 shared quota on a deploy path that does not use it.
 
 - **Do not create files under `.github/workflows/`.** `.githooks/pre-commit`
-  refuses to stage them. If a task genuinely needs one, state the case and stop
-  — explicit yes first.
+  refuses to stage them. If a task genuinely needs one, state the case and
+  stop — explicit yes first.
 - The gate that replaces CI is `.githooks/pre-push`: `npm run typecheck`,
   `npm run build`, `npm run verify:import`, `npm run verify:facets`,
-  `npm run verify:i18n`, `npm run verify:seo`. Same thing by hand:
-  `npm run verify:local`. The last four are pure — no database, no network —
-  which is why they belong in a hook at all.
-- Hooks install themselves via `prepare` on `npm install`; after a fresh clone
-  that skipped scripts, run `npm run hooks:install` (`git config core.hooksPath
-  .githooks`).
-- `npm run verify:scopes` stays manual — it needs a localhost database and
-  refuses to run against anything else. Run it on anything touching
+  `npm run verify:i18n`, `npm run verify:seo` — same as `npm run verify:local`.
+- Hooks install themselves via `prepare` on `npm install`; after a fresh
+  clone that skipped scripts, run `npm run hooks:install`.
+- `npm run verify:scopes` stays manual — needs a localhost database, refuses
+  to run against anything else. Run it on anything touching
   `listingScopeWhere`, `panelScope` or a panel query.
-- Because there is no required status check, **nothing auto-merges** — see
-  PLAN.md D11/D20.
+- Because there is no required status check, **nothing auto-merges**.
 
 ## Migrations — `db:status` before you fire, and again after
 
-`npm run db:migrate` decides what to run from `__drizzle_migrations`, which can
-be wrong in both directions (README documents pasting SQL into phpMyAdmin,
-which records nothing). So the migration list is a proxy. The question that
-actually matters is **does this database have what the deployed code selects**,
-because drizzle names every column of a table in its `SELECT` — one missing
-column is a 500 on every page that reads that table, not a broken feature.
+`npm run db:migrate` decides what to run from `__drizzle_migrations`, which
+can be wrong in either direction, so the migration list is a proxy. The
+question that actually matters is **does this database have what the
+deployed code selects** — drizzle names every column of a table in its
+`SELECT`, so one missing column is a 500 on every page that reads that table.
 
-`npm run db:status` answers both: the real pending set (hashing each
-`drizzle/*.sql` the way drizzle's migrator does), and a **schema-drift diff**
-of `src/db/schema.ts` against `information_schema` naming every missing table,
-column and enum value. Read-only; `--probe` additionally proves an `owner`-lane
-lead inserts, inside a transaction it always rolls back.
+`npm run db:status` answers both: the real pending set, and a schema-drift
+diff of `src/db/schema.ts` against `information_schema`, naming every missing
+table, column and enum value. `--probe` additionally proves an `owner`-lane
+lead inserts, inside a transaction it always rolls back. Run it **before
+merging any PR that touches `schema.ts`** and **again immediately after
+`db:migrate`**. `No drift` is the only green.
 
-Run it **before merging any PR that touches `schema.ts`** and **again
-immediately after `db:migrate`**. `No drift` is the only green.
+Local `DATABASE_URL` is `mysql://ftse:ftse@127.0.0.1:3306/ftse` — the
+docker-compose service, DB name and user are all `ftse`, not `propia`.
 
 ## Working agreements with the founder
 
@@ -415,7 +489,8 @@ immediately after `db:migrate`**. `No drift` is the only green.
 - **Flag before merging** anything touching auth, payments, or the DB schema.
 - **Always** `git fetch origin main && git reset --hard origin/main` before
   branching. Merges happen through the GitHub API, so local `main` goes stale
-  and a merged PR can look "missing". This has already cost a session.
+  and a merged PR can look "missing".
 - Verify with `npx tsc --noEmit` **and** `npm run build` before merging;
   Hostinger auto-deploys `main` with no staging environment.
-- Branch naming: `claude/<feature-name>`.
+- Branch naming: `phase/<id>` for a phased-build phase (`plan.md`'s own
+  numbering); `claude/<feature-name>` for any other ad hoc session.

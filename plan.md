@@ -973,6 +973,86 @@ also names two defects (§9.4, §9.5 above) that are neither this phase's
 scope nor Phase 5's — they need a session with core-logic/query-layer
 license, which is a founder call on sequencing, not an automatic next step.
 
+### Phase 5 — SEO, content & docs rewrite (2026-08-29)
+
+Branch `phase/5`.
+
+**What now exists.** The editorial Swedish pass is done: read every namespace
+in `sv.ts` end to end (1,593 lines, 333 strings/copy functions) — most of it,
+on inspection, already read as natural, professionally-written Swedish
+(later phases had authored copy fresh rather than translating, despite
+Phase 1's working-draft warning), so the actual rewrite was targeted at the
+namespaces/strings that still carried calqued constructions or literal-
+translation tells: `svPanel`, `svHome`'s hero/newsletter copy, `svPrecios`'
+and `svTasacion`'s long caveat paragraphs, `svFooter`'s disclaimer,
+`svPublish.otpSubtitle`. `svListing`'s legal block and `svPublish`'s legal
+step were left alone, already final. **The four docs are rewritten**:
+`CLAUDE.md` (state-of-the-world — domains, currency/FX, the full legal
+block, three lister types, import/leads/messaging, backlog, caching,
+facets, map coords, i18n, CI, migrations), `ARCHITECTURE.md`, `README.md`,
+and the upper-case `PLAN.md` (restarted its decision numbering at `D21`,
+with one exception below). `verify:seo` was already trivially green
+(single-vertical invariants, jsonld.ts already EUR/RealEstateListing) —
+confirmed, not fought, per the phase brief's own prediction. **New**
+`scripts/seed-guides.ts` / `npm run seed:guides`: seeds
+`locations.guide_content_sv` for all 41 municipios with a short, factual,
+general-geography note (comunidad/provincia/coast region, a landmark only
+where genuinely common knowledge) — no invented statistics, since real
+listing counts/medians don't exist yet. No page template reads the column
+yet (`KNOWN-ISSUES.md`); this phase is the data half only.
+
+**Verified.** `npm run verify:local` green (typecheck, build, all four pure
+verifies); `verify:seo` and `verify:i18n` (333 strings, none empty, none
+ignoring an argument) green on their own too. Against a **freshly
+`docker compose up`'d** local MySQL (this build environment has no running
+Docker daemon by default — `service docker start` fails on a sandboxed
+`ulimit` call; started `dockerd` directly instead, then hit the same
+Docker-Hub-blocked-by-proxy issue Phase 1 documented and used the same
+`mirror.gcr.io/library/mysql:8.4` → retag fix): `db:migrate` clean, `db:status`
+reports no drift (20 tables/243 columns) and confirms the `owner` lane
+(migration 0009) is live; `seed:locations && seed:costs && seed:dev &&
+seed:guides` all clean (69 locations, 7 acquisition-cost regions, 20 dev
+listings, 41 guide notes); `DATABASE_URL=<local> npm run verify:import`
+**all green, including the rollback check** — see the decision below;
+`npm run verify:scopes` green, 50 assertions, including the `owner`-lane
+lead-inbox test.
+
+**Decisions and deviations.**
+1. **Restored `D8` in the rewritten `PLAN.md`.** The docs-rewrite pass
+   initially restarted decision numbering at `D21` and dropped `D1`–`D20`
+   as Paraguay-specific — correct for everything except `D8`:
+   `src/db/schema.ts`'s own comment on `leads.routed_to` names the `owner`
+   lane "the FSBO lane (PLAN.md D8)", and that comment is schema code, out
+   of this phase's reach to rewrite. Re-added `D8` (marked done — the
+   mechanism is carried over unchanged and `verify:scopes` proves it works)
+   so the code's own cross-reference still resolves to something real.
+   **Whoever next touches `PLAN.md`'s numbering should grep `schema.ts` for
+   `PLAN.md D` before renumbering anything again.**
+2. **The pre-existing `verify:import` rollback failure (KNOWN-ISSUES, found
+   in Phase 4) did not reproduce** against a database this phase created
+   from nothing — `rollback restored the old prices` passed cleanly, three
+   rows all back at the pre-import price, no extra generations. Logged as a
+   `KNOWN-ISSUES` update rather than closing the item outright (one clean
+   run isn't proof of absence), but it now points whoever picks this up
+   next at "try a fresh database first" before spending a core-logic
+   session inside `src/lib/import/jobs.ts`.
+3. Ran two parallel sub-sessions for the bulk of this phase's content
+   volume — one on the `sv.ts` editorial pass, one on the three docs other
+   than `CLAUDE.md` — each scoped to disjoint files, with `CLAUDE.md`
+   itself written directly (it is the file most other things get
+   cross-checked against, including the `D8` catch above). Both were
+   reviewed and spot-checked against the design doc and the actual current
+   code (not just the design doc's *intent*) before being accepted.
+
+**Where Phase 6 starts.** Nothing in this phase touched schema, auth,
+import logic or facet vocabulary — the Sonnet hard limits held. Phase 6
+picks up exactly where `plan.md` §6 Phase 6 and this file's `README.md`
+"Hostinger production setup" section describe: no production domain, no
+production database, no live traffic yet. The `PLAN.md` "Launch blockers"
+list (`CONTACT_EMAIL`/SMTP, acquisition-cost rate verification, R2 account,
+GDPR review, Hostinger plan confirmation) is the founder-input checklist
+Phase 6 will hit first.
+
 ## 10. Backlog
 
 Anything a phase session finds that is real but out of its scope goes here
