@@ -29,15 +29,20 @@ export interface ParsedListing {
   sourceUrl: string;
   title: string | null;
   description: string | null;
-  priceAmount: number | null;
-  priceCurrency: "USD" | "PYG" | null;
+  /**
+   * EUR, and only ever EUR. A page printing £ or $ (the English-language
+   * Spanish portals do) leaves this null with a note rather than converting:
+   * a wrong price silently imported is far worse than a blank one, and the
+   * portal has no business inventing an exchange rate on a scrape.
+   */
+  priceEur: number | null;
   operation: Operation | null;
   propertyType: PropertyType | null;
   bedrooms: number | null;
   bathrooms: number | null;
   parking: number | null;
-  areaM2: number | null;
-  landM2: number | null;
+  builtM2: number | null;
+  plotM2: number | null;
   /** Free-text location as printed on the page; matched to a location later. */
   locationText: string | null;
   imageUrls: string[];
@@ -145,20 +150,32 @@ function firstNumber(...values: unknown[]): number | null {
 // Moved to normalize.ts so the CSV adapter shares it; re-exported for callers.
 export { parseAmount } from "./normalize";
 
-function detectCurrency(text: string): "USD" | "PYG" | null {
-  if (/\b(usd|u\$s|us\$|dólares|dolares)\b/i.test(text)) return "USD";
-  if (/\b(pyg|gs\.?|guaran[ií]es)\b/i.test(text)) return "PYG";
-  if (/\$/.test(text)) return "USD"; // bare $ in this market means dollars
+/**
+ * Which currency a fragment is printed in, when it says so at all.
+ *
+ * `other` matters as much as `eur`: an English-language Spanish portal quoting
+ * £395,000 must not have that number read as euros. A fragment with no marker
+ * is `null` and the form asks the agent.
+ */
+type DetectedCurrency = "eur" | "other";
+
+function detectCurrency(text: string): DetectedCurrency | null {
+  if (/€|\b(eur|euros?)\b/i.test(text)) return "eur";
+  if (/[£$]|\b(gbp|usd|sek|kr|libras|pounds|dollars?)\b/i.test(text))
+    return "other";
   return null;
 }
 
 /**
  * Currency marker within ~40 chars of where this exact amount is printed.
- * Scanning the whole page instead attached USD to a Gs price because "US$"
- * appeared *somewhere* — turning Gs 850.000.000 into price_usd 850,000,000
- * (audit F44). No nearby marker → null, and the form asks the agent.
+ * Scanning the whole page instead attached one currency to another's price
+ * because its symbol appeared *somewhere* on the page (audit F44). No nearby
+ * marker → null, and the form asks the agent.
  */
-function currencyNearAmount(text: string, amount: number): "USD" | "PYG" | null {
+function currencyNearAmount(
+  text: string,
+  amount: number,
+): DetectedCurrency | null {
   const re = /\d[\d.,]{2,}/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
@@ -174,26 +191,37 @@ function currencyNearAmount(text: string, amount: number): "USD" | "PYG" | null 
   return null;
 }
 
-/** es-PY vocabulary → our enums. Order matters: "alquiler temporal" first. */
+/** es-ES vocabulary → our enums. Order matters: the holiday let comes first. */
 function detectOperation(text: string): Operation | null {
   const t = text.toLowerCase();
-  if (/alquiler\s+temporal|temporada|por\s+d[ií]a/.test(t)) return "alquiler_temporal";
-  if (/\balquil|\barrend|\brenta\b|for\s+rent/.test(t)) return "alquiler";
+  if (
+    /alquiler\s+(?:vacacional|tur[ií]stico|de\s+temporada)|temporada|por\s+d[ií]as?|holiday\s+rental|short\s+term/.test(
+      t,
+    )
+  )
+    return "alquiler_vacacional";
+  if (/\balquil|\barrend|\brenta\b|for\s+rent|to\s+let/.test(t))
+    return "alquiler";
   if (/\bventa\b|\bvende\b|en\s+venta|for\s+sale/.test(t)) return "venta";
   return null;
 }
 
 function detectPropertyType(text: string): PropertyType | null {
   const t = text.toLowerCase();
-  // Most specific first — "casa quinta" is a quinta, not a casa.
-  if (/\bquinta/.test(t)) return "quinta";
+  // Most specific first — an "ático dúplex" is an ático, and a "casa adosada"
+  // is an adosado rather than the villa "casa" alone would suggest.
+  if (/\b[áa]tico|\bpenthouse\b/.test(t)) return "atico";
+  if (/\badosad|\bparead|\btown\s?house\b/.test(t)) return "adosado";
   if (/\bd[úu]plex/.test(t)) return "duplex";
-  if (/\bdepto\b|\bdepartamento|\bapartamento|\bapart\b|\bpiso\b/.test(t)) return "departamento";
-  if (/\bterreno|\blote\b|\blotes\b|\bfracci[óo]n/.test(t)) return "terreno";
-  if (/\bdep[óo]sito|\bgalp[óo]n/.test(t)) return "deposito";
-  if (/\boficina/.test(t)) return "oficina";
-  if (/\blocal\b|\bcomercial|\bsal[óo]n\b/.test(t)) return "comercial";
-  if (/\bcasa\b|\bvivienda\b|\bchalet\b/.test(t)) return "casa";
+  if (/\bfinca\b|\bcortijo\b|\bmas[ií]a\b|\bc[áa]rmen\b/.test(t))
+    return "finca";
+  if (/\bterreno|\bparcela|\bsolar\b|\bplot\b|\bland\b/.test(t))
+    return "terreno";
+  if (/\blocal\b|\bcomercial|\boficina|\bnave\b/.test(t)) return "local";
+  if (/\bpiso\b|\bapartamento|\bapart\b|\bestudio\b|\bflat\b|\bapartment\b/.test(t))
+    return "apartamento";
+  if (/\bvilla\b|\bchalet\b|\bcasa\b|\bvivienda\b|\bhouse\b/.test(t))
+    return "villa";
   return null;
 }
 
@@ -278,20 +306,19 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
     (offer?.priceSpecification as Record<string, unknown> | undefined)?.priceCurrency,
     metaContent(html, "product:price:currency", "og:price:currency"),
   );
-  const priceCurrency: "USD" | "PYG" | null =
-    currencyRaw && /usd|dollar/i.test(currencyRaw)
-      ? "USD"
-      : currencyRaw && /pyg|guaran/i.test(currencyRaw)
-        ? "PYG"
-        : null;
+  const priceCurrency: DetectedCurrency | null = currencyRaw
+    ? /eur/i.test(currencyRaw)
+      ? "eur"
+      : "other"
+    : null;
 
   // Price from visible text as a fallback: the first amount next to a currency
   // marker, which on a listing page is the headline price.
   let fallbackPrice: number | null = null;
-  let fallbackCurrency: "USD" | "PYG" | null = null;
+  let fallbackCurrency: DetectedCurrency | null = null;
   if (priceAmount == null) {
     const m = text.match(
-      /(?:US\$|U\$S|USD|Gs\.?|₲|\$)\s*([\d][\d.,]{2,})|([\d][\d.,]{5,})\s*(?:Gs\.?|guaran[ií]es|USD)/i,
+      /(?:€|EUR|£|\$)\s*([\d][\d.,]{2,})|([\d][\d.,]{4,})\s*(?:€|EUR|euros?)/i,
     );
     if (m) {
       fallbackPrice = parseAmount(m[1] ?? m[2] ?? "");
@@ -329,10 +356,25 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
   const propertyType = detectPropertyType(headline) ?? detectPropertyType(signal);
   if (!propertyType) notes.push("No pudimos deducir el tipo de propiedad — elegilo vos.");
 
-  const areaM2 =
-    areaFrom(text, ["superficie cubierta", "cubierta", "construidos?", "sup\\.? cub"]) ??
-    areaFrom(text);
-  const landM2 = areaFrom(text, ["terreno", "lote", "superficie total", "sup\\.? total"]);
+  // `built_m2` is the comparable figure, so "superficie construida" is what is
+  // hunted first; `útil` is deliberately NOT accepted as a fallback for it,
+  // because the two differ by 10–15% and filing one as the other understates
+  // every property it happens to.
+  const builtM2 =
+    areaFrom(text, [
+      "superficie construida",
+      "construidos?",
+      "constru[ií]da",
+      "sup\\.? const",
+      "built",
+    ]) ?? areaFrom(text);
+  const plotM2 = areaFrom(text, [
+    "parcela",
+    "terreno",
+    "solar",
+    "superficie de parcela",
+    "plot",
+  ]);
 
   const locationText = firstString(
     (productish?.address as Record<string, unknown> | undefined)?.addressLocality,
@@ -347,23 +389,35 @@ export function parseListingHtml(html: string, sourceUrl: string): ParsedListing
     priceCurrency ??
     fallbackCurrency ??
     (finalAmount != null ? currencyNearAmount(text, finalAmount) : null);
+
+  /**
+   * A price is kept only when the page said euros. An unmarked amount could be
+   * anything, and a marked non-euro one is a real number in the wrong
+   * currency — converting it here would invent a rate, and storing it as EUR
+   * would be a straightforwardly wrong price on a €400 000 purchase. Both go
+   * to the agent as a blank field and a note.
+   */
+  const priceEur = finalCurrency === "eur" ? finalAmount : null;
   if (finalAmount != null && finalCurrency == null) {
-    notes.push("No pudimos determinar la moneda del precio — confirmala.");
+    notes.push("No pudimos determinar la moneda del precio — confirmalo.");
+  } else if (finalCurrency === "other") {
+    notes.push(
+      "El precio de la página no está en euros — cargalo en euros a mano.",
+    );
   }
 
   return {
     sourceUrl,
     title,
     description,
-    priceAmount: finalAmount,
-    priceCurrency: finalCurrency,
+    priceEur,
     operation,
     propertyType,
-    bedrooms: countNear(text, ["dormitorios?", "dorm\\.?", "habitaciones?", "hab\\.?", "cuartos?"]),
-    bathrooms: countNear(text, ["ba[ñn]os?", "sanitarios?"]),
-    parking: countNear(text, ["cocheras?", "garages?", "garajes?", "estacionamientos?"]),
-    areaM2,
-    landM2,
+    bedrooms: countNear(text, ["dormitorios?", "dorm\\.?", "habitaciones?", "hab\\.?", "bedrooms?"]),
+    bathrooms: countNear(text, ["ba[ñn]os?", "aseos?", "bathrooms?"]),
+    parking: countNear(text, ["plazas? de garaje", "garajes?", "garages?", "parking"]),
+    builtM2,
+    plotM2,
     locationText,
     imageUrls: images.slice(0, 20),
     notes,

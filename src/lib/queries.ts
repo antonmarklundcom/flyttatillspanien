@@ -1,8 +1,12 @@
 /**
  * Read queries for the public site (ARCHITECTURE.md §4). All filtering runs
- * on indexed scalar columns (idx_search, idx_location) and normalized
- * price_usd — no MySQL-only cleverness, so the Postgres escape hatch stays
- * open. JSON columns are display-only and never filtered here.
+ * on indexed scalar columns (idx_search, idx_location) and `price_eur`, the
+ * one stored price — no MySQL-only cleverness, so the Postgres escape hatch
+ * stays open. JSON columns are display-only and never filtered here.
+ *
+ * SEK never appears in a query. It is computed at render from the cached ECB
+ * rate (`src/lib/format.ts`), and a visitor's kronor bounds are converted to
+ * EUR before they reach `facetConds()` — see `facet-sql.ts`.
  */
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
@@ -21,7 +25,6 @@ import {
   agencies,
   agents,
   developers,
-  financingPrograms,
   listingImages,
   listings,
   locations,
@@ -53,7 +56,7 @@ const cachedCities = unstable_cache(
     db
       .select({ id: locations.id, name: locations.name, slug: locations.slug })
       .from(locations)
-      .where(eq(locations.level, "ciudad"))
+      .where(eq(locations.level, "municipio"))
       .orderBy(asc(locations.name)),
   ["queries:listCities"],
   { revalidate: CACHE_TTL.locations, tags: [CACHE_TAGS.locations] },
@@ -65,17 +68,17 @@ export async function listCities(): Promise<
   return cachedCities();
 }
 
-/** A ciudad by slug (slugs are unique per level in our seed). */
+/** A municipio by slug (slugs are unique per level in our seed). */
 export async function resolveCity(citySlug: string): Promise<LocationRow | null> {
   const [row] = await db
     .select()
     .from(locations)
-    .where(and(eq(locations.slug, citySlug), eq(locations.level, "ciudad")))
+    .where(and(eq(locations.slug, citySlug), eq(locations.level, "municipio")))
     .limit(1);
   return row ?? null;
 }
 
-/** A barrio by slug, scoped to its parent ciudad. */
+/** A zona by slug, scoped to its parent municipio. */
 export async function resolveBarrio(
   cityId: number,
   barrioSlug: string,
@@ -86,7 +89,7 @@ export async function resolveBarrio(
     .where(
       and(
         eq(locations.slug, barrioSlug),
-        eq(locations.level, "barrio"),
+        eq(locations.level, "zona"),
         eq(locations.parentId, cityId),
       ),
     )
@@ -95,7 +98,7 @@ export async function resolveBarrio(
 }
 
 /**
- * City + its barrio children — the location set a city page covers. Served from
+ * Municipio + its zona children — the location set a city page covers. Served from
  * the same one-read map as locationChain(), so a category page no longer pays a
  * query per subtree lookup.
  */
@@ -111,8 +114,9 @@ export async function citySubtreeIds(cityId: number): Promise<number[]> {
 /**
  * The whole `locations` table, keyed by id, loaded once per request.
  *
- * It is a small, slow-changing table (país → departamento → ciudad → barrio;
- * tens of rows, not thousands), and walking a parent chain used to cost one
+ * It is a small, slow-changing table (país → comunidad → provincia →
+ * municipio → zona; tens of rows, not thousands), and walking a parent chain
+ * used to cost one
  * round-trip per level. One read serves every chain on the page instead —
  * cache() dedupes it across generateMetadata and the page body.
  */
@@ -204,27 +208,44 @@ function filterConds(q: CategoryQuery, f: CategoryFilters) {
 }
 
 function sortOrder(sort: SortOption | undefined) {
-  if (sort === "precio_asc") return asc(listings.priceUsd);
-  if (sort === "precio_desc") return desc(listings.priceUsd);
+  if (sort === "pris_upp") return asc(listings.priceEur);
+  if (sort === "pris_ner") return desc(listings.priceEur);
   return desc(listings.publishedAt);
 }
 
+/**
+ * The card shape every grid renders.
+ *
+ * `titleSv` rides along with `title` because the served Swedish is
+ * `title_sv ?? title` from day one (schema, §3.1) — a card that read only
+ * `title` would print the agency's Spanish under a Swedish heading.
+ *
+ * `energyRating` is on the card and not only on the detail page because
+ * RD 390/2021 requires the rating in **any advertisement** offering the
+ * property, and a card in a grid is an advertisement. `legalStatus` is here
+ * for the same reason the column exists at all (design doc §3.2): it is the
+ * editorial premise, and a Swedish buyer who only meets it on the detail page
+ * has already built a shortlist without it. `isVpo` is one boolean that
+ * prevents a category of wasted inquiry.
+ */
 export type ListingCard = Pick<
   typeof listings.$inferSelect,
   | "id"
   | "publicId"
   | "slug"
   | "title"
+  | "titleSv"
+  | "sourceLang"
   | "operation"
   | "propertyType"
-  | "priceUsd"
-  | "priceAmount"
-  | "priceCurrency"
-  | "cuotaGs"
+  | "priceEur"
   | "bedrooms"
   | "bathrooms"
-  | "areaM2"
-  | "landM2"
+  | "builtM2"
+  | "plotM2"
+  | "energyRating"
+  | "legalStatus"
+  | "isVpo"
   | "locationId"
   | "featuredUntil"
 > & { coverKey: string | null };
@@ -244,24 +265,7 @@ export async function getFilteredCategoryListings(
   // so they go out together rather than one after the other.
   const [rows, filteredCount] = await Promise.all([
     db
-      .select({
-        id: listings.id,
-        publicId: listings.publicId,
-        slug: listings.slug,
-        title: listings.title,
-        operation: listings.operation,
-        propertyType: listings.propertyType,
-        priceUsd: listings.priceUsd,
-        priceAmount: listings.priceAmount,
-        priceCurrency: listings.priceCurrency,
-        cuotaGs: listings.cuotaGs,
-        bedrooms: listings.bedrooms,
-        bathrooms: listings.bathrooms,
-        areaM2: listings.areaM2,
-        landM2: listings.landM2,
-        locationId: listings.locationId,
-        featuredUntil: listings.featuredUntil,
-      })
+      .select(cardColumns())
       .from(listings)
       .where(where)
       .orderBy(sortOrder(filters.sort))
@@ -463,16 +467,18 @@ function cardColumns() {
     publicId: listings.publicId,
     slug: listings.slug,
     title: listings.title,
+    titleSv: listings.titleSv,
+    sourceLang: listings.sourceLang,
     operation: listings.operation,
     propertyType: listings.propertyType,
-    priceUsd: listings.priceUsd,
-    priceAmount: listings.priceAmount,
-    priceCurrency: listings.priceCurrency,
-    cuotaGs: listings.cuotaGs,
+    priceEur: listings.priceEur,
     bedrooms: listings.bedrooms,
     bathrooms: listings.bathrooms,
-    areaM2: listings.areaM2,
-    landM2: listings.landM2,
+    builtM2: listings.builtM2,
+    plotM2: listings.plotM2,
+    energyRating: listings.energyRating,
+    legalStatus: listings.legalStatus,
+    isVpo: listings.isVpo,
     locationId: listings.locationId,
     featuredUntil: listings.featuredUntil,
   };
@@ -504,8 +510,17 @@ export async function getRecentListings(
  */
 export interface ListingOwner {
   name: string | null;
-  whatsapp: string | null;
-  whatsappVerifiedAt: Date | null;
+  /**
+   * The optional direct channel. The seller's EMAIL is deliberately not in
+   * this shape: it is the account identity now (§3.7), and rendering it on a
+   * public page would publish a private person's inbox to every scraper that
+   * reads the site. Buyers reach an FSBO seller through the lead form, which
+   * routes to the `owner` lane and is the channel a Swedish buyer expects
+   * anyway.
+   */
+  phone: string | null;
+  /** NULL = the account never confirmed its email. Rendered as unverified. */
+  emailVerifiedAt: Date | null;
 }
 
 export interface ListingDetail {
@@ -566,8 +581,8 @@ export async function getListingByPublicId(
       ? db
           .select({
             name: users.name,
-            whatsapp: users.whatsapp,
-            whatsappVerifiedAt: users.whatsappVerifiedAt,
+            phone: users.phone,
+            emailVerifiedAt: users.emailVerifiedAt,
           })
           .from(users)
           .where(eq(users.id, listing.ownerUserId))
@@ -622,18 +637,18 @@ export interface ProjectCard {
   heroImageUrl: string | null;
   developerName: string | null;
   cityName: string | null;
-  minPriceUsd: number | null;
+  minPriceEur: number | null;
   availableUnits: number;
 }
 
 /** Aggregate unit facts (min price / count) for a set of project ids. */
 async function projectUnitStats(projectIds: number[]) {
   if (projectIds.length === 0)
-    return new Map<number, { minPriceUsd: number; units: number }>();
+    return new Map<number, { minPriceEur: number; units: number }>();
   const rows = await db
     .select({
       projectId: listings.projectId,
-      minPriceUsd: sql<string>`MIN(${listings.priceUsd})`,
+      minPriceEur: sql<string>`MIN(${listings.priceEur})`,
       units: sql<number>`COUNT(*)`,
     })
     .from(listings)
@@ -649,7 +664,7 @@ async function projectUnitStats(projectIds: number[]) {
       .filter((r) => r.projectId != null)
       .map((r) => [
         r.projectId as number,
-        { minPriceUsd: Number(r.minPriceUsd), units: Number(r.units) },
+        { minPriceEur: Number(r.minPriceEur), units: Number(r.units) },
       ]),
   );
 }
@@ -682,12 +697,12 @@ export async function getFeaturedProjects(limit = 6): Promise<ProjectCard[]> {
  * cards identical to the homepage carousel's.
  */
 export async function projectCardsFrom(
-  rows: Omit<ProjectCard, "minPriceUsd" | "availableUnits">[],
+  rows: Omit<ProjectCard, "minPriceEur" | "availableUnits">[],
 ): Promise<ProjectCard[]> {
   const stats = await projectUnitStats(rows.map((r) => r.id));
   return rows.map((r) => ({
     ...r,
-    minPriceUsd: stats.get(r.id)?.minPriceUsd ?? null,
+    minPriceEur: stats.get(r.id)?.minPriceEur ?? null,
     availableUnits: stats.get(r.id)?.units ?? 0,
   }));
 }
@@ -723,12 +738,11 @@ export interface ProjectUnit {
   publicId: string;
   slug: string;
   title: string;
+  titleSv: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
-  areaM2: string | null;
-  priceUsd: string;
-  priceAmount: string;
-  priceCurrency: "USD" | "PYG";
+  builtM2: string | null;
+  priceEur: string;
   propertyState: string | null;
 }
 
@@ -753,19 +767,18 @@ export async function getProjectBySlug(slug: string) {
       publicId: listings.publicId,
       slug: listings.slug,
       title: listings.title,
+      titleSv: listings.titleSv,
       bedrooms: listings.bedrooms,
       bathrooms: listings.bathrooms,
-      areaM2: listings.areaM2,
-      priceUsd: listings.priceUsd,
-      priceAmount: listings.priceAmount,
-      priceCurrency: listings.priceCurrency,
+      builtM2: listings.builtM2,
+      priceEur: listings.priceEur,
       propertyState: listings.propertyState,
     })
     .from(listings)
     .where(
       and(eq(listings.status, "published"), eq(listings.projectId, row.project.id)),
     )
-    .orderBy(asc(listings.priceUsd));
+    .orderBy(asc(listings.priceEur));
 
   // Other projects by the same developer (for the "Otros proyectos" row).
   const siblings = row.project.developerId
@@ -795,20 +808,9 @@ export async function getProjectBySlug(slug: string) {
   const sibStats = await projectUnitStats(siblings.map((s) => s.id));
   const otherProjects: ProjectCard[] = siblings.map((s) => ({
     ...s,
-    minPriceUsd: sibStats.get(s.id)?.minPriceUsd ?? null,
+    minPriceEur: sibStats.get(s.id)?.minPriceEur ?? null,
     availableUnits: sibStats.get(s.id)?.units ?? 0,
   }));
 
   return { ...row, units, otherProjects };
-}
-
-/** Best active financing program (lowest rate) — listing cuota module. */
-export async function getBestFinancingProgram() {
-  const [row] = await db
-    .select()
-    .from(financingPrograms)
-    .where(eq(financingPrograms.active, true))
-    .orderBy(asc(financingPrograms.annualRate))
-    .limit(1);
-  return row ?? null;
 }

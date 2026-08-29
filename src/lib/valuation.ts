@@ -95,7 +95,7 @@ async function estimateValueUncached(
   const ids = await citySubtreeIds(city.id);
   const rows = await db
     .select({
-      medianPriceM2Usd: marketMedians.medianPriceM2Usd,
+      medianPriceM2Eur: marketMedians.medianPriceM2Eur,
       sampleSize: marketMedians.sampleSize,
       sampleSizeM2: marketMedians.sampleSizeM2,
     })
@@ -120,10 +120,10 @@ async function estimateValueUncached(
   let weight = 0;
   let sample = 0;
   for (const r of rows) {
-    if (r.medianPriceM2Usd == null) continue;
+    if (r.medianPriceM2Eur == null) continue;
     const n = r.sampleSizeM2 > 0 ? r.sampleSizeM2 : r.sampleSize;
     sample += n;
-    weighted += Number(r.medianPriceM2Usd) * n;
+    weighted += Number(r.medianPriceM2Eur) * n;
     weight += n;
   }
 

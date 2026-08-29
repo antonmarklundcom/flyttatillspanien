@@ -27,30 +27,55 @@ export const TEMPLATE_COLUMNS = [
   "property_type",
   "title",
   "description_es",
-  "price_amount",
-  "price_currency",
+  "price_eur",
   "bedrooms",
   "bathrooms",
   "parking",
-  "area_m2",
-  "land_m2",
+  "built_m2",
+  "usable_m2",
+  "plot_m2",
+  "year_built",
   "property_state",
   "location_full_slug",
   "location_name",
   "address_text",
   "lat",
   "lng",
+  /* The Spain legal block. `referencia_catastral` is first because it is the
+     single highest-value cell in the file: it is the exact dedup key and the
+     strongest anti-fraud signal the portal has. */
+  "referencia_catastral",
+  "energy_rating",
+  "energy_emissions",
+  "energy_kwh_m2",
+  "energy_co2_m2",
+  "legal_status",
+  "charges_status",
+  "ibi_annual_eur",
+  "community_monthly_eur",
+  "is_vpo",
+  "land_classification",
+  "buildable_m2",
+  "tourist_licence",
   "contact_phone",
   "source_external_id",
   "source_url",
   "image_urls",
 ] as const;
 
+/**
+ * `energy_rating` is deliberately NOT required. A feed that has not got the
+ * certificate yet must still be importable — the row simply cannot be
+ * published until the rating arrives, which the publish gate enforces at the
+ * one transition where it matters (src/lib/publish-gate.ts). Making it
+ * required here would reject whole spreadsheets over a field the operator can
+ * fill in later.
+ */
 export const REQUIRED_COLUMNS = [
   "operation",
   "property_type",
   "title",
-  "price_amount",
+  "price_eur",
 ] as const;
 
 /**
@@ -61,9 +86,9 @@ export const REQUIRED_COLUMNS = [
 export const UPLOAD_SOURCES: readonly ListingSource[] = [
   "whiteglove",
   "import_agency_site",
-  "import_tulugar",
-  "import_infocasas",
-  "import_clasipar",
+  "import_idealista",
+  "import_fotocasa",
+  "import_kyero",
 ];
 
 export type IntakeKind = "csv" | "xlsx";

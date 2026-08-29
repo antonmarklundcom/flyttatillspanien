@@ -105,13 +105,13 @@ export default async function CityPricesPage({ params }: Params) {
                   <td>{PROPERTY_TYPE_LABELS[cell.propertyType]}</td>
                   <td>{OPERATION_LABEL[cell.operation]}</td>
                   <td className="panel-table__num">
-                    {cell.medianPriceUsd != null
-                      ? formatUsd(cell.medianPriceUsd)
+                    {cell.medianPriceEur != null
+                      ? formatUsd(cell.medianPriceEur)
                       : "—"}
                   </td>
                   <td className="panel-table__num">
-                    {cell.medianPriceM2Usd != null
-                      ? formatUsd(cell.medianPriceM2Usd)
+                    {cell.medianPriceM2Eur != null
+                      ? formatUsd(cell.medianPriceM2Eur)
                       : "—"}
                   </td>
                   <td className="panel-table__num">

@@ -30,8 +30,8 @@ export const MIN_RELIABLE_SAMPLE = 8;
 export interface MedianCell {
   propertyType: PropertyType;
   operation: Operation;
-  medianPriceUsd: number | null;
-  medianPriceM2Usd: number | null;
+  medianPriceEur: number | null;
+  medianPriceM2Eur: number | null;
   sampleSize: number;
   /** False when the sample is too small to present without a caveat. */
   reliable: boolean;
@@ -118,8 +118,8 @@ async function getCityPricesUncached(
     .select({
       propertyType: marketMedians.propertyType,
       operation: marketMedians.operation,
-      medianPriceUsd: marketMedians.medianPriceUsd,
-      medianPriceM2Usd: marketMedians.medianPriceM2Usd,
+      medianPriceEur: marketMedians.medianPriceEur,
+      medianPriceM2Eur: marketMedians.medianPriceM2Eur,
       sampleSize: marketMedians.sampleSize,
       sampleSizeM2: marketMedians.sampleSizeM2,
     })
@@ -146,15 +146,15 @@ async function getCityPricesUncached(
       acc.get(key) ??
       { priceWeighted: 0, priceWeight: 0, m2Weighted: 0, m2Weight: 0, sample: 0 };
     const n = r.sampleSize;
-    if (r.medianPriceUsd != null) {
-      a.priceWeighted += Number(r.medianPriceUsd) * n;
+    if (r.medianPriceEur != null) {
+      a.priceWeighted += Number(r.medianPriceEur) * n;
       a.priceWeight += n;
     }
-    if (r.medianPriceM2Usd != null) {
+    if (r.medianPriceM2Eur != null) {
       // Weight the m² median by its own sample (listings that had an area),
       // not the full bucket (F16). Pre-migration rows carry 0 → old weight.
       const m2n = r.sampleSizeM2 > 0 ? r.sampleSizeM2 : n;
-      a.m2Weighted += Number(r.medianPriceM2Usd) * m2n;
+      a.m2Weighted += Number(r.medianPriceM2Eur) * m2n;
       a.m2Weight += m2n;
     }
     a.sample += n;
@@ -167,8 +167,8 @@ async function getCityPricesUncached(
     cells.push({
       propertyType,
       operation,
-      medianPriceUsd: a.priceWeight > 0 ? a.priceWeighted / a.priceWeight : null,
-      medianPriceM2Usd: a.m2Weight > 0 ? a.m2Weighted / a.m2Weight : null,
+      medianPriceEur: a.priceWeight > 0 ? a.priceWeighted / a.priceWeight : null,
+      medianPriceM2Eur: a.m2Weight > 0 ? a.m2Weighted / a.m2Weight : null,
       sampleSize: a.sample,
       reliable: a.sample >= MIN_RELIABLE_SAMPLE,
     });
@@ -227,9 +227,9 @@ async function citiesWithPricesUncached(): Promise<
   const cityOf = (locationId: number) => {
     const loc = byId.get(locationId);
     if (!loc) return null;
-    if (loc.level === "ciudad") return loc;
+    if (loc.level === "municipio") return loc;
     const parent = loc.parentId != null ? byId.get(loc.parentId) : undefined;
-    return parent?.level === "ciudad" ? parent : null;
+    return parent?.level === "municipio" ? parent : null;
   };
 
   // Samples per (city × type × operation), so reliability is judged on the same

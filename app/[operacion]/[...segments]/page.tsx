@@ -537,12 +537,12 @@ export default async function CategoryPage({ params, searchParams }: Params) {
                     contextCell.operation,
                   city: r.city.name,
                   median:
-                    contextCell.medianPriceUsd != null
-                      ? formatUsd(contextCell.medianPriceUsd)
+                    contextCell.medianPriceEur != null
+                      ? formatUsd(contextCell.medianPriceEur)
                       : "—",
                   perM2:
-                    contextCell.medianPriceM2Usd != null
-                      ? formatUsd(contextCell.medianPriceM2Usd)
+                    contextCell.medianPriceM2Eur != null
+                      ? formatUsd(contextCell.medianPriceM2Eur)
                       : null,
                   sample: contextCell.sampleSize,
                 })
