@@ -18,7 +18,8 @@ export function adminTabs(
     | "listings"
     | "leads"
     | "posts"
-    | "import",
+    | "import"
+    | "reference",
   reviewCount: number,
   /** Draft count, badged on the editorial tab. Omitted where it isn't loaded. */
   draftPostCount?: number,
@@ -71,6 +72,12 @@ export function adminTabs(
       group: "manage",
       label: svPanel.adminAgentsTitle,
       active: active === "agents",
+    },
+    {
+      href: "/admin/referens",
+      group: "manage",
+      label: svPanel.adminReferenceTitle,
+      active: active === "reference",
     },
     {
       href: "/admin/usuarios",

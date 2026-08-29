@@ -76,6 +76,9 @@ interface WizardState {
   referenciaCatastral: string;
   legalStatus: LegalStatus;
   chargesStatus: ChargesStatus;
+  /** Annual IBI and monthly comunidad fee, both optional. */
+  ibiAnnualEur: string;
+  communityMonthlyEur: string;
   /** Only meaningful (and only sent) for `alquiler_vacacional`. */
   touristLicence: string;
 }
@@ -117,6 +120,8 @@ const EMPTY: WizardState = {
   referenciaCatastral: "",
   legalStatus: "desconocido",
   chargesStatus: "desconocido",
+  ibiAnnualEur: "",
+  communityMonthlyEur: "",
   touristLicence: "",
 };
 
@@ -255,6 +260,8 @@ export function PublishWizard({
       energyRating: state.energyRating,
       legalStatus: state.legalStatus,
       chargesStatus: state.chargesStatus,
+      ibiAnnualEur: numOrNull(state.ibiAnnualEur),
+      communityMonthlyEur: numOrNull(state.communityMonthlyEur),
       // Sent only for a holiday let — a licence number on any other operation
       // would render a compliance claim about the wrong thing (the server
       // enforces this too; see draftFields() in publish-queries.ts).
@@ -658,6 +665,38 @@ export function PublishWizard({
                     </option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            <div className="wizard-grid">
+              <div className="wizard-field">
+                <label className="wizard-label" htmlFor="ibiAnnualEur">
+                  {svPublish.ibiLabel}
+                </label>
+                <input
+                  id="ibiAnnualEur"
+                  className="wizard-input"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={state.ibiAnnualEur}
+                  onChange={(e) => set("ibiAnnualEur", e.target.value)}
+                />
+              </div>
+
+              <div className="wizard-field">
+                <label className="wizard-label" htmlFor="communityMonthlyEur">
+                  {svPublish.communityLabel}
+                </label>
+                <input
+                  id="communityMonthlyEur"
+                  className="wizard-input"
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={state.communityMonthlyEur}
+                  onChange={(e) => set("communityMonthlyEur", e.target.value)}
+                />
               </div>
             </div>
 

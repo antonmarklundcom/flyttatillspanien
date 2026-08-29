@@ -9,7 +9,7 @@ import {
   listAllLeads,
   type AdminLeadRow,
 } from "@/lib/panel-queries";
-import { svPanel } from "@/i18n/sv";
+import { svPanel, svAgencyProfile } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
@@ -86,12 +86,24 @@ function forwardHref(lead: AdminLeadRow) {
 }
 
 function formatWhen(d: Date): string {
-  return new Intl.DateTimeFormat("es-PY", {
+  return new Intl.DateTimeFormat("sv-SE", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
     minute: "2-digit",
   }).format(d);
+}
+
+/**
+ * Who owns the follow-up, with a relocation partner labelled distinctly —
+ * they represent the buyer's side, not the seller's, so blurring them into
+ * "Inmobiliaria" in the operator's own inbox would misstate whose lead this
+ * is (design doc §3.3, plan §6.2).
+ */
+function agencyLabel(name: string, kind: string | null): string {
+  return kind === "relocation"
+    ? `${name} (${svAgencyProfile.kindLabel.relocation})`
+    : name;
 }
 
 export default async function AdminLeadsPage({
@@ -197,10 +209,11 @@ export default async function AdminLeadsPage({
                     {/* Who owns the follow-up: an agency, a particular
                         seller who has no panel yet, or you. */}
                     <span>
-                      {lead.agencyName ??
-                        (lead.ownerEmail
+                      {lead.agencyName
+                        ? agencyLabel(lead.agencyName, lead.agencyKind)
+                        : lead.ownerEmail
                           ? `${svPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerEmail}`
-                          : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo))}
+                          : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo)}
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
                     <span>{lead.vertical}</span>

@@ -137,7 +137,10 @@ async function listAgenciesForDirectoryUncached(): Promise<AgencyDirectoryRow[]>
       .map((r) => [r.agencyId as number, Number(r.n)]),
   );
 
-  const planRank: Record<string, number> = { partner: 0, destacado: 1, free: 2 };
+  // Keys must match `agencies.plan` exactly (`free | premium | partner`) — a
+  // typo'd key here silently sorts that plan last via the `?? 9` fallback
+  // instead of raising a type error. Was "destacado" (Phase 4 fix).
+  const planRank: Record<string, number> = { partner: 0, premium: 1, free: 2 };
   return rows
     .map((r) => ({
       ...r,

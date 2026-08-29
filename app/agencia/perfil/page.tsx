@@ -6,7 +6,7 @@ import {
   getOwnAgentProfile,
 } from "@/lib/profile-queries";
 import { BRAND_NAME } from "@/lib/brand";
-import { svPanel } from "@/i18n/sv";
+import { svPanel, svAgencyProfile } from "@/i18n/sv";
 import { agencyTabs } from "../tabs";
 import {
   updateAccountAction,
@@ -92,6 +92,20 @@ export default async function AgencyProfilePage({
                   <VerifiedBadge verified={agency.isVerified} />
                 </p>
 
+                {/*
+                  `kind` is read-only here (design doc §3.3): it is the
+                  portal's own classification of who the agency represents,
+                  changed only from /admin/inmobiliarias — same trust level as
+                  isVerified above, so it gets a badge, not a form field.
+                */}
+                <p style={{ margin: "0 0 1rem" }}>
+                  <span className="panel-card__meta">
+                    {svPanel.profileKindLabel}:{" "}
+                    {svAgencyProfile.kindLabel[agency.kind] ??
+                      svAgencyProfile.kindLabel.inmobiliaria}
+                  </span>
+                </p>
+
                 {!canEditAgency && (
                   <p style={{ color: "#55655F", fontSize: 13 }}>
                     {svPanel.profileAgencyReadOnly}
@@ -142,6 +156,38 @@ export default async function AgencyProfilePage({
                       type="email"
                       defaultValue={agency.email ?? ""}
                       maxLength={190}
+                      disabled={!canEditAgency}
+                    />
+                  </label>
+
+                  <label className="panel-form__field">
+                    <span className="auth-field__label">
+                      {svPanel.profileTaxIdLabel}
+                    </span>
+                    <input
+                      className="auth-field__input"
+                      name="taxId"
+                      type="text"
+                      defaultValue={agency.taxId ?? ""}
+                      maxLength={20}
+                      disabled={!canEditAgency}
+                    />
+                    <span className="auth-field__hint">
+                      {svPanel.profileTaxIdHint}
+                    </span>
+                  </label>
+
+                  <label className="panel-form__field">
+                    <span className="auth-field__label">
+                      {svPanel.countryLabel}
+                    </span>
+                    <input
+                      className="auth-field__input"
+                      name="taxIdCountry"
+                      type="text"
+                      defaultValue={agency.taxIdCountry ?? ""}
+                      maxLength={2}
+                      placeholder="ES"
                       disabled={!canEditAgency}
                     />
                   </label>

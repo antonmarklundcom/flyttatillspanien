@@ -27,6 +27,15 @@ export interface AgencyProfile {
   phone: string | null;
   email: string | null;
   isVerified: boolean;
+  /**
+   * The lister type (design doc §3.3). Read here for display only — an
+   * agency does not set its own `kind`, the same reason it does not set its
+   * own `isVerified`: it is the portal's own classification of who the
+   * agency represents, not a self-report. Changed from `/admin/inmobiliarias`.
+   */
+  kind: (typeof agencies.$inferSelect)["kind"];
+  taxId: string | null;
+  taxIdCountry: string | null;
 }
 
 export interface AgentProfile {
@@ -51,6 +60,9 @@ export async function getAgencyProfile(
       phone: agencies.phone,
       email: agencies.email,
       isVerified: agencies.isVerified,
+      kind: agencies.kind,
+      taxId: agencies.taxId,
+      taxIdCountry: agencies.taxIdCountry,
     })
     .from(agencies)
     .where(eq(agencies.id, agencyId))
@@ -102,6 +114,9 @@ export interface AgencyProfileInput {
   logoUrl: string;
   phone: string;
   email: string;
+  /** CIF/NIF for a Spanish company, organisationsnummer for a Swedish AB. */
+  taxId: string;
+  taxIdCountry: string;
 }
 
 /**
@@ -109,6 +124,9 @@ export interface AgencyProfileInput {
  * context, never from the form, so this cannot be pointed at another agency.
  * Returns false when the name is empty — the one field the public site cannot
  * render without.
+ *
+ * `kind` is deliberately not settable here — see the field comment on
+ * `AgencyProfile.kind`.
  */
 export async function updateAgencyProfile(
   agencyId: number,
@@ -127,6 +145,8 @@ export async function updateAgencyProfile(
       logoUrl,
       phone: orNull(input.phone, 30),
       email: orNull(input.email, 190),
+      taxId: orNull(input.taxId, 20),
+      taxIdCountry: orNull(input.taxIdCountry.toUpperCase(), 2),
     })
     .where(eq(agencies.id, agencyId));
   return true;

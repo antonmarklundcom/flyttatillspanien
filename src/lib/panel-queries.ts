@@ -267,6 +267,19 @@ export async function setAgencyVerified(id: number, verified: boolean): Promise<
     .where(eq(agencies.id, id));
 }
 
+/**
+ * Reclassify an agency's lister type (design doc §3.3). Operator-only, same
+ * trust level as `isVerified`: a `relocation` label changes what the public
+ * seller card and directory say about whose side the agency is on, so it is
+ * not something the agency sets about itself.
+ */
+export async function setAgencyKind(
+  id: number,
+  kind: AgencyRow["kind"],
+): Promise<void> {
+  await db.update(agencies).set({ kind }).where(eq(agencies.id, id));
+}
+
 export async function setAgentVerified(id: number, verified: boolean): Promise<void> {
   await db.update(agents).set({ isVerified: verified }).where(eq(agents.id, id));
 }
@@ -625,6 +638,9 @@ export interface AdminLeadRow extends LeadRow {
   vertical: string;
   routedTo: (typeof leads.$inferSelect)["routedTo"];
   agencyName: string | null;
+  /** So the inbox can label a relocation partner rather than blur it into
+   *  "agency" — the same distinction the seller card and directory make. */
+  agencyKind: (typeof agencies.$inferSelect)["kind"] | null;
   /**
    * The FSBO publisher behind a lead on a self-published listing.
    *
@@ -683,6 +699,7 @@ export async function listAllLeads(params: {
       vertical: leads.vertical,
       routedTo: leads.routedTo,
       agencyName: agencies.name,
+      agencyKind: agencies.kind,
       ownerName: users.name,
       ownerEmail: users.email,
       ownerPhone: users.phone,

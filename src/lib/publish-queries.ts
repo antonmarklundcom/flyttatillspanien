@@ -110,6 +110,9 @@ export interface DraftInput {
   energyRating?: EnergyRating | null;
   legalStatus?: LegalStatus;
   chargesStatus?: ChargesStatus;
+  /** Annual municipal property tax and monthly community fee, both optional. */
+  ibiAnnualEur?: number | null;
+  communityMonthlyEur?: number | null;
   /** Only meaningful for `alquiler_vacacional`; NULL everywhere else. */
   touristLicence?: string | null;
 }
@@ -160,6 +163,9 @@ export async function getUserDraft(
     energyRating: row.energyRating,
     legalStatus: row.legalStatus,
     chargesStatus: row.chargesStatus,
+    ibiAnnualEur: row.ibiAnnualEur != null ? Number(row.ibiAnnualEur) : null,
+    communityMonthlyEur:
+      row.communityMonthlyEur != null ? Number(row.communityMonthlyEur) : null,
     touristLicence: row.touristLicence,
   };
 }
@@ -199,6 +205,16 @@ function draftFields(input: DraftInput, agencyId: number | null) {
     ...(input.legalStatus !== undefined && { legalStatus: input.legalStatus }),
     ...(input.chargesStatus !== undefined && {
       chargesStatus: input.chargesStatus,
+    }),
+    ...(input.ibiAnnualEur !== undefined && {
+      ibiAnnualEur:
+        input.ibiAnnualEur != null ? input.ibiAnnualEur.toFixed(2) : null,
+    }),
+    ...(input.communityMonthlyEur !== undefined && {
+      communityMonthlyEur:
+        input.communityMonthlyEur != null
+          ? input.communityMonthlyEur.toFixed(2)
+          : null,
     }),
     // A licence number only means anything on a holiday let; carrying one on a
     // venta would render a compliance claim about the wrong thing.

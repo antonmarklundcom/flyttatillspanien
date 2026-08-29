@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Plan names mirror the `agencies.plan` enum (free / destacado / partner) so
+ * Plan names mirror the `agencies.plan` enum (free / premium / partner) so
  * the sales page and the data model can't drift apart.
  *
  * Paid tiers quote "a convenir" rather than a number on purpose: pricing is a
@@ -55,7 +55,7 @@ const PLANS: {
     cta: { label: "Annonsera gratis", href: "/publicar" },
   },
   {
-    key: "destacado",
+    key: "premium",
     name: "Mäklarbyrå",
     price: "Gratis",
     priceNote: "Proffsplan, kostnadsfri under lanseringen",

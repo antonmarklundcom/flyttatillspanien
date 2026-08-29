@@ -6,11 +6,12 @@ import {
   listAgencies,
   listAgents,
 } from "@/lib/panel-queries";
-import { svPanel } from "@/i18n/sv";
+import { svPanel, svAgencyProfile } from "@/i18n/sv";
 import { adminTabs } from "../tabs";
 import {
   toggleAgencyVerifiedAction,
   toggleAgentVerifiedAction,
+  updateAgencyKindAction,
 } from "../actions";
 import { createAgencyAction } from "./actions";
 
@@ -29,16 +30,27 @@ function VerifiedPill({ on }: { on: boolean }) {
   );
 }
 
-/** Plan values as the founder reads them, not as the enum spells them. */
-const PLAN_OPTIONS: { value: "free" | "destacado" | "partner"; label: string }[] = [
+/**
+ * Plan values as the founder reads them, not as the enum spells them.
+ * `value` must match `agencies.plan` exactly (`free | premium | partner`) —
+ * a mismatch here silently falls back to "free" on save while the UI still
+ * shows the wrong option as selected. Fixed in Phase 4 (was "destacado").
+ */
+const PLAN_OPTIONS: { value: "free" | "premium" | "partner"; label: string }[] = [
   { value: "free", label: "Gratis" },
-  { value: "destacado", label: "Destacado" },
+  { value: "premium", label: "Utvald" },
   { value: "partner", label: "Partner" },
 ];
 
 function planLabel(plan: string): string {
   return PLAN_OPTIONS.find((p) => p.value === plan)?.label ?? plan;
 }
+
+const KIND_OPTIONS: { value: "inmobiliaria" | "relocation" | "developer" }[] = [
+  { value: "inmobiliaria" },
+  { value: "relocation" },
+  { value: "developer" },
+];
 
 /** Flash messages keyed by the ?msg= code createAgencyAction redirects with. */
 const FLASH: Record<string, { text: string; error?: boolean }> = {
@@ -105,6 +117,20 @@ export default async function AdminAgenciesPage({
                 ))}
               </select>
             </label>
+            <label className="panel-form__field">
+              <span className="auth-field__label">{svPanel.agencyKindLabel}</span>
+              <select
+                className="panel-select"
+                name="kind"
+                defaultValue="inmobiliaria"
+              >
+                {KIND_OPTIONS.map((k) => (
+                  <option key={k.value} value={k.value}>
+                    {svAgencyProfile.kindLabel[k.value]}
+                  </option>
+                ))}
+              </select>
+            </label>
             <div className="panel-form__field panel-form__field--action">
               <button className="panel-btn panel-btn--primary" type="submit">
                 {svPanel.createAgency}
@@ -125,6 +151,7 @@ export default async function AdminAgenciesPage({
                 <tr>
                   <th>Nombre</th>
                   <th>Plan</th>
+                  <th>Typ</th>
                   <th>Contacto</th>
                   <th>Estado</th>
                   <th></th>
@@ -135,6 +162,25 @@ export default async function AdminAgenciesPage({
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
                     <td>{planLabel(a.plan)}</td>
+                    <td>
+                      <form action={updateAgencyKindAction}>
+                        <input type="hidden" name="agencyId" value={a.id} />
+                        <select
+                          className="panel-select"
+                          name="kind"
+                          defaultValue={a.kind}
+                        >
+                          {KIND_OPTIONS.map((k) => (
+                            <option key={k.value} value={k.value}>
+                              {svAgencyProfile.kindLabel[k.value]}
+                            </option>
+                          ))}
+                        </select>
+                        <button className="panel-btn" type="submit">
+                          {svPanel.profileSave}
+                        </button>
+                      </form>
+                    </td>
                     <td>{a.phone ?? a.email ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />

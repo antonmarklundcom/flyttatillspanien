@@ -120,6 +120,9 @@ export default async function PublishPage({
         energyRating: row.energyRating ?? "",
         legalStatus: row.legalStatus,
         chargesStatus: row.chargesStatus,
+        ibiAnnualEur: row.ibiAnnualEur != null ? String(row.ibiAnnualEur) : "",
+        communityMonthlyEur:
+          row.communityMonthlyEur != null ? String(row.communityMonthlyEur) : "",
         touristLicence: row.touristLicence ?? "",
       };
       // Same owner scope the upload action uses, so a resumed draft shows the

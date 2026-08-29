@@ -17,6 +17,11 @@ import { createPanelAgency, type AgencyRow } from "@/lib/panel-queries";
 const ROUTE = "/admin/inmobiliarias";
 
 const PLANS: readonly AgencyRow["plan"][] = ["free", "premium", "partner"];
+const KINDS: readonly AgencyRow["kind"][] = [
+  "inmobiliaria",
+  "relocation",
+  "developer",
+];
 
 function str(v: FormDataEntryValue | null): string {
   return String(v ?? "").trim();
@@ -27,6 +32,14 @@ function toPlan(v: FormDataEntryValue | null): AgencyRow["plan"] {
   return (PLANS as readonly string[]).includes(s)
     ? (s as AgencyRow["plan"])
     : "free";
+}
+
+/** Defaults to `inmobiliaria`, the overwhelmingly common case. */
+function toKind(v: FormDataEntryValue | null): AgencyRow["kind"] {
+  const s = str(v);
+  return (KINDS as readonly string[]).includes(s)
+    ? (s as AgencyRow["kind"])
+    : "inmobiliaria";
 }
 
 /** Bounce back to the page with a flash code in the query string. */
@@ -49,6 +62,7 @@ export async function createAgencyAction(formData: FormData): Promise<void> {
     email: str(formData.get("email")).toLowerCase() || null,
     phone: str(formData.get("phone")) || null,
     plan: toPlan(formData.get("plan")),
+    kind: toKind(formData.get("kind")),
   });
 
   done(id ? "agency_created" : "invalid");

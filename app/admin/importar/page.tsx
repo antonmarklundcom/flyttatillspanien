@@ -27,7 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function formatDate(d: Date): string {
-  return new Date(d).toLocaleDateString("es-PY", {
+  return new Date(d).toLocaleDateString("sv-SE", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",

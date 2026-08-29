@@ -62,6 +62,8 @@ export interface DraftPayload {
   energyRating?: string;
   legalStatus?: string;
   chargesStatus?: string;
+  ibiAnnualEur?: number | null;
+  communityMonthlyEur?: number | null;
   touristLicence?: string;
 }
 
@@ -165,6 +167,12 @@ export async function saveDraftAction(
         chargesStatus:
           enumOrNull<ChargesStatus>(payload.chargesStatus, CHARGES_STATUSES) ??
           "desconocido",
+      }),
+      ...("ibiAnnualEur" in payload && {
+        ibiAnnualEur: posNumOrNull(payload.ibiAnnualEur),
+      }),
+      ...("communityMonthlyEur" in payload && {
+        communityMonthlyEur: posNumOrNull(payload.communityMonthlyEur),
       }),
       ...("touristLicence" in payload && {
         touristLicence: String(payload.touristLicence ?? "").trim() || null,

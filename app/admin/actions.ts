@@ -6,14 +6,22 @@
  * before any write. Mutations revalidate the affected panel routes.
  */
 import { revalidatePath } from "next/cache";
-import { revalidateListings } from "@/lib/cache";
+import { revalidateDirectory, revalidateListings } from "@/lib/cache";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import {
   approveListing,
   rejectListing,
+  setAgencyKind,
   setAgencyVerified,
   setAgentVerified,
+  type AgencyRow,
 } from "@/lib/panel-queries";
+
+const AGENCY_KINDS: readonly AgencyRow["kind"][] = [
+  "inmobiliaria",
+  "relocation",
+  "developer",
+];
 
 function toId(v: FormDataEntryValue | null): number {
   const n = Number(v);
@@ -46,6 +54,22 @@ export async function toggleAgencyVerifiedAction(formData: FormData): Promise<vo
   const verified = formData.get("verified") === "1";
   if (id) await setAgencyVerified(id, verified);
   revalidatePath("/admin/inmobiliarias");
+}
+
+export async function updateAgencyKindAction(formData: FormData): Promise<void> {
+  await requireSuperAdmin();
+  const id = toId(formData.get("agencyId"));
+  const kind = String(formData.get("kind") ?? "");
+  if (id && (AGENCY_KINDS as readonly string[]).includes(kind)) {
+    await setAgencyKind(id, kind as AgencyRow["kind"]);
+  }
+  revalidatePath("/admin/inmobiliarias");
+  // The kind decides the "represents the buyer" label on every public
+  // surface that renders this agency's name — the directory, the profile
+  // page, and every listing's seller card. Both tags, belt and suspenders:
+  // this is a rare admin write, not a hot path.
+  revalidateDirectory();
+  revalidateListings();
 }
 
 export async function toggleAgentVerifiedAction(formData: FormData): Promise<void> {
