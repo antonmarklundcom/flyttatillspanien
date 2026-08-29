@@ -183,6 +183,26 @@ Format: `- [phase found] area — what, and what would fix it.`
   cleanest next step is reproducing it once against a freshly
   `docker compose up`'d database before touching `jobs.ts`.
 
+  **[5] Update: does not reproduce against a fresh database.** Phase 5 ran
+  `docker compose up -d` from nothing (a brand-new named volume, never
+  reused from an earlier phase) and `db:migrate` on it, then
+  `DATABASE_URL=<local> npm run verify:import` — `rollback restored the old
+  prices` passed cleanly, three rows all back at 285000, no extra
+  generations. This does not prove `jobs.ts` is bug-free (one clean run
+  isn't a proof of absence), but it does support the "stale fixture from a
+  reused local database" theory over a real rollback defect strongly enough
+  that the next person hitting this should try a fresh database FIRST,
+  before spending a core-logic session tracing `rollbackImportJob()`.
+
+- [5] `locations.guide_content_sv` is seeded (`npm run seed:guides`, all 41
+  municipios) but **no page template reads the column yet**. Content is a
+  short, factual, general-geography note (comunidad/provincia/coast region,
+  and a well-known landmark where genuinely common knowledge) — no
+  invented statistics, deliberately, since real listing counts/medians
+  don't exist yet. Wiring a category-page reader is future scope; the
+  seed script's own header note explains what a later, data-backed
+  upgrade to the copy would look like.
+
 - [4] `agencies.plan`'s enum is `free | premium | partner`; three pre-existing
   surfaces spelled the middle tier `"destacado"` instead, so selecting or
   reading that plan silently fell back to the wrong thing: the admin
