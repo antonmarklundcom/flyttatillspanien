@@ -15,13 +15,13 @@ import { CtaBand, PageHero, Section } from "@/components/MarketingUI";
 // Editorial content changes when the founder publishes, not on a schedule.
 export const dynamic = "force-dynamic";
 
-const TITLE = "Guías y notas";
-const DESCRIPTION = (brand: string) => `Guías prácticas para comprar, vender y alquilar en Paraguay, y análisis del mercado inmobiliario — escritas por el equipo de ${brand}.`;
+const TITLE = "Guider och artiklar";
+const DESCRIPTION = (brand: string) => `Praktiska guider för att köpa, sälja och hyra i Spanien, och analyser av bostadsmarknaden — skrivna av teamet på ${brand}.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} sobre el mercado inmobiliario paraguayo`,
+    title: `${TITLE} om den spanska bostadsmarknaden`,
     description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/guias` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 function formatDate(d: Date | null): string | null {
   if (!d) return null;
-  return new Date(d).toLocaleDateString("es-PY", {
+  return new Date(d).toLocaleDateString("sv-SE", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -71,7 +71,7 @@ function PostTile({ post, featured }: { post: PostCard; featured?: boolean }) {
         <p className="post-card__excerpt">{post.excerpt}</p>
         <div className="post-card__meta">
           {date && <span>{date}</span>}
-          <span>{post.readingMinutes} min de lectura</span>
+          <span>{post.readingMinutes} min lästid</span>
         </div>
       </div>
     </Link>
@@ -91,7 +91,7 @@ export default async function GuiasPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/guias" },
           ]),
           ...(posts.length > 0
@@ -109,24 +109,24 @@ export default async function GuiasPage() {
       />
 
       <PageHero
-        kicker="Guías"
-        title="Comprar, vender y alquilar en Paraguay, explicado"
-        subtitle="Lo que conviene saber antes de firmar: documentos, financiamiento, precios de referencia y los errores que salen caros."
+        kicker="Guider"
+        title="Köpa, sälja och hyra i Spanien, förklarat"
+        subtitle="Det som är bra att veta innan du skriver under: dokument, skatter, referenspriser och misstagen som blir dyra."
       />
 
       <Section>
         {posts.length === 0 ? (
           <div className="mk-empty">
             <p>
-              Todavía no publicamos ninguna guía. Mientras tanto, estas páginas
-              responden lo más consultado:
+              Vi har inte publicerat någon guide än. Under tiden svarar de
+              här sidorna på det vanligaste:
             </p>
             <div className="mk-cta__actions" style={{ marginTop: 16 }}>
               <Link className="mk-btn mk-btn--outline" href="/como-funciona">
-                Cómo funciona
+                Så fungerar det
               </Link>
               <Link className="mk-btn mk-btn--outline" href="/preguntas-frecuentes">
-                Preguntas frecuentes
+                Vanliga frågor
               </Link>
             </div>
           </div>
@@ -145,10 +145,10 @@ export default async function GuiasPage() {
       </Section>
 
       <CtaBand
-        title="¿Ya sabés cuánto vale tu propiedad?"
-        text="Tasación online gratuita, con los precios publicados de tu zona."
-        primary={{ label: "Tasar gratis", href: "/tasacion" }}
-        secondary={{ label: "Ver datos del mercado", href: "/datos" }}
+        title="Vet du redan vad din bostad är värd?"
+        text="Gratis värdering online, med de publicerade priserna i ditt område."
+        primary={{ label: "Värdera gratis", href: "/tasacion" }}
+        secondary={{ label: "Se marknadsdata", href: "/datos" }}
       />
     </main>
   );

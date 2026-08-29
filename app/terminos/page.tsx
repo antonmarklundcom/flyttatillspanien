@@ -8,14 +8,14 @@ import { PageHero, Prose, Section } from "@/components/MarketingUI";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Términos y condiciones";
-const LAST_UPDATED = "julio de 2026";
+const TITLE = "Användarvillkor";
+const LAST_UPDATED = "juli 2026";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
     title: `${TITLE}`,
-    description: `Condiciones de uso del portal ${brand}.`,
+    description: `Villkor för att använda portalen ${brand}.`,
     alternates: { canonical: `${await siteOrigin()}/terminos` },
     robots: { index: true, follow: true },
   };
@@ -24,11 +24,12 @@ export async function generateMetadata(): Promise<Metadata> {
 /**
  * Baseline terms covering how the portal actually behaves: intermediation
  * disclaimer, user-generated listing content, the estimative nature of the
- * cuota/median/valuation figures, and takedown.
+ * median/valuation/acquisition-cost figures, and takedown.
  *
  * TODO (founder, before launch): replace the operator paragraph with the real
- * razón social and RUC once the company is constituted, and have a Paraguayan
- * lawyer review this text — it is a reasonable starting point, not legal advice.
+ * company name and organisationsnummer once the company is constituted, and
+ * have a lawyer review this text — it is a reasonable starting point, not
+ * legal advice.
  */
 export default async function TerminosPage() {
   const brand = await brandName();
@@ -39,7 +40,7 @@ export default async function TerminosPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/terminos" },
           ]),
         ]}
@@ -47,142 +48,142 @@ export default async function TerminosPage() {
 
       <PageHero
         title={TITLE}
-        subtitle={`Última actualización: ${LAST_UPDATED}`}
+        subtitle={`Senast uppdaterad: ${LAST_UPDATED}`}
       />
 
       <Section width="narrow">
         <Prose>
-          <h2>1. Quiénes somos y qué es este servicio</h2>
+          <h2>1. Vilka vi är och vad tjänsten är</h2>
           <p>
-            {brand} es un portal de avisos inmobiliarios que opera en la
-            República del Paraguay. El portal pone en contacto a quienes ofrecen
-            inmuebles en venta o alquiler con quienes los buscan. No somos una
-            inmobiliaria, no somos corredores ni representamos a ninguna de las
-            partes, y no intervenimos en la negociación, en la seña, en el pago
-            ni en la firma de ningún contrato.
+            {brand} är en bostadsportal som förmedlar kontakt mellan personer
+            som säljer eller hyr ut bostäder i Spanien och personer i Sverige
+            som söker en bostad där. Vi är ingen mäklarbyrå, vi är inga
+            fastighetsmäklare och vi representerar ingen av parterna. Vi
+            deltar inte i förhandlingen, i handpenningen, i betalningen eller
+            i undertecknandet av något avtal.
           </p>
 
-          <h2>2. Aceptación</h2>
+          <h2>2. Godkännande</h2>
           <p>
-            Al utilizar el sitio aceptás estos términos. Si no estás de acuerdo
-            con alguno de ellos, no utilices el portal. Podemos actualizar estos
-            términos; la versión vigente es siempre la publicada en esta página,
-            con su fecha de actualización.
+            Genom att använda webbplatsen godkänner du dessa villkor. Om du
+            inte accepterar dem ska du inte använda portalen. Vi kan
+            uppdatera villkoren; det som gäller är alltid den version som är
+            publicerad på den här sidan, med sitt uppdateringsdatum.
           </p>
 
-          <h2>3. Uso del portal</h2>
+          <h2>3. Att använda portalen</h2>
           <p>
-            Buscar propiedades y contactar a quienes publican es gratuito y no
-            requiere registro. Para publicar avisos sí es necesario crear una
-            cuenta. Sos responsable de la veracidad de los datos de tu cuenta y
-            de la actividad realizada desde ella, incluido el resguardo de tus
-            credenciales.
+            Att söka bostäder och kontakta den som annonserar är gratis och
+            kräver inget konto. För att annonsera en bostad krävs ett konto.
+            Du ansvarar för att uppgifterna på ditt konto stämmer och för
+            aktiviteten som sker från det, inklusive att skydda dina
+            inloggningsuppgifter.
           </p>
-          <p>Está prohibido, entre otras conductas:</p>
+          <p>Det är förbjudet att bland annat:</p>
           <ul>
             <li>
-              publicar inmuebles sobre los que no tenés derecho de oferta o
-              autorización del titular;
+              annonsera bostäder du inte har rätt att erbjuda eller
+              ägarens tillstånd att publicera;
             </li>
             <li>
-              publicar información falsa, engañosa o duplicada, o fotografías
-              que no correspondan al inmueble ofrecido;
+              publicera falsk, vilseledande eller duplicerad information,
+              eller bilder som inte motsvarar den annonserade bostaden;
             </li>
             <li>
-              publicar contenido discriminatorio, ofensivo o contrario a la
-              legislación paraguaya vigente;
+              publicera diskriminerande, kränkande innehåll eller innehåll
+              som strider mot gällande lag;
             </li>
             <li>
-              extraer datos del sitio de forma automatizada (scraping),
-              revenderlos o utilizarlos para contactar masivamente a usuarios;
+              samla in data från sajten automatiserat (scraping), sälja
+              vidare den eller använda den för att massutskicka kontakt till
+              andra användare;
             </li>
             <li>
-              intentar vulnerar la seguridad del sitio o interferir con su
-              funcionamiento.
+              försöka kringgå sajtens säkerhet eller störa dess funktion.
             </li>
           </ul>
 
-          <h2>4. Contenido publicado por los usuarios</h2>
+          <h2>4. Innehåll som användare publicerar</h2>
           <p>
-            Los avisos, fotografías, precios y descripciones son cargados por
-            los propios usuarios, inmobiliarias, agentes y desarrolladoras.
-            Ellos son los únicos responsables de su contenido, de su exactitud y
-            de contar con los derechos necesarios sobre las imágenes que suben.
-            Al publicar, nos otorgás una licencia no exclusiva y gratuita para
-            mostrar, redimensionar y difundir ese contenido dentro del portal y
-            en la promoción del portal.
+            Annonser, bilder, priser och beskrivningar läggs in av
+            användarna själva — ägare, mäklarbyråer, agenter och byggherrar.
+            De ansvarar ensamma för innehållet, för att det stämmer och för
+            att de har rätt att använda de bilder de laddar upp. Genom att
+            publicera ger du oss en icke-exklusiv, kostnadsfri licens att
+            visa, ändra storlek på och sprida innehållet inom portalen och i
+            marknadsföringen av portalen.
           </p>
           <p>
-            No verificamos de forma independiente la titularidad de los
-            inmuebles, la exactitud de los precios ni las condiciones de las
-            operaciones ofrecidas. Podemos moderar, editar el formato,
-            despublicar o eliminar avisos que incumplan estos términos, estén
-            desactualizados o resulten duplicados, sin que ello genere derecho a
-            indemnización.
-          </p>
-
-          <h2>5. Estimaciones, precios de referencia y cuotas</h2>
-          <p>
-            El portal publica valores estimados: medianas de precio por zona,
-            cuotas mensuales aproximadas y rangos de tasación. Se calculan
-            automáticamente a partir de los avisos publicados y de las
-            condiciones de referencia de programas de financiamiento vigentes.
-          </p>
-          <p>
-            Estas cifras son orientativas. No constituyen una tasación oficial,
-            una oferta de crédito, una recomendación de inversión ni
-            asesoramiento financiero, y pueden diferir de manera significativa
-            de los valores reales de una operación concreta. No otorgamos
-            créditos ni intermediamos en su otorgamiento.
+            Vi kontrollerar inte självständigt äganderätten till bostäderna,
+            att priserna stämmer eller villkoren i de erbjudanden som
+            publiceras. Vi kan moderera, ändra formatet på, avpublicera eller
+            ta bort annonser som bryter mot dessa villkor, är föråldrade
+            eller är dubbletter, utan att det ger rätt till ersättning.
           </p>
 
-          <h2>6. Responsabilidad</h2>
+          <h2>5. Uppskattningar, referenspriser och kostnadsberäkningar</h2>
           <p>
-            El portal se ofrece «tal como está». Hacemos un esfuerzo razonable
-            por mantenerlo disponible y actualizado, pero no garantizamos la
-            continuidad del servicio ni la ausencia de errores. En la máxima
-            medida permitida por la ley, no respondemos por daños derivados de
-            operaciones acordadas entre usuarios, de la información publicada
-            por terceros ni de decisiones tomadas en base a las estimaciones del
-            sitio.
+            Portalen publicerar uppskattade värden: medianpriser per område,
+            en ungefärlig kronsumma vid sidan av eurobeloppet, och en
+            uppskattning av vad ett köp kostar utöver priset (skatter,
+            notarie, lagfart och juristarvode). Dessa beräknas automatiskt
+            utifrån publicerade annonser och de regionala skattesatser vi
+            har lagt in.
           </p>
           <p>
-            Antes de entregar dinero o firmar documentos, verificá la
-            documentación del inmueble y la identidad de la contraparte con un
-            escribano público.
-          </p>
-
-          <h2>7. Propiedad intelectual</h2>
-          <p>
-            El nombre, el logotipo, el diseño, el software y los contenidos
-            elaborados por el portal —incluidos los informes de precios de
-            referencia— nos pertenecen y no pueden reproducirse sin
-            autorización, salvo la cita con atribución y enlace a la fuente.
+            Siffrorna är vägledande. De utgör ingen officiell värdering,
+            inget lånelöfte, ingen investeringsrekommendation och ingen
+            finansiell rådgivning, och kan avvika betydligt från de
+            verkliga kostnaderna i en specifik affär. Vi beviljar inga lån
+            och förmedlar inga lån.
           </p>
 
-          <h2>8. Planes y pagos</h2>
+          <h2>6. Ansvar</h2>
           <p>
-            La publicación de avisos es gratuita. Los servicios de visibilidad
-            preferente son opcionales y se contratan por separado, con las
-            condiciones, la vigencia y el precio informados al momento de la
-            contratación. No cobramos comisión sobre las operaciones cerradas
-            entre las partes.
+            Portalen tillhandahålls i befintligt skick. Vi gör en rimlig
+            ansträngning för att hålla den tillgänglig och uppdaterad, men vi
+            garanterar varken att tjänsten är kontinuerligt tillgänglig eller
+            felfri. I den utsträckning lagen tillåter ansvarar vi inte för
+            skador som uppstår ur affärer som ingåtts mellan användare, ur
+            information som publicerats av tredje part eller ur beslut som
+            fattats utifrån portalens uppskattningar.
+          </p>
+          <p>
+            Innan du betalar eller skriver under några dokument bör du låta
+            en jurist eller notarie i Spanien kontrollera bostadens
+            dokumentation och motpartens identitet.
           </p>
 
-          <h2>9. Denuncias y bajas de contenido</h2>
+          <h2>7. Immateriella rättigheter</h2>
           <p>
-            Si un aviso infringe tus derechos, contiene datos falsos o utiliza
-            fotografías tuyas sin autorización, escribinos desde la{" "}
-            <Link href="/contacto">página de contacto</Link> indicando el enlace
-            del aviso y el motivo. Revisamos los reclamos y damos de baja el
-            contenido cuando corresponde.
+            Namnet, logotypen, designen, programvaran och det innehåll
+            portalen tagit fram — inklusive rapporterna om referenspriser —
+            tillhör oss och får inte återges utan tillstånd, förutom citat
+            med källhänvisning och länk till källan.
           </p>
 
-          <h2>10. Ley aplicable</h2>
+          <h2>8. Planer och betalning</h2>
           <p>
-            Estos términos se rigen por las leyes de la República del Paraguay.
-            Cualquier controversia se someterá a los tribunales ordinarios de la
-            ciudad de Asunción.
+            Att annonsera bostäder är gratis. Tjänster för prioriterad
+            synlighet är valfria och tecknas separat, med de villkor,
+            löptid och pris som anges vid avtalstillfället. Vi tar ingen
+            provision på affärer som sluts mellan parterna.
+          </p>
+
+          <h2>9. Anmälan och borttagning av innehåll</h2>
+          <p>
+            Om en annons kränker dina rättigheter, innehåller falska
+            uppgifter eller använder dina bilder utan tillstånd, hör av dig
+            via <Link href="/contacto">kontaktsidan</Link> med länk till
+            annonsen och vad det gäller. Vi granskar anmälningar och tar
+            bort innehåll när det är befogat.
+          </p>
+
+          <h2>10. Tillämplig lag</h2>
+          <p>
+            Dessa villkor för användning av portalen styrs av svensk lag.
+            En eventuell tvist om själva fastighetsköpet i Spanien regleras
+            i stället av spansk rätt och avtalet mellan köpare och säljare.
           </p>
         </Prose>
       </Section>

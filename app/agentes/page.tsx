@@ -11,13 +11,13 @@ import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Agentes inmobiliarios";
-const DESCRIPTION = (brand: string) => `Agentes inmobiliarios que publican en ${brand}: su cartera activa, las zonas donde trabajan y su contacto directo por WhatsApp.`;
+const TITLE = "Fastighetsmäklare";
+const DESCRIPTION = (brand: string) => `Mäklare som annonserar på ${brand}: deras aktiva objektlista, vilka områden de jobbar i och deras direktkontakt.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} en Paraguay`,
+    title: `${TITLE} för bostäder i Spanien`,
     description: DESCRIPTION(brand),
     alternates: { canonical: `${await siteOrigin()}/agentes` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION(brand) },
@@ -35,7 +35,7 @@ export default async function AgentesPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/agentes" },
           ]),
           ...(agents.length > 0
@@ -50,17 +50,17 @@ export default async function AgentesPage() {
       />
 
       <PageHero
-        kicker="Empresas"
-        title="Agentes inmobiliarios en Paraguay"
-        subtitle="Trabajar con un agente que conoce la zona acorta la búsqueda. Cada perfil muestra su cartera activa y su contacto directo."
+        kicker="Företag"
+        title="Fastighetsmäklare för bostäder i Spanien"
+        subtitle="Att jobba med en mäklare som kan området kortar sökningen. Varje profil visar den aktiva objektlistan och direktkontakten."
       />
 
       <Section>
         {agents.length === 0 ? (
           <div className="mk-empty">
-            <p>Todavía no hay agentes con propiedades publicadas.</p>
+            <p>Det finns ännu inga mäklare med publicerade bostäder.</p>
             <Link className="mk-btn mk-btn--accent" href="/para-inmobiliarias">
-              Publicar como agente
+              Annonsera som mäklare
             </Link>
           </div>
         ) : (
@@ -90,13 +90,13 @@ export default async function AgentesPage() {
                     <div className="mk-agency__name">
                       {a.name}
                       {a.isVerified && (
-                        <span className="mk-agency__verified" title="Verificado">
+                        <span className="mk-agency__verified" title="Verifierad">
                           ✓
                         </span>
                       )}
                     </div>
                     <div className="mk-agency__cities">
-                      {a.agencyName ?? "Agente independiente"}
+                      {a.agencyName ?? "Oberoende mäklare"}
                     </div>
                   </div>
                 </div>
@@ -113,12 +113,12 @@ export default async function AgentesPage() {
 
                 <div className="mk-agency__meta">
                   <span>
-                    {a.listingCount.toLocaleString("es-PY")}{" "}
-                    {a.listingCount === 1 ? "propiedad" : "propiedades"}
+                    {a.listingCount.toLocaleString("sv-SE")}{" "}
+                    {a.listingCount === 1 ? "bostad" : "bostäder"}
                   </span>
                 </div>
 
-                <span className="mk-agency__cta">Ver cartera →</span>
+                <span className="mk-agency__cta">Se objektlistan →</span>
               </Link>
             ))}
           </div>
@@ -128,18 +128,18 @@ export default async function AgentesPage() {
       {agents.some((a) => a.agencySlug) && (
         <Section tone="muted" width="narrow">
           <p className="mk-note">
-            ¿Buscás la oficina y no la persona? Mirá el{" "}
-            <Link href="/inmobiliarias">directorio de inmobiliarias</Link>, con
-            la cartera completa de cada una.
+            Letar du efter kontoret snarare än personen? Se{" "}
+            <Link href="/inmobiliarias">mäklarkatalogen</Link>, med hela
+            objektlistan för varje byrå.
           </p>
         </Section>
       )}
 
       <CtaBand
-        title="¿Sos agente inmobiliario?"
-        text="Creá tu perfil, publicá tu cartera y recibí las consultas directo en tu WhatsApp. Sin costo."
-        primary={{ label: "Crear mi perfil", href: "/para-inmobiliarias" }}
-        secondary={{ label: "Ver planes", href: "/planes" }}
+        title="Är du fastighetsmäklare?"
+        text="Skapa din profil, annonsera din objektlista och ta emot förfrågningarna direkt. Utan kostnad."
+        primary={{ label: "Skapa min profil", href: "/para-inmobiliarias" }}
+        secondary={{ label: "Se planer", href: "/planes" }}
       />
     </main>
   );

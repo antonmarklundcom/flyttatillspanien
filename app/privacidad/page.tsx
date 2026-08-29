@@ -9,14 +9,14 @@ import { CONTACT_EMAIL } from "@/config/contact";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Política de privacidad";
-const LAST_UPDATED = "julio de 2026";
+const TITLE = "Integritetspolicy";
+const LAST_UPDATED = "juli 2026";
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
     title: `${TITLE}`,
-    description: `Cómo ${brand} recolecta, usa y protege tus datos personales.`,
+    description: `Hur ${brand} samlar in, använder och skyddar dina personuppgifter.`,
     alternates: { canonical: `${await siteOrigin()}/privacidad` },
   };
 }
@@ -29,8 +29,9 @@ export async function generateMetadata(): Promise<Metadata> {
  * policy that describes a different product than the one shipped is worse
  * than none.
  *
- * TODO (founder, before launch): add the razón social, RUC and domicilio of
- * the responsible entity, and confirm the text with a Paraguayan lawyer.
+ * TODO (founder, before launch): add the legal company name,
+ * organisationsnummer and registered address of the responsible entity, and
+ * confirm the text against GDPR with a lawyer.
  */
 export default async function PrivacidadPage() {
   const origin = await siteOrigin();
@@ -40,7 +41,7 @@ export default async function PrivacidadPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/privacidad" },
           ]),
         ]}
@@ -48,152 +49,151 @@ export default async function PrivacidadPage() {
 
       <PageHero
         title={TITLE}
-        subtitle={`Última actualización: ${LAST_UPDATED}`}
+        subtitle={`Senast uppdaterad: ${LAST_UPDATED}`}
       />
 
       <Section width="narrow">
         <Prose>
-          <h2>1. Qué datos recolectamos</h2>
-          <p>Solo los que hacen falta para que el portal funcione:</p>
+          <h2>1. Vilka uppgifter vi samlar in</h2>
+          <p>Bara det som behövs för att portalen ska fungera:</p>
           <ul>
             <li>
-              <strong>Datos de contacto que nos das</strong>: nombre, número de
-              WhatsApp, correo electrónico y el mensaje que escribís cuando
-              consultás por una propiedad, pedís una tasación o solicitás una
-              cuenta profesional.
+              <strong>Kontaktuppgifter du lämnar</strong>: namn, telefonnummer,
+              e-postadress och det meddelande du skriver när du frågar om en
+              bostad, ber om en värdering eller ansöker om ett
+              professionellt konto.
             </li>
             <li>
-              <strong>Datos de tu cuenta</strong>, si publicás: nombre, teléfono,
-              correo, y los datos de la inmobiliaria o del agente cuando
-              corresponde.
+              <strong>Kontouppgifter</strong>, om du annonserar: namn, telefon,
+              e-post, och uppgifter om mäklarbyrån eller agenten där det är
+              relevant.
             </li>
             <li>
-              <strong>Contenido de tus avisos</strong>: fotos, ubicación, precio
-              y descripción de los inmuebles que publicás.
+              <strong>Innehållet i dina annonser</strong>: bilder, plats,
+              pris och beskrivning av de bostäder du publicerar.
             </li>
             <li>
-              <strong>Datos técnicos básicos</strong>: dirección IP, tipo de
-              navegador y páginas visitadas, en registros del servidor que
-              usamos para seguridad y diagnóstico.
+              <strong>Grundläggande tekniska uppgifter</strong>: IP-adress,
+              webbläsartyp och besökta sidor, i serverloggar vi använder för
+              säkerhet och felsökning.
             </li>
             <li>
-              <strong>Parámetros de campaña</strong> (utm_source y similares)
-              cuando llegás desde un anuncio o un enlace de campaña, para saber
-              qué canal funciona.
+              <strong>Kampanjparametrar</strong> (utm_source och liknande)
+              när du kommer från en annons eller en kampanjlänk, för att veta
+              vilken kanal som fungerar.
             </li>
           </ul>
           <p>
-            No pedimos ni almacenamos datos de tarjetas de crédito, número de
-            cédula ni información financiera para usar el portal.
+            Vi begär eller lagrar inga kortuppgifter, personnummer eller
+            finansiell information för att du ska kunna använda portalen.
           </p>
 
-          <h2>2. Para qué los usamos</h2>
+          <h2>2. Vad vi använder uppgifterna till</h2>
           <ul>
             <li>
-              Poner en contacto tu consulta con quien publicó la propiedad
-              (tu nombre, tu WhatsApp y tu mensaje se comparten con esa persona
-              o inmobiliaria: es el objeto mismo de la consulta).
+              Koppla din förfrågan till den som publicerat bostaden (ditt
+              namn, din kontaktväg och ditt meddelande delas med den
+              personen eller mäklarbyrån: det är själva syftet med
+              förfrågan).
             </li>
-            <li>Responder tus pedidos de tasación, publicación o soporte.</li>
-            <li>Operar tu cuenta y mostrar tus avisos.</li>
+            <li>Besvara förfrågningar om värdering, annonsering eller support.</li>
+            <li>Sköta ditt konto och visa dina annonser.</li>
             <li>
-              Mantener la seguridad del sitio y prevenir abusos o publicaciones
-              fraudulentas.
+              Hålla webbplatsen säker och förebygga missbruk eller bedrägliga
+              annonser.
             </li>
             <li>
-              Elaborar estadísticas agregadas del mercado —medianas de precio
-              por zona, por ejemplo— que no identifican a ninguna persona.
+              Ta fram sammanställd marknadsstatistik — till exempel
+              medianpriser per område — som inte identifierar någon
+              enskild person.
             </li>
           </ul>
           <p>
-            No vendemos tus datos personales ni los cedemos a terceros para su
-            publicidad.
+            Vi säljer inte dina personuppgifter och lämnar inte ut dem till
+            tredje part för deras marknadsföring.
           </p>
 
-          <h2>3. Con quién los compartimos</h2>
+          <h2>3. Vem vi delar uppgifterna med</h2>
           <ul>
             <li>
-              <strong>Con quien publicó la propiedad</strong>, cuando enviás una
-              consulta sobre su aviso.
+              <strong>Med den som publicerat bostaden</strong>, när du skickar
+              en förfrågan om deras annons.
             </li>
             <li>
-              <strong>Con nuestros proveedores de tecnología</strong>, que
-              procesan datos por cuenta nuestra y solo para prestarnos el
-              servicio: el proveedor de hosting y base de datos, el sistema de
-              gestión de contactos (CRM) donde se registran las consultas
-              recibidas, y el servicio de almacenamiento de las imágenes de los
-              avisos.
+              <strong>Med våra teknikleverantörer</strong>, som behandlar
+              uppgifter för vår räkning och bara för att leverera tjänsten:
+              leverantören av hosting och databas, systemet för
+              kundhantering (CRM) där inkomna förfrågningar registreras, och
+              lagringstjänsten för annonsernas bilder.
             </li>
             <li>
-              <strong>Con autoridades competentes</strong>, cuando exista una
-              obligación legal o una orden judicial.
+              <strong>Med behöriga myndigheter</strong>, när det finns en
+              rättslig skyldighet eller ett domstolsbeslut.
             </li>
           </ul>
 
-          <h2>4. Cookies y almacenamiento en tu navegador</h2>
+          <h2>4. Cookies och lagring i din webbläsare</h2>
           <p>
-            Usamos una cookie técnica de sesión para mantenerte identificado
-            mientras estás logueado en el panel de publicación. Es necesaria
-            para el funcionamiento del sitio y se elimina al cerrar sesión o al
-            expirar.
+            Vi använder en teknisk sessionscookie för att hålla dig inloggad
+            i annonseringspanelen. Den är nödvändig för att sajten ska
+            fungera och tas bort när du loggar ut eller när sessionen går
+            ut.
           </p>
           <p>
-            La lista de «propiedades vistas recientemente» se guarda únicamente
-            en el almacenamiento local de tu navegador (localStorage): no se
-            envía a nuestros servidores y podés borrarla limpiando los datos del
-            sitio desde tu navegador.
+            Listan över &quot;nyligen visade bostäder&quot; sparas enbart i
+            din webbläsares lokala lagring (localStorage): den skickas inte
+            till våra servrar och du kan rensa den genom att rensa
+            webbplatsens data i din webbläsare.
           </p>
           <p>
-            Los mapas del portal cargan imágenes de mosaicos desde
-            OpenStreetMap; al mostrarse, tu navegador se conecta a ese servicio,
-            que puede registrar la solicitud según su propia política.
-          </p>
-
-          <h2>5. Cuánto tiempo los conservamos</h2>
-          <p>
-            Las consultas y los datos de cuenta se conservan mientras la cuenta
-            esté activa y por el plazo necesario para atender reclamos o cumplir
-            obligaciones legales. Después se eliminan o se anonimizan. Las
-            estadísticas agregadas del mercado, al no identificar personas, se
-            conservan de forma indefinida.
+            Portalens kartor laddar karttiles från OpenStreetMap. När de
+            visas kopplar din webbläsare upp mot den tjänsten, som kan
+            registrera anropet enligt sin egen policy.
           </p>
 
-          <h2>6. Tus derechos</h2>
+          <h2>5. Hur länge vi sparar uppgifterna</h2>
           <p>
-            Podés pedirnos en cualquier momento acceder a tus datos,
-            rectificarlos si están desactualizados o incorrectos, o solicitar su
-            eliminación y la baja de tu cuenta. Escribinos desde la{" "}
-            <Link href="/contacto">página de contacto</Link>
-            {CONTACT_EMAIL ? <> o a {CONTACT_EMAIL}</> : null}. Respondemos
-            dentro de los plazos que establece
-            la normativa aplicable en Paraguay, incluida la Ley N.º 6534/2020 de
-            protección de datos personales crediticios en lo que resulte
-            pertinente.
-          </p>
-          <p>
-            Tené en cuenta que si ya enviaste una consulta a una inmobiliaria,
-            esos datos también quedaron en su poder: la baja en ese caso se pide
-            directamente a ella.
+            Förfrågningar och kontouppgifter sparas så länge kontot är
+            aktivt och den tid som behövs för att hantera ärenden eller
+            uppfylla rättsliga skyldigheter. Därefter raderas eller
+            anonymiseras de. Den sammanställda marknadsstatistiken, som inte
+            identifierar någon person, sparas tills vidare.
           </p>
 
-          <h2>7. Seguridad</h2>
+          <h2>6. Dina rättigheter</h2>
           <p>
-            El sitio se sirve por conexión cifrada (HTTPS), las contraseñas se
-            almacenan cifradas y el acceso a la base de datos está restringido.
-            Ningún sistema es infalible: si detectamos un incidente que afecte
-            tus datos, lo comunicaremos por los medios de contacto que tengamos.
+            Du kan när som helst begära att få tillgång till dina
+            uppgifter, rätta dem om de är föråldrade eller felaktiga, eller
+            begära att de raderas och att ditt konto avslutas. Hör av dig
+            via <Link href="/contacto">kontaktsidan</Link>
+            {CONTACT_EMAIL ? <> eller till {CONTACT_EMAIL}</> : null}. Vi
+            svarar inom de tidsramar som gäller enligt EU:s
+            dataskyddsförordning (GDPR).
+          </p>
+          <p>
+            Tänk på att om du redan skickat en förfrågan till en mäklarbyrå
+            finns dina uppgifter också kvar hos dem: den raderingen begär du
+            direkt hos dem.
           </p>
 
-          <h2>8. Menores de edad</h2>
+          <h2>7. Säkerhet</h2>
           <p>
-            El portal está dirigido a personas mayores de 18 años. No
-            recolectamos deliberadamente datos de menores.
+            Sajten levereras över en krypterad anslutning (HTTPS), lösenord
+            lagras krypterade och åtkomsten till databasen är begränsad.
+            Inget system är ofelbart: upptäcker vi en incident som påverkar
+            dina uppgifter meddelar vi dig via de kontaktvägar vi har.
           </p>
 
-          <h2>9. Cambios en esta política</h2>
+          <h2>8. Minderåriga</h2>
           <p>
-            Si cambiamos la forma en que tratamos los datos, actualizaremos esta
-            página y su fecha de última actualización.
+            Portalen riktar sig till personer över 18 år. Vi samlar
+            medvetet inte in uppgifter om minderåriga.
+          </p>
+
+          <h2>9. Ändringar i denna policy</h2>
+          <p>
+            Om vi ändrar hur vi hanterar uppgifter uppdaterar vi den här
+            sidan och dess datum för senaste uppdatering.
           </p>
         </Prose>
       </Section>

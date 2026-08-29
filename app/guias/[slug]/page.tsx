@@ -20,7 +20,7 @@ const resolve = cache(getPublishedPost);
 
 function formatDate(d: Date | null): string | null {
   if (!d) return null;
-  return new Date(d).toLocaleDateString("es-PY", {
+  return new Date(d).toLocaleDateString("sv-SE", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -30,7 +30,7 @@ function formatDate(d: Date | null): string | null {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const detail = await resolve(slug);
-  if (!detail) return { title: `Nota no encontrada` };
+  if (!detail) return { title: `Artikeln hittades inte` };
 
   const { post } = detail;
   const description =
@@ -79,8 +79,8 @@ export default async function GuiaPage({ params }: Params) {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
-            { name: "Guías", url: "/guias" },
+            { name: "Start", url: "/" },
+            { name: "Guider", url: "/guias" },
             { name: post.title, url: `/guias/${post.slug}` },
           ]),
           {
@@ -106,7 +106,7 @@ export default async function GuiaPage({ params }: Params) {
         <header className="post-hero">
           <div className="post-hero__inner">
             <Link className="post-hero__back" href="/guias">
-              ← Guías y notas
+              ← Guider och artiklar
             </Link>
             <div className="post-hero__category">
               {POST_CATEGORY_LABEL[post.category]}
@@ -116,10 +116,10 @@ export default async function GuiaPage({ params }: Params) {
               <p className="post-hero__excerpt">{post.excerpt}</p>
             )}
             <div className="post-hero__meta">
-              {authorName && <span>Por {authorName}</span>}
+              {authorName && <span>Av {authorName}</span>}
               {published && <span>{published}</span>}
-              <span>{readingMinutes} min de lectura</span>
-              {showUpdated && <span>Actualizada el {updated}</span>}
+              <span>{readingMinutes} min lästid</span>
+              {showUpdated && <span>Uppdaterad {updated}</span>}
             </div>
           </div>
         </header>
@@ -137,7 +137,7 @@ export default async function GuiaPage({ params }: Params) {
       </article>
 
       {related.length > 0 && (
-        <Section tone="muted" title="Seguí leyendo">
+        <Section tone="muted" title="Fortsätt läsa">
           <div className="post-grid">
             {related.map((r) => (
               <Link
@@ -176,10 +176,10 @@ export default async function GuiaPage({ params }: Params) {
       )}
 
       <CtaBand
-        title="Pasá de leer a buscar"
-        text="Casas, departamentos y terrenos en todo Paraguay, con cuota estimada."
-        primary={{ label: "Ver propiedades", href: "/venta" }}
-        secondary={{ label: "Tasar la mía", href: "/tasacion" }}
+        title="Från att läsa till att söka"
+        text="Villor, lägenheter och tomter i hela Spanien, med kostnaden för köpet uträknad."
+        primary={{ label: "Se bostäder", href: "/kopa" }}
+        secondary={{ label: "Värdera min bostad", href: "/tasacion" }}
       />
     </main>
   );

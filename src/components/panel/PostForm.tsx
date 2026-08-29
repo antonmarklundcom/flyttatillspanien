@@ -40,7 +40,7 @@ export function PostForm({
           defaultValue={post?.title ?? ""}
           maxLength={200}
           required
-          placeholder="Cómo comprar tu primera casa en Paraguay"
+          placeholder="Cómo comprar tu primera casa en España"
         />
       </label>
 
@@ -54,7 +54,7 @@ export function PostForm({
           type="text"
           defaultValue={post?.slug ?? ""}
           maxLength={200}
-          placeholder="comprar-primera-casa-paraguay"
+          placeholder="comprar-primera-casa-espana"
         />
         <span className="panel-hint">
           Queda como /guias/<strong>{post?.slug ?? "tu-url"}</strong>. Si la

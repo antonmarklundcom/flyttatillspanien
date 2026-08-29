@@ -28,11 +28,11 @@ export interface LeadFormReason {
 export function LeadForm({
   leadType,
   reasons,
-  submitLabel = "Enviar consulta",
-  messagePlaceholder = "Contanos en qué podemos ayudarte",
+  submitLabel = "Skicka förfrågan",
+  messagePlaceholder = "Berätta vad vi kan hjälpa dig med",
   companyField = false,
-  successTitle = "¡Gracias! Recibimos tu mensaje.",
-  successText = "Te contactamos por WhatsApp dentro de las próximas 24 horas hábiles.",
+  successTitle = "Tack! Vi har fått ditt meddelande.",
+  successText = "Vi svarar via e-post inom en arbetsdag.",
 }: {
   /** Used when `reasons` is not given, or as the initial selection. */
   leadType: LeadFormType;
@@ -62,14 +62,14 @@ export function LeadForm({
     // like every other address check in this repo.
     const address = email.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s.]+\.[^@\s]+$/.test(address)) {
-      setError("Ingresá un email válido.");
+      setError("Ange en giltig e-postadress.");
       return;
     }
     setError(null);
     setSending(true);
 
     const body = [
-      companyField && company ? `Inmobiliaria / empresa: ${company}` : null,
+      companyField && company ? `Mäklarbyrå / företag: ${company}` : null,
       message,
     ]
       .filter(Boolean)
@@ -92,7 +92,7 @@ export function LeadForm({
       setSent(true);
     } catch {
       setError(
-        "No pudimos enviar tu mensaje. Probá de nuevo o escribinos por WhatsApp.",
+        "Vi kunde inte skicka ditt meddelande. Försök igen om en stund.",
       );
     } finally {
       setSending(false);
@@ -115,7 +115,7 @@ export function LeadForm({
     <form className="lead-form" onSubmit={onSubmit}>
       {reasons && reasons.length > 0 && (
         <label className="lead-form__field">
-          <span className="lead-form__label">Motivo de contacto</span>
+          <span className="lead-form__label">Anledning till kontakt</span>
           <select
             className="lead-form__input"
             value={type}
@@ -132,18 +132,18 @@ export function LeadForm({
 
       <div className="lead-form__row">
         <label className="lead-form__field">
-          <span className="lead-form__label">Nombre</span>
+          <span className="lead-form__label">Namn</span>
           <input
             className="lead-form__input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Tu nombre"
+            placeholder="Ditt namn"
             autoComplete="name"
           />
         </label>
         <label className="lead-form__field">
           <span className="lead-form__label">
-            Email <span aria-hidden>*</span>
+            E-post <span aria-hidden>*</span>
           </span>
           <input
             className="lead-form__input"
@@ -151,7 +151,7 @@ export function LeadForm({
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@email.com"
+            placeholder="din@epost.se"
             autoComplete="email"
           />
         </label>
@@ -159,7 +159,7 @@ export function LeadForm({
 
       <div className="lead-form__row">
         <label className="lead-form__field">
-          <span className="lead-form__label">Teléfono (opcional)</span>
+          <span className="lead-form__label">Telefon (valfritt)</span>
           <input
             className="lead-form__input"
             type="tel"
@@ -171,12 +171,12 @@ export function LeadForm({
         </label>
         {companyField && (
           <label className="lead-form__field">
-            <span className="lead-form__label">Inmobiliaria / empresa</span>
+            <span className="lead-form__label">Mäklarbyrå / företag</span>
             <input
               className="lead-form__input"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="Nombre comercial"
+              placeholder="Företagsnamn"
               autoComplete="organization"
             />
           </label>
@@ -184,7 +184,7 @@ export function LeadForm({
       </div>
 
       <label className="lead-form__field">
-        <span className="lead-form__label">Mensaje</span>
+        <span className="lead-form__label">Meddelande</span>
         <textarea
           className="lead-form__input lead-form__textarea"
           value={message}
@@ -201,14 +201,14 @@ export function LeadForm({
       )}
 
       <button className="lead-form__submit" type="submit" disabled={sending}>
-        {sending ? "Enviando…" : submitLabel}
+        {sending ? "Skickar…" : submitLabel}
       </button>
 
       <p className="lead-form__fineprint">
-        Al enviar aceptás nuestros{" "}
-        <a href="/terminos">términos</a> y la{" "}
-        <a href="/privacidad">política de privacidad</a>. Usamos tus datos solo
-        para responderte.
+        Genom att skicka godkänner du våra{" "}
+        <a href="/terminos">användarvillkor</a> och vår{" "}
+        <a href="/privacidad">integritetspolicy</a>. Vi använder dina
+        uppgifter bara för att svara dig.
       </p>
     </form>
   );

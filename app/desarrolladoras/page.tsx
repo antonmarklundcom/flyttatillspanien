@@ -10,20 +10,20 @@ import { safeImageUrl } from "@/lib/external-image";
 
 export const dynamic = "force-dynamic";
 
-const TITLE = "Desarrolladoras";
+const TITLE = "Byggherrar";
 const DESCRIPTION =
-  "Desarrolladoras inmobiliarias que construyen en Paraguay: sus proyectos, en qué ciudades y en qué etapa de obra están.";
+  "Byggherrar som bygger i Spanien: deras projekt, i vilka orter och i vilken byggfas de befinner sig.";
 
 const STAGE_LABEL: Record<string, string> = {
-  en_pozo: "En pozo",
-  en_construccion: "En construcción",
-  entrega_inmediata: "Entrega inmediata",
+  sobre_plano: "Köp på ritning",
+  en_construccion: "Under byggnation",
+  obra_nueva: "Nyproduktion, inflyttningsklar",
 };
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${TITLE} inmobiliarias en Paraguay`,
+    title: `${TITLE} för bostäder i Spanien`,
     description: DESCRIPTION,
     alternates: { canonical: `${await siteOrigin()}/desarrolladoras` },
     openGraph: { title: `${TITLE} — ${brand}`, description: DESCRIPTION },
@@ -41,7 +41,7 @@ export default async function DesarrolladorasPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/desarrolladoras" },
           ]),
           ...(developers.length > 0
@@ -59,17 +59,17 @@ export default async function DesarrolladorasPage() {
       />
 
       <PageHero
-        kicker="Empresas"
-        title="Desarrolladoras que construyen en Paraguay"
-        subtitle="Quién está detrás de cada proyecto. Antes de reservar una unidad en pozo, mirá qué más construyó la desarrolladora y en qué etapa está cada obra."
+        kicker="Företag"
+        title="Byggherrar som bygger i Spanien"
+        subtitle="Vem som står bakom varje projekt. Innan du bokar en enhet på ritning, kolla vad byggherren byggt tidigare och i vilken fas varje bygge är."
       />
 
       <Section>
         {developers.length === 0 ? (
           <div className="mk-empty">
-            <p>Todavía no hay desarrolladoras con proyectos publicados.</p>
+            <p>Det finns ännu inga byggherrar med publicerade projekt.</p>
             <Link className="mk-btn mk-btn--accent" href="/contacto">
-              Publicar mi proyecto
+              Publicera mitt projekt
             </Link>
           </div>
         ) : (
@@ -122,17 +122,17 @@ export default async function DesarrolladorasPage() {
                 <div className="mk-agency__meta">
                   <span>
                     {d.projectCount}{" "}
-                    {d.projectCount === 1 ? "proyecto" : "proyectos"}
+                    {d.projectCount === 1 ? "projekt" : "projekt"}
                   </span>
                   {d.unitCount > 0 && (
                     <span>
-                      {d.unitCount.toLocaleString("es-PY")}{" "}
-                      {d.unitCount === 1 ? "unidad" : "unidades"}
+                      {d.unitCount.toLocaleString("sv-SE")}{" "}
+                      {d.unitCount === 1 ? "enhet" : "enheter"}
                     </span>
                   )}
                 </div>
 
-                <span className="mk-agency__cta">Ver proyectos →</span>
+                <span className="mk-agency__cta">Se projekt →</span>
               </Link>
             ))}
           </div>
@@ -140,10 +140,10 @@ export default async function DesarrolladorasPage() {
       </Section>
 
       <CtaBand
-        title="¿Desarrollás proyectos?"
-        text="Publicá tu emprendimiento con todas sus unidades, etapa de obra y plan de pagos."
-        primary={{ label: "Publicar mi proyecto", href: "/contacto" }}
-        secondary={{ label: "Ver proyectos", href: "/proyectos" }}
+        title="Bygger du projekt?"
+        text="Publicera ditt projekt med alla enheter, byggfas och betalplan."
+        primary={{ label: "Publicera mitt projekt", href: "/contacto" }}
+        secondary={{ label: "Se projekt", href: "/proyectos" }}
       />
     </main>
   );

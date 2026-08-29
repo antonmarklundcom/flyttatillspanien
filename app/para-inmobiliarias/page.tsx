@@ -18,8 +18,8 @@ import {
 // Reads live portal counts; the DB isn't reachable at build time on Hostinger.
 export const dynamic = "force-dynamic";
 
-const TITLE = "Para inmobiliarias y agentes";
-const DESCRIPTION = (brand: string) => `Publicá tu cartera completa en ${brand}, recibí consultas por WhatsApp y mostrá tu inmobiliaria en el directorio. Empezar es gratis.`;
+const TITLE = "För mäklarbyråer och agenter";
+const DESCRIPTION = (brand: string) => `Annonsera hela din objektlista på ${brand}, ta emot förfrågningar från svenska köpare och synas i mäklarkatalogen. Det är gratis att komma igång.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
@@ -34,75 +34,75 @@ export async function generateMetadata(): Promise<Metadata> {
 const BENEFITS = [
   {
     icon: "📇",
-    title: "Tu cartera completa, en un solo lugar",
-    text: "Cargá propiedad por propiedad o importá tu cartera entera desde una planilla o desde el enlace de tu aviso. Sin límite de avisos en el plan gratuito.",
+    title: "Din objektlista, samlad på ett ställe",
+    text: "Lägg upp bostad för bostad eller importera hela objektlistan från en fil eller från länken till din annons. Inget tak på antal annonser i den kostnadsfria planen.",
   },
   {
     icon: "💬",
-    title: "Las consultas llegan directo a vos",
-    text: "Cada aviso lleva tu WhatsApp. No intermediamos la conversación, no te cobramos por contacto y no revendemos tus leads a la competencia.",
+    title: "Förfrågningarna går direkt till dig",
+    text: "Varje annons visar din kontaktväg. Vi lägger oss inte i konversationen, tar inget betalt per kontakt och säljer inte dina leads vidare till konkurrenter.",
   },
   {
     icon: "🏢",
-    title: "Perfil público de tu inmobiliaria",
-    text: "Tu página con logo, equipo de agentes y todos tus avisos activos — un enlace que podés compartir y que además posiciona en Google.",
+    title: "Publik profil för din mäklarbyrå",
+    text: "Din sida med logotyp, team av mäklare och alla dina aktiva annonser — en länk du kan dela och som dessutom rankar i Google.",
   },
   {
     icon: "📊",
-    title: "Datos reales del mercado",
-    text: "Medianas de precio por ciudad y por m² calculadas sobre avisos publicados. Argumentos concretos para la próxima captación.",
+    title: "Verklig marknadsdata",
+    text: "Medianpriser per ort och per kvadratmeter, beräknade på publicerade annonser. Konkreta argument inför nästa säljpresentation.",
   },
   {
     icon: "💳",
-    title: "Cuota estimada en cada aviso",
-    text: "Mostramos automáticamente la cuota mensual aproximada con financiamiento vigente. El comprador entiende de entrada si le cierra el número.",
+    title: "Köpets kostnader uträknade på varje annons",
+    text: "Vi visar automatiskt vad köpet kostar utöver priset — skatter, notarie och lagfart. Köparen förstår direkt om totalsumman håller för budgeten.",
   },
   {
     icon: "👥",
-    title: "Cuentas para tu equipo",
-    text: "Cada agente con su usuario y su perfil público, todo bajo la cuenta de la inmobiliaria. Vos ves la actividad de toda la oficina.",
+    title: "Konton för hela teamet",
+    text: "Varje mäklare med sitt eget konto och sin publika profil, allt under mäklarbyråns konto. Du ser aktiviteten för hela kontoret.",
   },
 ];
 
 const STEPS = [
   {
-    title: "Creá tu cuenta",
-    text: "Registro con tu WhatsApp en menos de dos minutos. No pedimos tarjeta.",
+    title: "Skapa ditt konto",
+    text: "Registrera dig med din e-post på under två minuter. Vi begär inget kort.",
   },
   {
-    title: "Cargá tu cartera",
-    text: "Publicá una por una desde el panel, o importá varias de una vez. Nosotros te ayudamos con la primera carga si querés.",
+    title: "Lägg upp din objektlista",
+    text: "Publicera en och en via panelen, eller importera flera på en gång. Vi hjälper dig gärna med den första uppladdningen.",
   },
   {
-    title: "Verificamos tu inmobiliaria",
-    text: "Revisamos los datos y activamos el sello de verificado en tu perfil y en todos tus avisos.",
+    title: "Vi verifierar din mäklarbyrå",
+    text: "Vi kontrollerar uppgifterna och aktiverar verifieringsmärket på din profil och alla dina annonser.",
   },
   {
-    title: "Recibí y gestioná consultas",
-    text: "Las consultas te llegan por WhatsApp y quedan registradas en tu panel, con la propiedad que las originó.",
+    title: "Ta emot och hantera förfrågningar",
+    text: "Förfrågningarna når dig via e-post och sparas i din panel, tillsammans med vilken bostad de gäller.",
   },
 ];
 
 const FAQ = [
   {
-    q: "¿Cuánto cuesta publicar como inmobiliaria?",
-    a: "El plan Profesional es gratuito e incluye avisos ilimitados, perfil público y panel con consultas. Los planes pagos agregan destaque en las búsquedas y posiciones fijas en la portada; podés verlos en la página de planes.",
+    q: "Vad kostar det att annonsera som mäklarbyrå?",
+    a: "Proffsplanen är gratis och inkluderar obegränsat antal annonser, publik profil och en panel med förfrågningar. De betalda planerna lägger till utvald placering i sökresultaten och fasta platser på förstasidan; du hittar dem på prissidan.",
   },
   {
-    q: "¿Cobran comisión sobre mis operaciones?",
-    a: "No. No participamos de la negociación ni cobramos porcentaje sobre ninguna venta o alquiler que cierres. Lo que se acuerde entre vos y tu cliente es entre ustedes.",
+    q: "Tar ni provision på mina affärer?",
+    a: "Nej. Vi deltar inte i förhandlingen och tar ingen procentandel av någon försäljning eller uthyrning du sluter. Det som avtalas mellan dig och din kund är mellan er.",
   },
   {
-    q: "¿Puedo importar mi cartera desde otro portal o desde una planilla?",
-    a: "Sí. Desde el panel podés importar avisos a partir de una planilla o pegando el enlace de una publicación existente, y después ajustar lo que haga falta antes de publicar.",
+    q: "Kan jag importera min objektlista från en annan portal eller en fil?",
+    a: "Ja. Från panelen kan du importera annonser från en fil eller genom att klistra in länken till en befintlig annons, och sedan justera det som behövs innan du publicerar.",
   },
   {
-    q: "¿Qué pasa con mis leads?",
-    a: "Son tuyos. Las consultas de tus avisos van directo a tu WhatsApp y quedan en tu panel. No los vendemos ni los compartimos con otras inmobiliarias.",
+    q: "Vad händer med mina leads?",
+    a: "De är dina. Förfrågningarna på dina annonser går direkt till dig och sparas i din panel. Vi säljer dem inte och delar dem inte med andra mäklarbyråer.",
   },
   {
-    q: "¿Y si soy agente independiente, sin inmobiliaria?",
-    a: "También podés publicar. Tenés perfil de agente propio, con tu foto, tu WhatsApp y tus avisos, sin necesidad de estar vinculado a una oficina.",
+    q: "Och om jag är oberoende agent utan mäklarbyrå?",
+    a: "Du kan annonsera ändå. Du får en egen agentprofil, med foto, kontaktuppgifter och dina annonser, utan att vara knuten till ett kontor.",
   },
 ];
 
@@ -115,7 +115,7 @@ export default async function ParaInmobiliariasPage() {
       <JsonLd
         data={[
           breadcrumbJsonLd(origin, [
-            { name: "Inicio", url: "/" },
+            { name: "Start", url: "/" },
             { name: TITLE, url: "/para-inmobiliarias" },
           ]),
           faqJsonLd(FAQ),
@@ -124,16 +124,16 @@ export default async function ParaInmobiliariasPage() {
 
       <PageHero
         tone="dark"
-        kicker="Para profesionales del sector"
-        title="Tu cartera, frente a quien la está buscando"
-        subtitle={`Publicá todas tus propiedades en ${brand}, recibí las consultas directo en tu WhatsApp y mostrá tu inmobiliaria en el directorio del portal. Empezar es gratis y no pedimos tarjeta.`}
+        kicker="För branschfolk"
+        title="Din objektlista, framför dem som letar"
+        subtitle={`Annonsera alla dina bostäder på ${brand}, ta emot förfrågningarna direkt och synas i portalens mäklarkatalog. Det är gratis att komma igång och vi begär inget kort.`}
         actions={
           <>
             <Link className="mk-btn mk-btn--accent" href="/registro">
-              Crear cuenta gratis
+              Skapa konto gratis
             </Link>
             <Link className="mk-btn mk-btn--ghost" href="#contacto">
-              Hablar con nosotros
+              Prata med oss
             </Link>
           </>
         }
@@ -144,39 +144,39 @@ export default async function ParaInmobiliariasPage() {
           <StatRow
             stats={[
               {
-                value: stats.listings.toLocaleString("es-PY"),
-                label: "Propiedades publicadas",
+                value: stats.listings.toLocaleString("sv-SE"),
+                label: "Publicerade bostäder",
               },
               {
-                value: stats.cities.toLocaleString("es-PY"),
-                label: "Zonas con inventario activo",
+                value: stats.cities.toLocaleString("sv-SE"),
+                label: "Orter med aktivt utbud",
               },
               {
-                value: stats.agencies.toLocaleString("es-PY"),
-                label: "Inmobiliarias publicando",
+                value: stats.agencies.toLocaleString("sv-SE"),
+                label: "Annonserande mäklarbyråer",
               },
-              { value: "Gs. 0", label: "Costo por consulta recibida" },
+              { value: "0 kr", label: "Kostnad per mottagen förfrågan" },
             ]}
           />
         </Section>
       )}
 
       <Section
-        title="Lo que incluye publicar con nosotros"
-        subtitle="Todo esto entra en el plan gratuito. Sin límite de avisos, sin costo por consulta."
+        title="Det här ingår när du annonserar hos oss"
+        subtitle="Allt det här ingår i den kostnadsfria planen. Inget tak på antal annonser, ingen kostnad per förfrågan."
       >
         <FeatureGrid items={BENEFITS} />
       </Section>
 
       <Section
         tone="muted"
-        title="Cómo empezás"
-        subtitle="De crear la cuenta a tener la cartera publicada, normalmente el mismo día."
+        title="Så kommer du igång"
+        subtitle="Från skapat konto till publicerad objektlista, oftast samma dag."
       >
         <StepList steps={STEPS} />
       </Section>
 
-      <Section title="Preguntas de inmobiliarias" width="narrow">
+      <Section title="Frågor från mäklarbyråer" width="narrow">
         <div className="mk-faq">
           {FAQ.map((f) => (
             <details key={f.q} className="mk-faq__item">
@@ -191,24 +191,24 @@ export default async function ParaInmobiliariasPage() {
         id="contacto"
         tone="muted"
         width="narrow"
-        title="Hablemos de tu cartera"
-        subtitle="Dejanos tus datos y te escribimos por WhatsApp para activar tu cuenta y ayudarte con la primera carga."
+        title="Berätta om din objektlista"
+        subtitle="Lämna dina uppgifter så hör vi av oss för att aktivera ditt mäklarkonto och hjälpa dig med den första uppladdningen."
       >
         <LeadForm
           leadType="agent_signup"
           companyField
-          submitLabel="Quiero publicar mi cartera"
-          messagePlaceholder="¿Cuántas propiedades tenés publicadas hoy? ¿En qué zonas trabajás?"
-          successTitle="¡Listo! Te escribimos enseguida."
-          successText="Un integrante del equipo te contacta por WhatsApp para activar tu cuenta de inmobiliaria."
+          submitLabel="Jag vill annonsera min objektlista"
+          messagePlaceholder="Hur många bostäder har du publicerade i dag? I vilka områden jobbar du?"
+          successTitle="Klart! Vi hör av oss snart."
+          successText="Någon i teamet kontaktar dig för att aktivera ditt mäklarkonto."
         />
       </Section>
 
       <CtaBand
-        title="Empezá hoy, sin costo"
-        text="Creá tu cuenta, cargá tu primera propiedad y mirá cuántas consultas llegan."
-        primary={{ label: "Crear cuenta gratis", href: "/registro" }}
-        secondary={{ label: "Ver planes", href: "/planes" }}
+        title="Kom igång i dag, utan kostnad"
+        text="Skapa ditt konto, lägg upp din första bostad och se hur många förfrågningar som kommer in."
+        primary={{ label: "Skapa konto gratis", href: "/registro" }}
+        secondary={{ label: "Se planer", href: "/planes" }}
       />
     </main>
   );
