@@ -53,7 +53,7 @@ export default async function DesarrolladoraPage({ params }: Params) {
 
   const totalUnits = projects.reduce((n, p) => n + p.availableUnits, 0);
   const waHref = waLink(
-    developer.whatsapp,
+    developer.phone,
     `Hola, vi los proyectos de ${developer.name} en ${brand}.`,
   );
 

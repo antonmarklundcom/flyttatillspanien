@@ -128,12 +128,12 @@ export default async function AgencyProfilePage({ params }: Params) {
               ? `${listingCount} ${listingCount === 1 ? "propiedad publicada" : "propiedades publicadas"}`
               : "Sin propiedades publicadas por el momento"}
           </p>
-          {(agency.whatsapp || agency.email) && (
+          {(agency.phone || agency.email) && (
             <div className="agency-profile__contact">
-              {waLink(agency.whatsapp) && (
+              {waLink(agency.phone) && (
                 <a
                   className="contact-form__altlink"
-                  href={waLink(agency.whatsapp)!}
+                  href={waLink(agency.phone)!}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

@@ -13,8 +13,8 @@ import {
   STATS_WINDOW_DAYS,
   totalsFrom,
 } from "@/lib/stats-queries";
-import { esPanel, listingStatusLabel } from "@/i18n/es";
-import { formatPrice } from "@/lib/format";
+import { svPanel, listingStatusLabel } from "@/i18n/sv";
+import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
 import { agencyTabs } from "./tabs";
@@ -49,27 +49,27 @@ export default async function AgencyListingsPage({
       />
       <main className="panel site-main">
         {msg === "welcome" ? (
-          <p className="panel-flash">{esPanel.agencyWelcome}</p>
+          <p className="panel-flash">{svPanel.agencyWelcome}</p>
         ) : null}
         {msg === "joined" ? (
-          <p className="panel-flash">{esPanel.teamJoined}</p>
+          <p className="panel-flash">{svPanel.teamJoined}</p>
         ) : null}
 
         <div className="panel-section__header">
-          <h2 className="panel-section__title">{esPanel.agencyListingsTitle}</h2>
+          <h2 className="panel-section__title">{svPanel.agencyListingsTitle}</h2>
           <Link className="panel-btn panel-btn--primary" href="/publicar">
-            {esPanel.agencyAddListingCta}
+            {svPanel.agencyAddListingCta}
           </Link>
         </div>
 
         {/* Publishing moved behind the review queue (audit F1); say so where
             the status control is, not in a help page nobody opens. */}
-        <p className="panel-note">{esPanel.statusReviewNote}</p>
+        <p className="panel-note">{svPanel.statusReviewNote}</p>
 
         {/* An agency account with no agencies row is a setup slip worth
             flagging; an independent agent is simply scoped to their own rows. */}
         {agencyId == null && user.role === "agency_admin" ? (
-          <p className="panel-empty">{esPanel.agencyNoLink}</p>
+          <p className="panel-empty">{svPanel.agencyNoLink}</p>
         ) : (
           <AgencyListings scope={scope} />
         )}
@@ -85,7 +85,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
     getPanelListingStats(scope),
   ]);
   if (rows.length === 0) {
-    return <p className="panel-empty">{esPanel.agencyListingsEmpty}</p>;
+    return <p className="panel-empty">{svPanel.agencyListingsEmpty}</p>;
   }
 
   const totals = totalsFrom(stats);
@@ -94,11 +94,11 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
     <>
       {/* The headline answer to "is this working?", before the table detail. */}
       <p className="panel-stats-summary">
-        {esPanel.statsSummary}:{" "}
-        <strong>{totals.views}</strong> {esPanel.statsViews.toLowerCase()} ·{" "}
-        <strong>{totals.leads}</strong> {esPanel.statsLeads.toLowerCase()}{" "}
+        {svPanel.statsSummary}:{" "}
+        <strong>{totals.views}</strong> {svPanel.statsViews.toLowerCase()} ·{" "}
+        <strong>{totals.leads}</strong> {svPanel.statsLeads.toLowerCase()}{" "}
         <span className="panel-stats-summary__hint">
-          ({STATS_WINDOW_DAYS} días — {esPanel.statsViewsHint})
+          ({STATS_WINDOW_DAYS} días — {svPanel.statsViewsHint})
         </span>
       </p>
 
@@ -109,9 +109,9 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
             <th>Propiedad</th>
             <th>Tipo</th>
             <th>Precio</th>
-            <th>{esPanel.statusLabel}</th>
-            <th title={esPanel.statsViewsHint}>{esPanel.statsViews}</th>
-            <th>{esPanel.statsLeads}</th>
+            <th>{svPanel.statusLabel}</th>
+            <th title={svPanel.statsViewsHint}>{svPanel.statsViews}</th>
+            <th>{svPanel.statsLeads}</th>
             <th>Cambiar estado</th>
           </tr>
         </thead>
@@ -129,10 +129,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
               </td>
               <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
               <td>
-                {formatPrice({
-                  priceAmount: row.priceAmount,
-                  priceCurrency: row.priceCurrency,
-                })}
+                {formatEur(row.priceEur)}
               </td>
               <td>
                 <span className={`panel-status panel-status--${row.status}`}>
@@ -166,18 +163,18 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
                         ))}
                       </select>
                       <button className="panel-btn" type="submit">
-                        {esPanel.saveStatus}
+                        {svPanel.saveStatus}
                       </button>
                     </form>
                   ) : (
                     <p className="panel-status-note">
                       {row.status === "pending_review"
-                        ? esPanel.statusPendingNote
-                        : esPanel.statusRejectedNote}
+                        ? svPanel.statusPendingNote
+                        : svPanel.statusRejectedNote}
                       {row.status === "removed" && row.reviewNotes && (
                         <>
                           {" "}
-                          {esPanel.statusRejectedReason}: {row.reviewNotes}
+                          {svPanel.statusRejectedReason}: {row.reviewNotes}
                         </>
                       )}
                     </p>
@@ -186,7 +183,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
                     className="panel-btn"
                     href={`/agencia/propiedad/${row.id}`}
                   >
-                    {esPanel.editListing}
+                    {svPanel.editListing}
                   </Link>
                 </div>
               </td>

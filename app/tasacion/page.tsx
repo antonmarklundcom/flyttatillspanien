@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { esTasacion } from "@/i18n/es";
+import { svTasacion } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { listCities } from "@/lib/queries";
 import { siteOrigin } from "@/lib/origin";
@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata(): Promise<Metadata> {
   const brand = await brandName();
   return {
-    title: `${esTasacion.title}`,
-    description: esTasacion.subtitle(brand),
+    title: `${svTasacion.title}`,
+    description: svTasacion.subtitle(brand),
     alternates: { canonical: `${await siteOrigin()}/tasacion` },
   };
 }
@@ -30,13 +30,13 @@ export default async function TasacionPage() {
         data={[
           breadcrumbJsonLd(origin, [
             { name: "Inicio", url: "/" },
-            { name: esTasacion.title, url: "/tasacion" },
+            { name: svTasacion.title, url: "/tasacion" },
           ]),
         ]}
       />
 
-      <h1 style={{ fontSize: 26 }}>{esTasacion.title}</h1>
-      <p style={{ color: "#55655F" }}>{esTasacion.subtitle(brand)}</p>
+      <h1 style={{ fontSize: 26 }}>{svTasacion.title}</h1>
+      <p style={{ color: "#55655F" }}>{svTasacion.subtitle(brand)}</p>
 
       <ValuationTool
         cities={cities.map((c) => ({ slug: c.slug, name: c.name }))}

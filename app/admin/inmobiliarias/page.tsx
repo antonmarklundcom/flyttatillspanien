@@ -6,7 +6,7 @@ import {
   listAgencies,
   listAgents,
 } from "@/lib/panel-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../tabs";
 import {
   toggleAgencyVerifiedAction,
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 function VerifiedPill({ on }: { on: boolean }) {
   return (
     <span className={`panel-verified${on ? "" : " panel-verified--off"}`}>
-      {on ? esPanel.verifiedBadge : esPanel.notVerifiedBadge}
+      {on ? svPanel.verifiedBadge : svPanel.notVerifiedBadge}
     </span>
   );
 }
@@ -42,8 +42,8 @@ function planLabel(plan: string): string {
 
 /** Flash messages keyed by the ?msg= code createAgencyAction redirects with. */
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  agency_created: { text: esPanel.agencyCreated },
-  invalid: { text: esPanel.agencyInvalid, error: true },
+  agency_created: { text: svPanel.agencyCreated },
+  invalid: { text: svPanel.agencyInvalid, error: true },
 };
 
 export default async function AdminAgenciesPage({
@@ -73,12 +73,12 @@ export default async function AdminAgenciesPage({
           <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p>
         ) : null}
 
-        <h2 className="panel-section__title">{esPanel.adminAgencyNewTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminAgencyNewTitle}</h2>
         <article className="panel-card">
-          <p className="panel-card__meta">{esPanel.adminAgencyNewHint}</p>
+          <p className="panel-card__meta">{svPanel.adminAgencyNewHint}</p>
           <form action={createAgencyAction} className="panel-form">
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.agencyNameLabel}</span>
+              <span className="auth-field__label">{svPanel.agencyNameLabel}</span>
               <input
                 className="auth-field__input"
                 name="name"
@@ -88,15 +88,15 @@ export default async function AdminAgenciesPage({
               />
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.agencyEmailLabel}</span>
+              <span className="auth-field__label">{svPanel.agencyEmailLabel}</span>
               <input className="auth-field__input" name="email" type="email" />
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.agencyWhatsappLabel}</span>
-              <input className="auth-field__input" name="whatsapp" type="tel" />
+              <span className="auth-field__label">{svPanel.agencyPhoneLabel}</span>
+              <input className="auth-field__input" name="phone" type="tel" />
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.planLabel}</span>
+              <span className="auth-field__label">{svPanel.planLabel}</span>
               <select className="panel-select" name="plan" defaultValue="free">
                 {PLAN_OPTIONS.map((p) => (
                   <option key={p.value} value={p.value}>
@@ -107,7 +107,7 @@ export default async function AdminAgenciesPage({
             </label>
             <div className="panel-form__field panel-form__field--action">
               <button className="panel-btn panel-btn--primary" type="submit">
-                {esPanel.createAgency}
+                {svPanel.createAgency}
               </button>
             </div>
           </form>
@@ -135,7 +135,7 @@ export default async function AdminAgenciesPage({
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
                     <td>{planLabel(a.plan)}</td>
-                    <td>{a.whatsapp ?? a.email ?? "—"}</td>
+                    <td>{a.phone ?? a.email ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />
                     </td>
@@ -148,7 +148,7 @@ export default async function AdminAgenciesPage({
                           value={a.isVerified ? "0" : "1"}
                         />
                         <button className="panel-btn" type="submit">
-                          {a.isVerified ? esPanel.unverify : esPanel.verify}
+                          {a.isVerified ? svPanel.unverify : svPanel.verify}
                         </button>
                       </form>
                     </td>
@@ -181,7 +181,7 @@ export default async function AdminAgenciesPage({
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
                     <td>{a.agencyName ?? "Independiente"}</td>
-                    <td>{a.whatsapp ?? "—"}</td>
+                    <td>{a.phone ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />
                     </td>
@@ -194,7 +194,7 @@ export default async function AdminAgenciesPage({
                           value={a.isVerified ? "0" : "1"}
                         />
                         <button className="panel-btn" type="submit">
-                          {a.isVerified ? esPanel.unverify : esPanel.verify}
+                          {a.isVerified ? svPanel.unverify : svPanel.verify}
                         </button>
                       </form>
                     </td>

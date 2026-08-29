@@ -18,7 +18,7 @@ import {
 } from "@/lib/stats-queries";
 import { isR2Configured } from "@/lib/r2";
 import { listPublishLocations } from "@/lib/publish-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { agencyTabs } from "../../tabs";
 import { agencyUpdateListingAction } from "./actions";
@@ -37,17 +37,17 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  saved: { text: esPanel.listingSaved },
-  invalid: { text: esPanel.listingInvalid, error: true },
-  not_found: { text: esPanel.listingNotFound, error: true },
-  photos_uploaded: { text: esPanel.photosUploaded },
-  photos_rejected: { text: esPanel.photosRejected, error: true },
-  photos_deleted: { text: esPanel.photosDeleted },
-  photos_reordered: { text: esPanel.photosReordered },
-  photos_none: { text: esPanel.photosNoFiles, error: true },
-  photos_too_many: { text: esPanel.photosTooManyFiles, error: true },
-  photos_unconfigured: { text: esPanel.photosNotConfigured, error: true },
-  imported: { text: esPanel.importCreated },
+  saved: { text: svPanel.listingSaved },
+  invalid: { text: svPanel.listingInvalid, error: true },
+  not_found: { text: svPanel.listingNotFound, error: true },
+  photos_uploaded: { text: svPanel.photosUploaded },
+  photos_rejected: { text: svPanel.photosRejected, error: true },
+  photos_deleted: { text: svPanel.photosDeleted },
+  photos_reordered: { text: svPanel.photosReordered },
+  photos_none: { text: svPanel.photosNoFiles, error: true },
+  photos_too_many: { text: svPanel.photosTooManyFiles, error: true },
+  photos_unconfigured: { text: svPanel.photosNotConfigured, error: true },
+  imported: { text: svPanel.importCreated },
 };
 
 export default async function AgencyListingEditPage({
@@ -93,7 +93,7 @@ export default async function AgencyListingEditPage({
       <main className="panel site-main">
         <p>
           <Link className="panel-btn" href="/agencia">
-            {esPanel.backToListings}
+            {svPanel.backToListings}
           </Link>
         </p>
 
@@ -106,7 +106,7 @@ export default async function AgencyListingEditPage({
           <span>#{listing.publicId}</span>
           {listing.status === "published" ? (
             <Link href={listingUrl(listing)} target="_blank">
-              {esPanel.viewListing}
+              {svPanel.viewListing}
             </Link>
           ) : null}
           {listing.reviewNotes ? <span>· {listing.reviewNotes}</span> : null}

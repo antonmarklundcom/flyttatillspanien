@@ -1,4 +1,4 @@
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { imageThumbUrl } from "@/lib/format";
 import { isPlaceholderPhoto } from "@/lib/photos";
 import type { ListingImageRow } from "@/lib/listing-images";
@@ -36,22 +36,22 @@ export function PhotoManager({
   return (
     <section className="panel-card" style={{ marginTop: "1.5rem" }}>
       <h2 style={{ fontSize: 18, margin: "0 0 .25rem" }}>
-        {esPanel.photosTitle}
+        {svPanel.photosTitle}
       </h2>
       <p style={{ color: "#55655F", fontSize: 13, margin: "0 0 1rem" }}>
-        {esPanel.photosHint}
+        {svPanel.photosHint}
       </p>
 
       {!storageReady && (
         <p className="panel-flash panel-flash--error" role="status">
-          {esPanel.photosNotConfigured}
+          {svPanel.photosNotConfigured}
         </p>
       )}
 
       <form action={uploadAction} className="panel-photos__upload">
         <input type="hidden" name="listingId" value={listingId} />
         <label className="panel-form__field" style={{ flexBasis: "100%" }}>
-          <span className="auth-field__label">{esPanel.photosAddLabel}</span>
+          <span className="auth-field__label">{svPanel.photosAddLabel}</span>
           <input
             className="auth-field__input"
             type="file"
@@ -67,13 +67,13 @@ export function PhotoManager({
           type="submit"
           disabled={!storageReady}
         >
-          {esPanel.photosUpload}
+          {svPanel.photosUpload}
         </button>
       </form>
 
       {images.length === 0 ? (
         <p style={{ color: "#55655F", marginTop: "1rem" }}>
-          {esPanel.photosEmpty}
+          {svPanel.photosEmpty}
         </p>
       ) : (
         <ul className="panel-photos">
@@ -92,15 +92,15 @@ export function PhotoManager({
               <div className="panel-photos__meta">
                 {i === 0 && (
                   <span className="panel-photos__badge">
-                    {esPanel.photosCover}
+                    {svPanel.photosCover}
                   </span>
                 )}
                 {isPlaceholderPhoto(image.r2Key) && (
                   <span
                     className="panel-photos__note"
-                    title={esPanel.photosPlaceholderNote}
+                    title={svPanel.photosPlaceholderNote}
                   >
-                    {esPanel.photosPlaceholderNote}
+                    {svPanel.photosPlaceholderNote}
                   </span>
                 )}
               </div>
@@ -111,7 +111,7 @@ export function PhotoManager({
                     <input type="hidden" name="listingId" value={listingId} />
                     <input type="hidden" name="imageId" value={image.id} />
                     <button className="panel-btn" type="submit">
-                      {esPanel.photosMakeCover}
+                      {svPanel.photosMakeCover}
                     </button>
                   </form>
                 )}
@@ -124,7 +124,7 @@ export function PhotoManager({
                     className="panel-btn"
                     type="submit"
                     disabled={i === 0}
-                    aria-label={esPanel.photosMoveUp}
+                    aria-label={svPanel.photosMoveUp}
                   >
                     ↑
                   </button>
@@ -138,7 +138,7 @@ export function PhotoManager({
                     className="panel-btn"
                     type="submit"
                     disabled={i === images.length - 1}
-                    aria-label={esPanel.photosMoveDown}
+                    aria-label={svPanel.photosMoveDown}
                   >
                     ↓
                   </button>
@@ -148,7 +148,7 @@ export function PhotoManager({
                   <input type="hidden" name="listingId" value={listingId} />
                   <input type="hidden" name="imageId" value={image.id} />
                   <button className="panel-btn panel-btn--danger" type="submit">
-                    {esPanel.photosDelete}
+                    {svPanel.photosDelete}
                   </button>
                 </form>
               </div>

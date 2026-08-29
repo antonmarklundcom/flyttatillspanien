@@ -35,7 +35,7 @@ export interface RegistrationInput {
   name: string;
   email: string;
   password: string;
-  whatsapp: string | null;
+  phone: string | null;
   /** Company name — required for kind === "agency", ignored otherwise. */
   agencyName: string | null;
   /** Invite token — required for kind === "invite", ignored otherwise. */
@@ -132,11 +132,13 @@ export async function registerAccount(
     name,
     email,
     role,
-    locale: "es",
+    locale: "sv",
     passwordHash: await hashPassword(input.password),
-    // whatsapp is unique in the schema; a blank string would collide on the
-    // second signup, so an absent number stays NULL.
-    whatsapp: input.whatsapp?.trim() || null,
+    // `phone` is unique in the schema; a blank string would collide on the
+    // second signup, so an absent number stays NULL. Optional now — email is
+    // the identity, and a Swedish buyer signing up has no reason to hand over
+    // a number before anyone has anything to call them about.
+    phone: input.phone?.trim() || null,
   });
 
   const [created] = await db
@@ -153,7 +155,7 @@ export async function registerAccount(
       name: agencyName,
       slug,
       email,
-      whatsapp: input.whatsapp?.trim() || null,
+      phone: input.phone?.trim() || null,
       // Pending your approval — this is the ✓ badge, and it starts off.
       isVerified: false,
     });
@@ -172,7 +174,7 @@ export async function registerAccount(
     userId: created.id,
     name,
     slug: await uniqueAgentSlug(name, created.id),
-    whatsapp: input.whatsapp?.trim() || null,
+    phone: input.phone?.trim() || null,
     isVerified: false,
   });
 

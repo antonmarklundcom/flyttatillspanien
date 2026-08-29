@@ -1,5 +1,5 @@
 import type { PanelTab } from "@/components/panel/PanelBar";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 
 /**
  * The /admin tabs, with the active one flagged and the review count badged.
@@ -32,18 +32,18 @@ export function adminTabs(
   return [
     {
       href: "/admin",
-      label: esPanel.adminReviewTitle,
+      label: svPanel.adminReviewTitle,
       count: reviewCount,
       active: active === "review",
     },
     {
       href: "/admin/propiedades",
-      label: esPanel.adminListingsTitle,
+      label: svPanel.adminListingsTitle,
       active: active === "listings",
     },
     {
       href: "/admin/leads",
-      label: esPanel.adminLeadsTitle,
+      label: svPanel.adminLeadsTitle,
       count: recentLeadCount,
       active: active === "leads",
     },
@@ -57,25 +57,25 @@ export function adminTabs(
     {
       href: "/admin/importar",
       group: "manage",
-      label: esPanel.adminImportTitle,
+      label: svPanel.adminImportTitle,
       active: active === "import",
     },
     {
       href: "/admin/inmobiliarias",
       group: "manage",
-      label: esPanel.adminAgenciesTitle,
+      label: svPanel.adminAgenciesTitle,
       active: active === "agencies",
     },
     {
       href: "/admin/agentes",
       group: "manage",
-      label: esPanel.adminAgentsTitle,
+      label: svPanel.adminAgentsTitle,
       active: active === "agents",
     },
     {
       href: "/admin/usuarios",
       group: "manage",
-      label: esPanel.adminUsersTitle,
+      label: svPanel.adminUsersTitle,
       active: active === "users",
     },
   ];

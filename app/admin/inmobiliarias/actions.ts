@@ -44,10 +44,10 @@ export async function createAgencyAction(formData: FormData): Promise<void> {
 
   const id = await createPanelAgency({
     name,
-    // Both columns are nullable and whatsapp is matched on elsewhere; a blank
+    // Both columns are nullable and the phone is matched on elsewhere; a blank
     // string would be a fake value, so an empty field stays NULL.
     email: str(formData.get("email")).toLowerCase() || null,
-    whatsapp: str(formData.get("whatsapp")) || null,
+    phone: str(formData.get("phone")) || null,
     plan: toPlan(formData.get("plan")),
   });
 

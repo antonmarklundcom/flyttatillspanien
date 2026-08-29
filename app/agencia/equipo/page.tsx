@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireAgencyContext } from "@/lib/auth/guards";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import {
   invitePath,
   listAgencyInvites,
@@ -27,16 +27,16 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  invite_created: { text: esPanel.teamInviteCreated },
-  invite_revoked: { text: esPanel.teamInviteRevoked },
-  role_saved: { text: esPanel.teamRoleSaved },
-  member_removed: { text: esPanel.teamMemberRemoved },
-  joined: { text: esPanel.teamJoined },
-  last_admin: { text: esPanel.teamLastAdminError, error: true },
-  self_role: { text: esPanel.teamSelfRoleError, error: true },
-  self_remove: { text: esPanel.teamSelfRemoveError, error: true },
-  forbidden: { text: esPanel.profileForbidden, error: true },
-  invalid: { text: esPanel.profileInvalid, error: true },
+  invite_created: { text: svPanel.teamInviteCreated },
+  invite_revoked: { text: svPanel.teamInviteRevoked },
+  role_saved: { text: svPanel.teamRoleSaved },
+  member_removed: { text: svPanel.teamMemberRemoved },
+  joined: { text: svPanel.teamJoined },
+  last_admin: { text: svPanel.teamLastAdminError, error: true },
+  self_role: { text: svPanel.teamSelfRoleError, error: true },
+  self_remove: { text: svPanel.teamSelfRemoveError, error: true },
+  forbidden: { text: svPanel.profileForbidden, error: true },
+  invalid: { text: svPanel.profileInvalid, error: true },
 };
 
 /**
@@ -72,9 +72,9 @@ function fmtDate(d: Date): string {
 }
 
 function roleName(role: string | null): string {
-  if (role === "agency_admin") return esPanel.teamRoleAdmin;
-  if (role === "agent") return esPanel.teamRoleAgent;
-  return esPanel.teamRoleNoLogin;
+  if (role === "agency_admin") return svPanel.teamRoleAdmin;
+  if (role === "agent") return svPanel.teamRoleAgent;
+  return svPanel.teamRoleNoLogin;
 }
 
 export default async function AgencyTeamPage({
@@ -120,28 +120,28 @@ export default async function AgencyTeamPage({
           </p>
         ) : null}
 
-        <h2 className="panel-section__title">{esPanel.teamInviteTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.teamInviteTitle}</h2>
         <article className="panel-card">
           <p className="panel-card__meta">
-            {esPanel.teamInviteHint(INVITE_TTL_DAYS)}
+            {svPanel.teamInviteHint(INVITE_TTL_DAYS)}
           </p>
           <form action={createInviteAction} className="panel-form">
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.teamRoleLabel}</span>
+              <span className="auth-field__label">{svPanel.teamRoleLabel}</span>
               <select className="panel-select" name="role" defaultValue="agent">
-                <option value="agent">{esPanel.teamRoleAgent}</option>
-                <option value="agency_admin">{esPanel.teamRoleAdmin}</option>
+                <option value="agent">{svPanel.teamRoleAgent}</option>
+                <option value="agency_admin">{svPanel.teamRoleAdmin}</option>
               </select>
             </label>
             <div className="panel-form__field panel-form__field--action">
               <button className="panel-btn panel-btn--primary" type="submit">
-                {esPanel.teamInviteCreate}
+                {svPanel.teamInviteCreate}
               </button>
             </div>
           </form>
 
           {openInvites.length === 0 ? (
-            <p className="panel-card__meta">{esPanel.teamInvitesEmpty}</p>
+            <p className="panel-card__meta">{svPanel.teamInvitesEmpty}</p>
           ) : (
             openInvites.map((invite) => (
               <InviteRow key={invite.id} invite={invite} origin={origin} />
@@ -150,20 +150,20 @@ export default async function AgencyTeamPage({
         </article>
 
         <h2 className="panel-section__title" style={{ marginTop: 32 }}>
-          {esPanel.teamTitle}
+          {svPanel.teamTitle}
         </h2>
-        <p className="panel-card__meta">{esPanel.teamHint}</p>
+        <p className="panel-card__meta">{svPanel.teamHint}</p>
 
         {team.length === 0 ? (
-          <p className="panel-empty">{esPanel.teamEmpty}</p>
+          <p className="panel-empty">{svPanel.teamEmpty}</p>
         ) : (
           <div className="panel-table__wrap">
             <table className="panel-table">
               <thead>
                 <tr>
-                  <th>{esPanel.nameLabel}</th>
-                  <th>{esPanel.emailLabel}</th>
-                  <th>{esPanel.teamRoleLabel}</th>
+                  <th>{svPanel.nameLabel}</th>
+                  <th>{svPanel.emailLabel}</th>
+                  <th>{svPanel.teamRoleLabel}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -199,10 +199,10 @@ function InviteRow({
     <div className="panel-form" style={{ alignItems: "flex-end" }}>
       <label className="panel-form__field" style={{ flexBasis: "100%" }}>
         <span className="auth-field__label">
-          {esPanel.teamInviteUrlLabel(
+          {svPanel.teamInviteUrlLabel(
             invite.role === "agency_admin"
-              ? esPanel.teamRoleAdmin
-              : esPanel.teamRoleAgent,
+              ? svPanel.teamRoleAdmin
+              : svPanel.teamRoleAgent,
             fmtDate(invite.expiresAt),
           )}
         </span>
@@ -214,7 +214,7 @@ function InviteRow({
         <form action={revokeInviteAction}>
           <input type="hidden" name="inviteId" value={invite.id} />
           <button className="panel-btn" type="submit">
-            {esPanel.teamInviteRevoke}
+            {svPanel.teamInviteRevoke}
           </button>
         </form>
       </div>
@@ -246,7 +246,7 @@ function MemberRow({
       <td>{roleName(member.role)}</td>
       <td>
         {!manageable ? (
-          <span className="panel-card__meta">{esPanel.teamNoLoginHint}</span>
+          <span className="panel-card__meta">{svPanel.teamNoLoginHint}</span>
         ) : (
           <div className="panel-actions">
             {isSelf ? null : (
@@ -258,7 +258,7 @@ function MemberRow({
                   value={isAdmin ? "agent" : "agency_admin"}
                 />
                 <button className="panel-btn" type="submit" disabled={onlyAdmin}>
-                  {isAdmin ? esPanel.teamDemote : esPanel.teamPromote}
+                  {isAdmin ? svPanel.teamDemote : svPanel.teamPromote}
                 </button>
               </form>
             )}
@@ -266,13 +266,13 @@ function MemberRow({
             {isSelf || onlyAdmin ? null : (
               <details>
                 <summary className="panel-btn panel-btn--danger">
-                  {esPanel.teamRemove}
+                  {svPanel.teamRemove}
                 </summary>
                 <form action={removeMemberAction} className="panel-reject">
-                  <p className="panel-card__meta">{esPanel.teamRemoveWarning}</p>
+                  <p className="panel-card__meta">{svPanel.teamRemoveWarning}</p>
                   <input type="hidden" name="userId" value={member.userId!} />
                   <button className="panel-btn panel-btn--danger" type="submit">
-                    {esPanel.teamRemoveConfirm}
+                    {svPanel.teamRemoveConfirm}
                   </button>
                 </form>
               </details>

@@ -7,7 +7,7 @@ import {
   listUsers,
   type PanelUserRow,
 } from "@/lib/panel-queries";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { roleLabel } from "@/lib/auth/roles";
 import { adminTabs } from "../tabs";
 import {
@@ -35,16 +35,16 @@ const ROLE_OPTIONS = [
 
 /** Flash messages keyed by the ?msg= code the actions redirect with. */
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  created: { text: esPanel.userCreated },
-  saved: { text: esPanel.userSaved },
-  deleted: { text: esPanel.userDeleted },
-  password_reset: { text: esPanel.userPasswordReset },
-  agency_linked: { text: esPanel.userAgencyLinked },
-  email_taken: { text: esPanel.userEmailTaken, error: true },
-  self_role: { text: esPanel.userSelfRoleError, error: true },
-  self_delete: { text: esPanel.userSelfDeleteError, error: true },
-  last_admin: { text: esPanel.userLastAdminError, error: true },
-  invalid: { text: esPanel.loginError, error: true },
+  created: { text: svPanel.userCreated },
+  saved: { text: svPanel.userSaved },
+  deleted: { text: svPanel.userDeleted },
+  password_reset: { text: svPanel.userPasswordReset },
+  agency_linked: { text: svPanel.userAgencyLinked },
+  email_taken: { text: svPanel.userEmailTaken, error: true },
+  self_role: { text: svPanel.userSelfRoleError, error: true },
+  self_delete: { text: svPanel.userSelfDeleteError, error: true },
+  last_admin: { text: svPanel.userLastAdminError, error: true },
+  invalid: { text: svPanel.loginError, error: true },
 };
 
 export default async function AdminUsersPage({
@@ -75,15 +75,15 @@ export default async function AdminUsersPage({
           <p className={flash.error ? "auth-error" : "panel-flash"}>{flash.text}</p>
         ) : null}
 
-        <h2 className="panel-section__title">{esPanel.adminUsersNewTitle}</h2>
+        <h2 className="panel-section__title">{svPanel.adminUsersNewTitle}</h2>
         <article className="panel-card">
           <form action={createUserAction} className="panel-form">
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.nameLabel}</span>
+              <span className="auth-field__label">{svPanel.nameLabel}</span>
               <input className="auth-field__input" name="name" type="text" />
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.emailLabel}</span>
+              <span className="auth-field__label">{svPanel.emailLabel}</span>
               <input
                 className="auth-field__input"
                 name="email"
@@ -92,7 +92,7 @@ export default async function AdminUsersPage({
               />
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.passwordLabel}</span>
+              <span className="auth-field__label">{svPanel.passwordLabel}</span>
               <input
                 className="auth-field__input"
                 name="password"
@@ -102,7 +102,7 @@ export default async function AdminUsersPage({
               />
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.roleLabel}</span>
+              <span className="auth-field__label">{svPanel.roleLabel}</span>
               <select className="panel-select" name="role" defaultValue="agency_admin">
                 {ROLE_OPTIONS.map((r) => (
                   <option key={r} value={r}>
@@ -112,7 +112,7 @@ export default async function AdminUsersPage({
               </select>
             </label>
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.localeLabel}</span>
+              <span className="auth-field__label">{svPanel.localeLabel}</span>
               <select className="panel-select" name="locale" defaultValue="es">
                 <option value="es">Español</option>
                 <option value="en">English</option>
@@ -120,18 +120,18 @@ export default async function AdminUsersPage({
             </label>
             <div className="panel-form__field panel-form__field--action">
               <button className="panel-btn panel-btn--primary" type="submit">
-                {esPanel.createUser}
+                {svPanel.createUser}
               </button>
             </div>
           </form>
         </article>
 
         <h2 className="panel-section__title" style={{ marginTop: 32 }}>
-          {esPanel.adminUsersListTitle}
+          {svPanel.adminUsersListTitle}
         </h2>
 
         {rows.length === 0 ? (
-          <p className="panel-empty">{esPanel.adminUsersEmpty}</p>
+          <p className="panel-empty">{svPanel.adminUsersEmpty}</p>
         ) : (
           rows.map((row) => (
             <UserCard
@@ -164,8 +164,8 @@ function UserCard({
           <div className="panel-card__meta">
             <span>{row.email ?? "—"}</span>
             <span>{roleLabel(row.role)}</span>
-            <span>{row.agencyName ?? esPanel.agencyNone}</span>
-            {row.hasPassword ? null : <span>{esPanel.noPasswordBadge}</span>}
+            <span>{row.agencyName ?? svPanel.agencyNone}</span>
+            {row.hasPassword ? null : <span>{svPanel.noPasswordBadge}</span>}
             {isSelf ? <span>· vos</span> : null}
           </div>
         </div>
@@ -175,7 +175,7 @@ function UserCard({
         <form action={updateUserAction} className="panel-form">
           <input type="hidden" name="userId" value={row.id} />
           <label className="panel-form__field">
-            <span className="auth-field__label">{esPanel.nameLabel}</span>
+            <span className="auth-field__label">{svPanel.nameLabel}</span>
             <input
               className="auth-field__input"
               name="name"
@@ -184,7 +184,7 @@ function UserCard({
             />
           </label>
           <label className="panel-form__field">
-            <span className="auth-field__label">{esPanel.emailLabel}</span>
+            <span className="auth-field__label">{svPanel.emailLabel}</span>
             <input
               className="auth-field__input"
               name="email"
@@ -194,17 +194,17 @@ function UserCard({
             />
           </label>
           <label className="panel-form__field">
-            <span className="auth-field__label">{esPanel.newPasswordLabel}</span>
+            <span className="auth-field__label">{svPanel.newPasswordLabel}</span>
             <input
               className="auth-field__input"
               name="password"
               type="text"
               autoComplete="off"
-              placeholder={esPanel.newPasswordHint}
+              placeholder={svPanel.newPasswordHint}
             />
           </label>
           <label className="panel-form__field">
-            <span className="auth-field__label">{esPanel.roleLabel}</span>
+            <span className="auth-field__label">{svPanel.roleLabel}</span>
             <select className="panel-select" name="role" defaultValue={row.role}>
               {ROLE_OPTIONS.map((r) => (
                 <option key={r} value={r}>
@@ -214,7 +214,7 @@ function UserCard({
             </select>
           </label>
           <label className="panel-form__field">
-            <span className="auth-field__label">{esPanel.localeLabel}</span>
+            <span className="auth-field__label">{svPanel.localeLabel}</span>
             <select className="panel-select" name="locale" defaultValue={row.locale}>
               <option value="es">Español</option>
               <option value="en">English</option>
@@ -222,7 +222,7 @@ function UserCard({
           </label>
           <div className="panel-form__field panel-form__field--action">
             <button className="panel-btn panel-btn--primary" type="submit">
-              {esPanel.saveUser}
+              {svPanel.saveUser}
             </button>
           </div>
         </form>
@@ -233,13 +233,13 @@ function UserCard({
             <input type="hidden" name="name" value={row.name ?? ""} />
             <input type="hidden" name="email" value={row.email ?? ""} />
             <label className="panel-form__field">
-              <span className="auth-field__label">{esPanel.agencyLabel}</span>
+              <span className="auth-field__label">{svPanel.agencyLabel}</span>
               <select
                 className="panel-select"
                 name="agencyId"
                 defaultValue={row.agencyId ? String(row.agencyId) : ""}
               >
-                <option value="">{esPanel.agencyNone}</option>
+                <option value="">{svPanel.agencyNone}</option>
                 {agencies.map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.name}
@@ -249,7 +249,7 @@ function UserCard({
             </label>
             <div className="panel-form__field panel-form__field--action">
               <button className="panel-btn" type="submit">
-                {esPanel.linkAgency}
+                {svPanel.linkAgency}
               </button>
             </div>
           </form>
@@ -257,13 +257,13 @@ function UserCard({
           {isSelf ? null : (
             <details>
               <summary className="panel-btn panel-btn--danger">
-                {esPanel.deleteUser}
+                {svPanel.deleteUser}
               </summary>
               <form action={deleteUserAction} className="panel-reject">
                 <input type="hidden" name="userId" value={row.id} />
                 <input type="hidden" name="role" value={row.role} />
                 <button className="panel-btn panel-btn--danger" type="submit">
-                  {esPanel.deleteUser}
+                  {svPanel.deleteUser}
                 </button>
               </form>
             </details>

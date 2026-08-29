@@ -9,7 +9,7 @@ import {
   getImportJob,
   listImportRows,
 } from "@/lib/import/jobs";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../../tabs";
 import { rollbackImportAction } from "../actions";
 
@@ -30,8 +30,8 @@ const OUTCOME_LABELS: Record<string, string> = {
 };
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
-  rolled_back: { text: esPanel.importJobRolledBack },
-  rollback_failed: { text: esPanel.importJobRollbackFailed, error: true },
+  rolled_back: { text: svPanel.importJobRolledBack },
+  rollback_failed: { text: svPanel.importJobRollbackFailed, error: true },
 };
 
 export default async function ImportJobPage({
@@ -101,7 +101,7 @@ export default async function ImportJobPage({
                 ? `${job.permissionGrantedBy ?? "sí"}${
                     job.permissionNote ? ` — ${job.permissionNote}` : ""
                   }`
-                : esPanel.importPermissionMissing}
+                : svPanel.importPermissionMissing}
             </li>
           </ul>
 
@@ -113,9 +113,9 @@ export default async function ImportJobPage({
           ) : job.status === "committed" ? (
             <form action={rollbackImportAction}>
               <input type="hidden" name="jobId" value={job.id} />
-              <p className="panel-card__meta">{esPanel.importRollbackHint}</p>
+              <p className="panel-card__meta">{svPanel.importRollbackHint}</p>
               <button className="panel-btn" type="submit">
-                {esPanel.importJobRollback}
+                {svPanel.importJobRollback}
               </button>
             </form>
           ) : null}

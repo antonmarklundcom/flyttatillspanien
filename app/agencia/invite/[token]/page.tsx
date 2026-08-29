@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { esPanel } from "@/i18n/es";
+import { svPanel } from "@/i18n/sv";
 import { getSessionUser } from "@/lib/auth/session";
 import { getUsableInvite } from "@/lib/agency-invites";
 import { joinPreflight } from "@/lib/team-queries";
@@ -17,10 +17,10 @@ export const dynamic = "force-dynamic";
 
 /** Why an otherwise valid link can't be accepted by *this* account. */
 const BLOCKED: Record<string, string> = {
-  invalid: esPanel.inviteInvalid,
-  already_in_agency: esPanel.inviteAlreadyInAgency,
-  protected: esPanel.inviteNotForAdmin,
-  no_profile: esPanel.inviteNoProfile,
+  invalid: svPanel.inviteInvalid,
+  already_in_agency: svPanel.inviteAlreadyInAgency,
+  protected: svPanel.inviteNotForAdmin,
+  no_profile: svPanel.inviteNoProfile,
 };
 
 /**
@@ -47,46 +47,46 @@ export default async function AgencyInvitePage({
   // in the action, which is the authority.
   const preflight = invite ? await joinPreflight(user.id) : "invalid";
   const blocked = invite == null ? "invalid" : preflight !== "ok" ? preflight : null;
-  const flash = msg ? (BLOCKED[msg] ?? esPanel.inviteInvalid) : null;
+  const flash = msg ? (BLOCKED[msg] ?? svPanel.inviteInvalid) : null;
 
   return (
     <main className="site-main">
       <div className="auth-wrap">
         <div className="auth-card">
-          <h1 className="auth-card__title">{esPanel.inviteTitle}</h1>
+          <h1 className="auth-card__title">{svPanel.inviteTitle}</h1>
 
           {flash ? <p className="auth-error">{flash}</p> : null}
 
           {invite == null || blocked ? (
             <>
               <p className="auth-card__subtitle">
-                {BLOCKED[blocked ?? "invalid"] ?? esPanel.inviteInvalid}
+                {BLOCKED[blocked ?? "invalid"] ?? svPanel.inviteInvalid}
               </p>
               <p className="auth-alt">
-                <Link href="/agencia">{esPanel.inviteBackToPanel}</Link>
+                <Link href="/agencia">{svPanel.inviteBackToPanel}</Link>
               </p>
             </>
           ) : (
             <>
               <p className="auth-card__subtitle">
-                {esPanel.inviteJoinBody(
+                {svPanel.inviteJoinBody(
                   invite.agencyName,
                   invite.role === "agency_admin"
-                    ? esPanel.teamRoleAdmin
-                    : esPanel.teamRoleAgent,
+                    ? svPanel.teamRoleAdmin
+                    : svPanel.teamRoleAgent,
                 )}
               </p>
-              <p className="auth-note">{esPanel.inviteJoinNote}</p>
+              <p className="auth-note">{svPanel.inviteJoinNote}</p>
 
               <form action={acceptInviteAction}>
                 <input type="hidden" name="token" value={invite.token} />
                 <button className="auth-submit" type="submit">
-                  {esPanel.inviteJoinSubmit(invite.agencyName)}
+                  {svPanel.inviteJoinSubmit(invite.agencyName)}
                 </button>
               </form>
 
               <p className="auth-alt">
-                <Link href="/agencia">{esPanel.inviteBackToPanel}</Link>
+                <Link href="/agencia">{svPanel.inviteBackToPanel}</Link>
               </p>
             </>
           )}

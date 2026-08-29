@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
+import { es } from "@/i18n/sv";
 import { waLink } from "@/lib/wa";
 
 /**

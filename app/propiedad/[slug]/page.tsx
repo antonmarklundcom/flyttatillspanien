@@ -25,7 +25,7 @@ import {
   listingJsonLd,
   breadcrumbJsonLd,
 } from "@/lib/jsonld";
-import { esPrecios, inquiryPrefillFor } from "@/i18n/es";
+import { svPrecios, inquiryPrefillFor } from "@/i18n/sv";
 import { currentLocale, dict } from "@/i18n/server";
 import type { Dictionary } from "@/i18n";
 import {
@@ -581,10 +581,10 @@ export default async function ListingPage({ params }: Params) {
           <span>
             {contextCell ? (
               <>
-                {esPrecios.contextMedian({
+                {svPrecios.contextMedian({
                   typeLabel: PROPERTY_TYPE_LABELS[contextCell.propertyType],
                   operationLabel:
-                    esPrecios.contextOperationLabel[contextCell.operation] ??
+                    svPrecios.contextOperationLabel[contextCell.operation] ??
                     contextCell.operation,
                   city: city.name,
                   median:
@@ -600,16 +600,16 @@ export default async function ListingPage({ params }: Params) {
                 {listingPerM2 != null && (
                   <>
                     {" — "}
-                    {esPrecios.contextThisListing(formatUsd(listingPerM2))}
+                    {svPrecios.contextThisListing(formatUsd(listingPerM2))}
                   </>
                 )}
               </>
             ) : (
-              esPrecios.relatedPrices(city.name)
+              svPrecios.relatedPrices(city.name)
             )}
           </span>
           <Link className="panel-btn" href={`/precios/${city.slug}`}>
-            {esPrecios.relatedPricesCta}
+            {svPrecios.relatedPricesCta}
           </Link>
         </aside>
       )}

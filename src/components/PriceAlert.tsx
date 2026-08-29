@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { es } from "@/i18n/es";
+import { es } from "@/i18n/sv";
 
 /**
  * "Avisame si baja" price alert. There's no alerting engine yet, so this is

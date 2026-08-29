@@ -52,7 +52,7 @@ export async function registerAction(formData: FormData): Promise<void> {
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
-    whatsapp: String(formData.get("whatsapp") ?? "") || null,
+    phone: String(formData.get("phone") ?? "") || null,
     agencyName: String(formData.get("agencyName") ?? "") || null,
     inviteToken: invite || null,
   });

@@ -7,7 +7,7 @@ import {
   listPublishLocations,
   USD_TO_PYG,
 } from "@/lib/publish-queries";
-import { esPublish } from "@/i18n/es";
+import { svPublish } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { isMessagingConfigured } from "@/lib/crm";
 import {
@@ -133,8 +133,8 @@ export default async function PublishPage({
   return (
     <main className="site-main wizard-wrap">
       <header className="wizard-head">
-        <h1 className="wizard-head__title">{esPublish.pageTitle}</h1>
-        <p className="wizard-head__subtitle">{esPublish.pageSubtitle}</p>
+        <h1 className="wizard-head__title">{svPublish.pageTitle}</h1>
+        <p className="wizard-head__subtitle">{svPublish.pageSubtitle}</p>
       </header>
       <PublishWizard
         locations={locations}

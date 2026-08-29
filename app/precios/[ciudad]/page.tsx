@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { esPrecios } from "@/i18n/es";
+import { svPrecios } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
-import { formatUsd } from "@/lib/format";
+import { formatEur } from "@/lib/format";
 import { getCityPrices, MIN_RELIABLE_SAMPLE } from "@/lib/precios-queries";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { categoryUrl } from "@/lib/urls";
@@ -41,8 +41,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const indexable = prices.reliableSample > 0;
 
   return {
-    title: `${esPrecios.cityTitle(prices.city.name)}`,
-    description: esPrecios.citySubtitle(brand, prices.city.name, prices.period),
+    title: `${svPrecios.cityTitle(prices.city.name)}`,
+    description: svPrecios.citySubtitle(brand, prices.city.name, prices.period),
     alternates: { canonical: `${await siteOrigin()}/precios/${prices.city.slug}` },
     robots: indexable
       ? { index: true, follow: true }
@@ -64,7 +64,7 @@ export default async function CityPricesPage({ params }: Params) {
         data={[
           breadcrumbJsonLd(origin, [
             { name: "Inicio", url: "/" },
-            { name: esPrecios.indexTitle, url: "/precios" },
+            { name: svPrecios.indexTitle, url: "/precios" },
             { name: city.name, url: `/precios/${city.slug}` },
           ]),
         ]}
@@ -72,27 +72,27 @@ export default async function CityPricesPage({ params }: Params) {
 
       <p>
         <Link className="panel-btn" href="/precios">
-          {esPrecios.backToPrices}
+          {svPrecios.backToPrices}
         </Link>
       </p>
 
-      <h1 style={{ fontSize: 24 }}>{esPrecios.cityTitle(city.name)}</h1>
+      <h1 style={{ fontSize: 24 }}>{svPrecios.cityTitle(city.name)}</h1>
       <p style={{ color: "#55655F" }}>
-        {esPrecios.citySubtitle(brand, city.name, period)}
+        {svPrecios.citySubtitle(brand, city.name, period)}
       </p>
 
       {cells.length === 0 ? (
-        <p className="panel-empty">{esPrecios.emptyCity}</p>
+        <p className="panel-empty">{svPrecios.emptyCity}</p>
       ) : (
         <div className="panel-table__wrap">
           <table className="panel-table precios-table">
             <thead>
               <tr>
-                <th>{esPrecios.tableType}</th>
-                <th>{esPrecios.tableOperation}</th>
-                <th className="panel-table__num">{esPrecios.tableMedian}</th>
-                <th className="panel-table__num">{esPrecios.tableMedianM2}</th>
-                <th className="panel-table__num">{esPrecios.tableSample}</th>
+                <th>{svPrecios.tableType}</th>
+                <th>{svPrecios.tableOperation}</th>
+                <th className="panel-table__num">{svPrecios.tableMedian}</th>
+                <th className="panel-table__num">{svPrecios.tableMedianM2}</th>
+                <th className="panel-table__num">{svPrecios.tableSample}</th>
                 <th />
               </tr>
             </thead>
@@ -106,12 +106,12 @@ export default async function CityPricesPage({ params }: Params) {
                   <td>{OPERATION_LABEL[cell.operation]}</td>
                   <td className="panel-table__num">
                     {cell.medianPriceEur != null
-                      ? formatUsd(cell.medianPriceEur)
+                      ? formatEur(cell.medianPriceEur)
                       : "—"}
                   </td>
                   <td className="panel-table__num">
                     {cell.medianPriceM2Eur != null
-                      ? formatUsd(cell.medianPriceM2Eur)
+                      ? formatEur(cell.medianPriceM2Eur)
                       : "—"}
                   </td>
                   <td className="panel-table__num">
@@ -119,7 +119,7 @@ export default async function CityPricesPage({ params }: Params) {
                     {!cell.reliable && (
                       <span
                         className="precios-caveat"
-                        title={esPrecios.fewSamples}
+                        title={svPrecios.fewSamples}
                       >
                         {" "}
                         ⚠
@@ -136,7 +136,7 @@ export default async function CityPricesPage({ params }: Params) {
                         type: cell.propertyType,
                       })}
                     >
-                      {esPrecios.seeListings}
+                      {svPrecios.seeListings}
                     </Link>
                   </td>
                 </tr>
@@ -148,15 +148,15 @@ export default async function CityPricesPage({ params }: Params) {
 
       {cells.some((c) => !c.reliable) && (
         <p className="precios-thin-note">
-          ⚠ {esPrecios.fewSamples} (&lt; {MIN_RELIABLE_SAMPLE})
+          ⚠ {svPrecios.fewSamples} (&lt; {MIN_RELIABLE_SAMPLE})
         </p>
       )}
 
       <section className="precios-method">
         <h2 style={{ fontSize: 16, margin: "0 0 .5rem" }}>
-          {esPrecios.methodTitle}
+          {svPrecios.methodTitle}
         </h2>
-        <p style={{ margin: 0 }}>{esPrecios.methodBody(brand)}</p>
+        <p style={{ margin: 0 }}>{svPrecios.methodBody(brand)}</p>
       </section>
     </main>
   );
