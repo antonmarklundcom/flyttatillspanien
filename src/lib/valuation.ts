@@ -38,9 +38,9 @@ export type ValuationResult =
       ok: true;
       /** Mid-point, only ever shown alongside the range. */
       midUsd: number;
-      lowUsd: number;
-      highUsd: number;
-      pricePerM2Usd: number;
+      lowEur: number;
+      highEur: number;
+      pricePerM2Eur: number;
       sampleSize: number;
       period: string;
       cityName: string;
@@ -152,9 +152,9 @@ async function estimateValueUncached(
   return {
     ok: true,
     midUsd: round(mid),
-    lowUsd: round(mid * (1 - band)),
-    highUsd: round(mid * (1 + band)),
-    pricePerM2Usd: Math.round(pricePerM2),
+    lowEur: round(mid * (1 - band)),
+    highEur: round(mid * (1 + band)),
+    pricePerM2Eur: Math.round(pricePerM2),
     sampleSize: sample,
     period: latest.period,
     cityName: city.name,

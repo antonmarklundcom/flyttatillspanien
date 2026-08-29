@@ -65,7 +65,7 @@ export default async function OperationHubPage({ params }: Params) {
   const [d, locale] = await Promise.all([dict(), currentLocale()]);
   const t = d.hub;
   const copy = t.copy[op];
-  const numberLocale = locale === "en" ? "en-US" : "es-PY";
+  const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
   // The door's own hard filters narrow this rail like every other listing
   // query on the domain (VerticalConfig.filters).
   const vertical = await currentVertical();

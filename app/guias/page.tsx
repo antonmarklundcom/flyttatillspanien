@@ -125,9 +125,6 @@ export default async function GuiasPage() {
               <Link className="mk-btn mk-btn--outline" href="/como-funciona">
                 Cómo funciona
               </Link>
-              <Link className="mk-btn mk-btn--outline" href="/financiamiento">
-                Financiamiento y cuotas
-              </Link>
               <Link className="mk-btn mk-btn--outline" href="/preguntas-frecuentes">
                 Preguntas frecuentes
               </Link>

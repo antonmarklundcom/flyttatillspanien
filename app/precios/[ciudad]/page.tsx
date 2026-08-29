@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 const OPERATION_LABEL: Record<Operation, string> = {
   venta: "Venta",
   alquiler: "Alquiler",
-  alquiler_temporal: "Alquiler temporal",
+  alquiler_vacacional: "Alquiler vacacional",
 };
 
 type Params = { params: Promise<{ ciudad: string }> };

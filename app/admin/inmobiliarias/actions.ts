@@ -16,7 +16,7 @@ import { createPanelAgency, type AgencyRow } from "@/lib/panel-queries";
 
 const ROUTE = "/admin/inmobiliarias";
 
-const PLANS: readonly AgencyRow["plan"][] = ["free", "destacado", "partner"];
+const PLANS: readonly AgencyRow["plan"][] = ["free", "premium", "partner"];
 
 function str(v: FormDataEntryValue | null): string {
   return String(v ?? "").trim();

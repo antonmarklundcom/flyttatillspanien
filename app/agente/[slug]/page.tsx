@@ -139,13 +139,11 @@ export default async function AgentProfilePage({ params }: Params) {
               <Link href={agencyUrl(agency.slug)}>{agency.name}</Link>
             </p>
           )}
-          {agent.whatsapp && (
-            <div className="agent-profile__contact">
-              <a className="contact-form__altlink" href="#contacto">
-                {svAgentProfile.whatsappLink}
-              </a>
-            </div>
-          )}
+          <div className="agent-profile__contact">
+            <a className="contact-form__altlink" href="#contacto">
+              {svAgentProfile.contactLink}
+            </a>
+          </div>
         </div>
       </header>
 
@@ -162,18 +160,20 @@ export default async function AgentProfilePage({ params }: Params) {
         <p className="agent-profile__empty">{svAgentProfile.empty}</p>
       )}
 
-      {agent.whatsapp && (
-        <section className="contact-panel" id="contacto">
-          <h2 className="contact-panel__title">{svAgentProfile.contactTitle}</h2>
-          <p className="contact-panel__subtitle">{svAgentProfile.contactSubtitle}</p>
-          <ContactForm
-            contactWhatsapp={agent.whatsapp}
-            leadType="buyer"
-            prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
-            variant="panel"
-          />
-        </section>
-      )}
+      {/* Always rendered now: the form itself is the channel (the lead is
+          stored and mailed), and the agent's own number is only the optional
+          WhatsApp continuation on top of it. Gating the whole panel on a phone
+          number was correct while WhatsApp was the only way to reach anyone. */}
+      <section className="contact-panel" id="contacto">
+        <h2 className="contact-panel__title">{svAgentProfile.contactTitle}</h2>
+        <p className="contact-panel__subtitle">{svAgentProfile.contactSubtitle}</p>
+        <ContactForm
+          contactWhatsapp={agent.phone}
+          leadType="buyer"
+          prefillMessage={agentInquiryPrefillFor(brand, agent.name, canonical)}
+          variant="panel"
+        />
+      </section>
     </main>
   );
 }

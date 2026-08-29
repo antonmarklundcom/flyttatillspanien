@@ -202,7 +202,7 @@ export default async function Home() {
   const vertical = await currentVertical();
   // Number formatting follows the request's locale, not the copy: the
   // thousands separator is not the same character everywhere.
-  const numberLocale = vertical.locale === "en" ? "en-US" : "es-PY";
+  const numberLocale = vertical.locale === "sv" ? "sv-SE" : "en-US";
   const {
     recent,
     cities,
@@ -388,8 +388,8 @@ export default async function Home() {
               <Link className="ds-btn ds-btn--outline-gold" href="/precios">
                 {t.investPricesCta}
               </Link>
-              <Link className="ds-link-underline ds-link-underline--dark" href="/financiamiento">
-                {t.investFinancingCta}
+              <Link className="ds-link-underline ds-link-underline--dark" href="/guias">
+                {t.investCostsCta}
               </Link>
             </div>
           </div>

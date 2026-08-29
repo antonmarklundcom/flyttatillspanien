@@ -126,7 +126,7 @@ export default async function ListingPage({ params }: Params) {
   const { listing, images, chain, agency, agent, ownerUser } = detail;
   const [d, locale] = await Promise.all([dict(), currentLocale()]);
   const t: Dictionary["listing"] = d.listing;
-  const numberLocale = locale === "en" ? "en-US" : "es-PY";
+  const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
 
   /**
    * Count the view after the response is sent: the owner's stats must never
