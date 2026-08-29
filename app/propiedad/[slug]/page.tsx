@@ -8,7 +8,6 @@ import {
   getListingByPublicId,
   getSimilarListings,
   getAgencyListings,
-  getBestFinancingProgram,
   citySubtreeIds,
 } from "@/lib/queries";
 import {
@@ -17,7 +16,9 @@ import {
   categoryUrl,
   agencyUrl,
 } from "@/lib/urls";
-import { formatPrice, formatCuota, formatUsd, imageUrl, imageThumbUrl } from "@/lib/format";
+import { formatEur, imageUrl, imageThumbUrl } from "@/lib/format";
+import { servedTitle } from "@/lib/listing-copy";
+import type { ListingCard as ListingCardRow } from "@/lib/queries";
 import { isPlaceholderPhoto, TYPE_ICON } from "@/lib/photos";
 import { brandName } from "@/lib/brand-server";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
@@ -83,8 +84,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     : undefined;
   const cover = imageUrl(detail.images[0]?.r2Key ?? null);
   return {
-    title: t.metaTitle(listing.title, formatPrice(listing)),
-    description: listing.descriptionEs?.slice(0, 160) ?? listing.title,
+    title: t.metaTitle(servedTitle(listing), formatEur(listing.priceEur)),
+    description:
+      (listing.descriptionSv ?? listing.descriptionEs)?.slice(0, 160) ??
+      servedTitle(listing),
     alternates: { canonical, languages },
     openGraph: {
       // og:title doesn't inherit title.template — brand goes in by hand (F47).
@@ -144,7 +147,6 @@ export default async function ListingPage({ params }: Params) {
       }
     });
   }
-  const cuota = formatCuota(listing.cuotaGs);
   /**
    * Contact chain, most specific first. `ownerUser` is the FSBO tail: a
    * listing published through /publicar belongs to a person, not an agency,
@@ -152,9 +154,11 @@ export default async function ListingPage({ params }: Params) {
    * rendered with no way to reach the seller (audit F4).
    */
   const contactWhatsapp =
-    agent?.whatsapp ?? agency?.whatsapp ?? ownerUser?.whatsapp ?? null;
+    agent?.phone ?? agency?.phone ?? ownerUser?.phone ?? null;
   const leadType = listing.operation === "venta" ? "buyer" : "renter";
-  const area = listing.areaM2 ?? listing.landM2;
+  const area = listing.builtM2 ?? listing.plotM2;
+  // `title_sv ?? title` on every surface, including this one (listing-copy.ts).
+  const title = servedTitle(listing);
   const origin = await listingCanonicalOrigin();
   const servingOrigin = await siteOrigin();
   const canonical = `${origin}${listingUrl(listing)}`;
@@ -221,7 +225,7 @@ export default async function ListingPage({ params }: Params) {
   const similarLocationIds = city ? await subtreeIds(city.id) : null;
   const vertical = await currentVertical();
 
-  const [similar, fromAgency, financingProgram, cityPrices] = await Promise.all([
+  const [similar, fromAgency, cityPrices] = await Promise.all([
     city && similarLocationIds
       ? getSimilarListings({
           excludeId: listing.id,
@@ -235,9 +239,6 @@ export default async function ListingPage({ params }: Params) {
     listing.agencyId
       ? getAgencyListings({ agencyId: listing.agencyId, excludeId: listing.id, limit: 4 })
       : Promise.resolve([]),
-    listing.operation === "venta" && cuota
-      ? getBestFinancingProgram()
-      : Promise.resolve(null),
     // Market context for the internal link module below — independent of the
     // three above, so it belongs inside this block, not before it.
     city ? getCityPrices(city.slug) : Promise.resolve(null),
@@ -257,12 +258,12 @@ export default async function ListingPage({ params }: Params) {
   // /tasacion uses for its area question.
   const listingArea = Number(
     listing.propertyType === "terreno"
-      ? (listing.landM2 ?? listing.areaM2)
-      : (listing.areaM2 ?? listing.landM2),
+      ? (listing.plotM2 ?? listing.builtM2)
+      : (listing.builtM2 ?? listing.plotM2),
   );
   const listingPerM2 =
     contextCell && Number.isFinite(listingArea) && listingArea > 0
-      ? Number(listing.priceUsd) / listingArea
+      ? Number(listing.priceEur) / listingArea
       : null;
 
   const amenities = normalizeAmenities(listing.amenities);
@@ -281,10 +282,14 @@ export default async function ListingPage({ params }: Params) {
       label: t.detailState,
       value: t.stateLabel[listing.propertyState] ?? listing.propertyState,
     });
-  if (listing.areaM2)
-    details.push({ icon: "📐", label: t.detailArea, value: t.factArea(Math.round(Number(listing.areaM2))) });
-  if (listing.landM2)
-    details.push({ icon: "🌳", label: t.detailLand, value: t.factArea(Math.round(Number(listing.landM2))) });
+  if (listing.builtM2)
+    details.push({ icon: "📐", label: t.detailBuilt, value: t.factArea(Math.round(Number(listing.builtM2))) });
+  // Display only, never compared: superficie útil is 10–15% under the built
+  // figure, and the two next to each other is the point.
+  if (listing.usableM2)
+    details.push({ icon: "📏", label: t.detailUsable, value: t.factArea(Math.round(Number(listing.usableM2))) });
+  if (listing.plotM2)
+    details.push({ icon: "🌳", label: t.detailPlot, value: t.factArea(Math.round(Number(listing.plotM2))) });
   if (listing.parking != null)
     details.push({ icon: "🚗", label: t.detailParking, value: String(listing.parking) });
 
@@ -310,8 +315,8 @@ export default async function ListingPage({ params }: Params) {
       <RecentlyViewedRecorder
         entry={{
           href: listingUrl(listing),
-          title: listing.title,
-          price: formatPrice(listing),
+          title: servedTitle(listing),
+          price: formatEur(listing.priceEur),
           operation: listing.operation,
           // realImages already excludes placeholder keys, so a listing with no
           // real photo stores no img and the card renders the fallback.
@@ -425,11 +430,15 @@ export default async function ListingPage({ params }: Params) {
             {listing.operation !== "venta" ? (
               <>
                 <span className="listing-price__label">{t.priceRentLabel}</span>{" "}
-                <span className="listing-price__amount">{formatPrice(listing)}</span>
+                <span className="listing-price__amount">
+                  {formatEur(listing.priceEur)}
+                </span>
                 <span className="listing-price__period">{t.priceRentPeriod}</span>
               </>
             ) : (
-              <span className="listing-price__amount">{formatPrice(listing)}</span>
+              <span className="listing-price__amount">
+                {formatEur(listing.priceEur)}
+              </span>
             )}
             <PriceAlert
               listingPublicId={listing.publicId}
@@ -438,35 +447,14 @@ export default async function ListingPage({ params }: Params) {
             />
           </div>
 
-          {/* Financing module — the cuota differentiator (ARCHITECTURE.md §3) */}
-          {cuota && financingProgram && (
-            <div className="financing-box">
-              <div className="financing-box__head">
-                {t.financingHead(financingProgram.name)}
-                {financingProgram.code === "che_roga_pora" &&
-                  t.financingStateProgram}
-              </div>
-              <div className="financing-box__grid">
-                <div>
-                  <div className="financing-box__label">{t.financingCuotaLabel}</div>
-                  <div className="financing-box__value">{cuota}</div>
-                </div>
-                <div>
-                  <div className="financing-box__label">{t.financingTermsLabel}</div>
-                  <div className="financing-box__value financing-box__value--muted">
-                    {t.financingTerms(
-                      Number(financingProgram.annualRate).toLocaleString(numberLocale),
-                      Math.round(financingProgram.maxTermMonths / 12),
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="financing-box__foot">{t.financingFoot}</div>
-            </div>
-          )}
-          {cuota && !financingProgram && (
-            <div className="cuota-chip">💳 {cuota}</div>
-          )}
+          {/*
+            The Paraguayan financing module is gone with its programme layer.
+            Its replacement is the acquisition-cost block — ITP/AJD, notary,
+            registry and legal on top of the price, computed at render from
+            `src/lib/acquisition-cost.ts` — and building it is Phase 3's, along
+            with the SEK line and the energy badge. The copy is already in
+            `svListing.acquisition*`.
+          */}
 
           {details.length > 0 && (
             <section className="listing-section">
@@ -589,18 +577,18 @@ export default async function ListingPage({ params }: Params) {
                   city: city.name,
                   median:
                     contextCell.medianPriceEur != null
-                      ? formatUsd(contextCell.medianPriceEur)
+                      ? formatEur(contextCell.medianPriceEur)
                       : "—",
                   perM2:
                     contextCell.medianPriceM2Eur != null
-                      ? formatUsd(contextCell.medianPriceM2Eur)
+                      ? formatEur(contextCell.medianPriceM2Eur)
                       : null,
                   sample: contextCell.sampleSize,
                 })}
                 {listingPerM2 != null && (
                   <>
                     {" — "}
-                    {svPrecios.contextThisListing(formatUsd(listingPerM2))}
+                    {svPrecios.contextThisListing(formatEur(listingPerM2))}
                   </>
                 )}
               </>
@@ -618,7 +606,7 @@ export default async function ListingPage({ params }: Params) {
         <section className="similar-listings">
           <h2 className="similar-listings__title">{t.similarTitle}</h2>
           <div className="similar-listings__grid">
-            {similar.map((card) => (
+            {similar.map((card: ListingCardRow) => (
               <ListingCard key={card.id} card={card} />
             ))}
           </div>
@@ -636,7 +624,7 @@ export default async function ListingPage({ params }: Params) {
             )}
           </h2>
           <div className="similar-listings__grid">
-            {fromAgency.map((card) => (
+            {fromAgency.map((card: ListingCardRow) => (
               <ListingCard key={card.id} card={card} />
             ))}
           </div>
@@ -674,10 +662,9 @@ export default async function ListingPage({ params }: Params) {
       <div className="listing-cta-bar">
         <div className="listing-cta-bar__price">
           <span className="listing-cta-bar__amount">
-            {formatPrice(listing)}
+            {formatEur(listing.priceEur)}
             {listing.operation !== "venta" && t.priceRentPeriod}
           </span>
-          {cuota && <span className="listing-cta-bar__cuota">💳 {cuota}</span>}
         </div>
         <div className="listing-cta-bar__actions">
           {waHref && (
@@ -686,7 +673,7 @@ export default async function ListingPage({ params }: Params) {
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={t.ctaBarWhatsapp}
+              aria-label={t.ctaBarContact}
             >
               💬
             </a>
