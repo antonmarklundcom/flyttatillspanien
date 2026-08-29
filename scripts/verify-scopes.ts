@@ -88,7 +88,7 @@ async function main() {
       name: "Verify Agency Owner",
       email: mail("agency"),
       password: "secreto123",
-      whatsapp: null,
+      phone: null,
       agencyName: `Verify Inmobiliaria ${stamp}`,
     });
     check("agency signup succeeds", agencyOwner.ok);
@@ -126,7 +126,7 @@ async function main() {
       name: "Verify Independent",
       email: mail("independent"),
       password: "secreto123",
-      whatsapp: null,
+      phone: null,
       agencyName: null,
     });
     check("independent signup succeeds", independent.ok);
@@ -144,12 +144,58 @@ async function main() {
     check("independent gets the agent role", indepUser.role === "agent");
     check("independent has no agency", indepAgent.agencyId === null);
 
+    /* ---------------------------------------------------------------- */
+    /* The third lister type: a relocation agency is a VALUE, not a fork  */
+    /* ---------------------------------------------------------------- */
+    /**
+     * `agencies.kind` was added so a Swedish relocation intermediary gets the
+     * whole apparatus — staff, a profile, listings, routed leads, a panel —
+     * from one enum column instead of a second table (design doc §3.3). The
+     * design doc's instruction is explicit: do NOT fork `listingScopeWhere` /
+     * `panelScope` for it.
+     *
+     * That instruction is only worth anything if something checks it, so the
+     * assertions below are deliberately the SAME ones the inmobiliaria above
+     * gets. A relocation agency that scoped differently — saw a neighbour's
+     * listing, or could publish its own past the review queue — would be a
+     * fork that nobody wrote on purpose.
+     */
+    const relocationOwner = await registerAccount({
+      kind: "agency",
+      name: "Verify Relocation Owner",
+      email: mail("relocation"),
+      password: "secreto123",
+      phone: null,
+      agencyName: `Verify Relocation ${stamp}`,
+    });
+    check("relocation-agency signup succeeds", relocationOwner.ok);
+    if (!relocationOwner.ok) return;
+    createdUserIds.push(relocationOwner.userId);
+
+    const [relocationAgent] = await db
+      .select()
+      .from(agents)
+      .where(eq(agents.userId, relocationOwner.userId));
+    const relocationAgencyId = relocationAgent.agencyId!;
+    createdAgencyIds.push(relocationAgencyId);
+
+    // The one column that makes it the third lister type.
+    await db
+      .update(agencies)
+      .set({ kind: "relocation", countryCode: "SE" })
+      .where(eq(agencies.id, relocationAgencyId));
+    const relocationProfile = await getAgencyProfile(relocationAgencyId);
+    check(
+      "the relocation agency reads back as its own kind",
+      relocationProfile !== null,
+    );
+
     const dup = await registerAccount({
       kind: "independent",
       name: "Duplicate",
       email: ownerUser.email!,
       password: "secreto123",
-      whatsapp: null,
+      phone: null,
       agencyName: null,
     });
     check("duplicate email refused", !dup.ok && dup.error === "email_taken");
@@ -159,7 +205,7 @@ async function main() {
       name: "Weak",
       email: mail("weak"),
       password: "corto",
-      whatsapp: null,
+      phone: null,
       agencyName: null,
     });
     check("short password refused", !weak.ok && weak.error === "password");
@@ -169,10 +215,16 @@ async function main() {
     /* ---------------------------------------------------------------- */
     const base = {
       operation: "venta" as const,
-      propertyType: "casa" as const,
-      priceCurrency: "USD" as const,
+      propertyType: "villa" as const,
       locationId,
       status: "published" as const,
+      /**
+       * Every fixture carries an energy rating, because the publish gate
+       * refuses a `published` row without one (publish-gate.ts) and these
+       * fixtures are here to test SCOPE, not the gate. A missing rating would
+       * make half the assertions below fail for the wrong reason.
+       */
+      energyRating: "D" as const,
     };
     await db.insert(listings).values([
       {
@@ -180,8 +232,7 @@ async function main() {
         publicId: `vfy${String(stamp).slice(-7)}`,
         slug: `verify-agency-${stamp}`,
         title: "Verify agency listing",
-        priceAmount: "100000",
-        priceUsd: "100000",
+        priceEur: "100000",
         agencyId,
         /**
          * Must start as a DRAFT, and this is not cosmetic. maySetStatus()
@@ -198,18 +249,36 @@ async function main() {
         publicId: `vfx${String(stamp).slice(-7)}`,
         slug: `verify-owner-${stamp}`,
         title: "Verify independent listing",
-        priceAmount: "90000",
-        priceUsd: "90000",
+        priceEur: "90000",
         ownerUserId: independent.userId,
+      },
+      {
+        ...base,
+        publicId: `vfz${String(stamp).slice(-7)}`,
+        slug: `verify-relocation-${stamp}`,
+        title: "Verify relocation listing",
+        priceEur: "120000",
+        agencyId: relocationAgencyId,
+        // A draft, for the same reason the inmobiliaria's fixture is one.
+        status: "draft" as const,
       },
     ]);
 
     const agencyScope = { kind: "agency", agencyId } as const;
     const ownerScope = { kind: "owner", userId: independent.userId } as const;
+    const relocationScope = {
+      kind: "agency",
+      agencyId: relocationAgencyId,
+    } as const;
 
     const agencyRows = await getPanelListings(agencyScope);
     const ownerRows = await getPanelListings(ownerScope);
-    createdListingIds.push(...agencyRows.map((r) => r.id), ...ownerRows.map((r) => r.id));
+    const relocationRows = await getPanelListings(relocationScope);
+    createdListingIds.push(
+      ...agencyRows.map((r) => r.id),
+      ...ownerRows.map((r) => r.id),
+      ...relocationRows.map((r) => r.id),
+    );
 
     check(
       "agency dashboard shows only its own listing",
@@ -284,18 +353,29 @@ async function main() {
         title: "Verify agency listing (edited)",
         descriptionEs: null,
         operation: "venta",
-        propertyType: "casa",
-        priceAmount: 100000,
-        priceCurrency: "USD",
+        propertyType: "villa",
+        priceEur: 100000,
         bedrooms: null,
         bathrooms: null,
         parking: null,
-        areaM2: null,
-        landM2: null,
+        builtM2: null,
+        usableM2: null,
+        plotM2: null,
+        yearBuilt: null,
         locationId,
         videoUrl: null,
-        foreignExposure: true,
         status: "published",
+        referenciaCatastral: null,
+        energyRating: "D",
+        energyEmissions: null,
+        legalStatus: "desconocido",
+        chargesStatus: "desconocido",
+        ibiAnnualEur: null,
+        communityMonthlyEur: null,
+        isVpo: false,
+        landClassification: null,
+        buildableM2: null,
+        touristLicence: null,
       },
     });
     check("agency can edit a published listing without unpublishing it", editPublished === 1);
@@ -306,6 +386,56 @@ async function main() {
       .where(eq(listings.id, agencyRows[0].id))
       .limit(1);
     check("...and it is still published", afterEdit?.status === "published");
+
+    /* ---------------------------------------------------------------- */
+    /* …and the relocation agency is scoped identically                  */
+    /* ---------------------------------------------------------------- */
+    check(
+      "relocation dashboard shows only its own listing",
+      relocationRows.length === 1 &&
+        relocationRows[0].title === "Verify relocation listing",
+      `${relocationRows.length} row(s)`,
+    );
+    check(
+      "a relocation agency cannot touch an inmobiliaria's listing",
+      (await setPanelListingStatus({
+        listingId: agencyRows[0].id,
+        scope: relocationScope,
+        status: "paused",
+      })) === 0,
+    );
+    check(
+      "…nor the other way round",
+      (await setPanelListingStatus({
+        listingId: relocationRows[0].id,
+        scope: agencyScope,
+        status: "paused",
+      })) === 0,
+    );
+    check(
+      "a relocation agency cannot publish its own listing either",
+      (await setPanelListingStatus({
+        listingId: relocationRows[0].id,
+        scope: relocationScope,
+        status: "published",
+      })) === 0,
+    );
+    check(
+      "…but can submit it for review, exactly like an inmobiliaria",
+      (await setPanelListingStatus({
+        listingId: relocationRows[0].id,
+        scope: relocationScope,
+        status: "pending_review",
+      })) === 1,
+    );
+    check(
+      "a relocation agency cannot load another agency's listing for editing",
+      (await getEditableListing(agencyRows[0].id, relocationScope)) === null,
+    );
+    check(
+      "…and can load its own",
+      (await getEditableListing(relocationRows[0].id, relocationScope)) !== null,
+    );
 
     check(
       "agency cannot load the independent's listing for editing",
@@ -331,7 +461,7 @@ async function main() {
         leadType: "buyer",
         vertical: "verify",
         listingId: ownerRows[0].id,
-        whatsapp: `0983${String(stamp).slice(-6)}`,
+        email: `buyer-${stamp}@example.test`,
         name: "Verify buyer lead",
         routedTo: "owner",
       },
@@ -339,7 +469,7 @@ async function main() {
         leadType: "valuation",
         vertical: "verify",
         listingId: ownerRows[0].id,
-        whatsapp: `0984${String(stamp).slice(-6)}`,
+        email: `internal-${stamp}@example.test`,
         name: "Verify internal lead",
         routedTo: "internal",
       },
@@ -369,7 +499,7 @@ async function main() {
     await updateAgencyProfile(agencyId, {
       name: "Verify Renamed",
       logoUrl: "https://example.test/logo.png",
-      whatsapp: "0981000000",
+      phone: "952100000",
       email: "hola@example.test",
     });
     const renamed = await getAgencyProfile(agencyId);
@@ -383,7 +513,7 @@ async function main() {
     await updateAgencyProfile(agencyId, {
       name: "Verify Renamed",
       logoUrl: "",
-      whatsapp: "",
+      phone: "",
       email: "",
     });
     check(
@@ -395,7 +525,7 @@ async function main() {
       (await updateAgencyProfile(agencyId, {
         name: " ",
         logoUrl: "",
-        whatsapp: "",
+        phone: "",
         email: "",
       })) === false,
     );
@@ -403,7 +533,7 @@ async function main() {
     await updateOwnAgentProfile(independent.userId, {
       name: "Verify Independent Renamed",
       photoUrl: "https://example.test/a.jpg",
-      whatsapp: "0982000000",
+      phone: "952200000",
     });
     check(
       "own agent profile updates",
