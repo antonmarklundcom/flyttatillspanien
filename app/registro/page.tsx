@@ -29,6 +29,7 @@ const ERRORS: Record<string, string> = {
   password: svPanel.registerErrorPassword,
   agency_name: svPanel.registerErrorAgencyName,
   invite: svPanel.registerErrorInvite,
+  throttled: svPanel.registerErrorThrottled,
   generic: svPanel.registerErrorGeneric,
 };
 

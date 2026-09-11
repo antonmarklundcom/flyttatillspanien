@@ -28,6 +28,7 @@ import { servedTitle } from "@/lib/listing-copy";
 import { svPanel } from "@/i18n/sv";
 import { siteOrigin } from "@/lib/origin";
 import { createOtp, verifyOtp } from "@/lib/otp";
+import { allowRequest } from "@/lib/rate-limit";
 import { saveDraft, submitDraftForReview } from "@/lib/publish-queries";
 
 /** Which agency (if any) a publisher belongs to — never read from the client. */
@@ -190,6 +191,20 @@ export async function saveDraftAction(
   return { ok: true, draftId };
 }
 
+/**
+ * `createOtp`'s own cooldown is keyed on the destination, which here is the
+ * account's own email — so it paces resends but does not bound how many mails
+ * one account can make the SMTP transport send. Keying a second cap on the
+ * user id is what closes that, because the account is the only thing an
+ * attacker has to spend to reach this action at all.
+ *
+ * Five an hour: publishing one listing needs one code, and a mistyped or
+ * mislaid mail plus resends makes three, so five leaves an honest publisher
+ * room while bounding a single account to five mails an hour.
+ */
+const OTP_MAX = 5;
+const OTP_WINDOW_MS = 60 * 60_000;
+
 export type RequestOtpResult =
   | { ok: true }
   | {
@@ -214,6 +229,17 @@ export async function requestOtpAction(): Promise<RequestOtpResult> {
   const email = user.email.trim();
 
   if (!isMessagingConfigured()) return { ok: false, error: "undeliverable" };
+
+  // Before `createOtp` reads or writes a row, and deliberately after the guard
+  // above: that path sends nothing, so it must not spend an hour's budget.
+  // Reported as `cooldown` rather than a new error so the wizard's existing
+  // countdown handles it with no client change — `allowRequest` does not
+  // expose how much of the window is left, so this reports the whole window,
+  // which is the upper bound on the wait and never invites a retry that would
+  // only be refused again.
+  if (!allowRequest(`otp|${user.id}`, OTP_MAX, OTP_WINDOW_MS)) {
+    return { ok: false, error: "cooldown", cooldownMs: OTP_WINDOW_MS };
+  }
 
   const created = await createOtp(email);
   if (!created.ok)
