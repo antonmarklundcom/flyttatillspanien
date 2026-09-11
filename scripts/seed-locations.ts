@@ -28,6 +28,7 @@
  * Coordinates are approximate centroids (OSM), good enough for map default
  * centering; per-listing lat/lng comes from the importer.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { db } from "../src/db";
 import { locations } from "../src/db/schema";
 import { slugify, joinSlug } from "../src/lib/slug";

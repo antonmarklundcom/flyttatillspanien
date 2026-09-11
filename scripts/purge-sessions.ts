@@ -9,6 +9,7 @@
  *
  * Wire as a Hostinger cron (daily) next to cron:fx. Uses idx_expires.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { lt } from "drizzle-orm";
 import { db } from "../src/db";
 import { sessions } from "../src/db/schema";

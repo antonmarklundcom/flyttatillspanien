@@ -21,6 +21,7 @@
  * are scaled fees with minimums, so a percentage is an approximation at any
  * price and a bad one at the extremes.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { db } from "../src/db";
 import { acquisitionCosts } from "../src/db/schema";
 

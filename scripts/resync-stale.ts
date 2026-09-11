@@ -12,6 +12,7 @@
  * Everything it does is recorded as an import job and can be reverted from
  * /admin/importar, so a cutoff set too aggressively is one click to undo.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { DEFAULT_STALE_DAYS, runResync } from "../src/lib/import/resync";
 
 async function main() {

@@ -17,6 +17,7 @@
  * picks up what failed or arrived since. Placeholder picsum rows are skipped
  * by default — copying fake stock photos into the bucket is not the point.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { listingImages, listings } from "../src/db/schema";

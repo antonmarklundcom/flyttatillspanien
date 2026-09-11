@@ -17,6 +17,7 @@
  * /admin/importar does the same thing with a preview, a permission record and
  * an undo button; prefer it unless the file is too big for an upload.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { readFileSync } from "node:fs";
 import { db } from "../src/db";
 import { parseCsvRecords, recordToRaw } from "../src/lib/import/csv";

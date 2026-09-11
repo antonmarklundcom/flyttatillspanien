@@ -20,6 +20,7 @@
  * `--dry` reports how many published rows would change position without
  * writing, the same shape as `cron:resync`.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { eq, or, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { listings, locations } from "../src/db/schema";

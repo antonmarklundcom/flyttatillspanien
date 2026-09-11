@@ -21,6 +21,7 @@
  *
  * Wire as a Hostinger cron (daily/weekly) once M0 deploy is live.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { listings, marketMedians } from "../src/db/schema";
