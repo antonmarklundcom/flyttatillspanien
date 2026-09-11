@@ -22,6 +22,7 @@
  * resolves municipios/zonas by slug and expects them to already exist.
  * Phases 4 and 6 reuse this fixture for their own verification.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { eq } from "drizzle-orm";
 import { db } from "../src/db";
 import { agencies, agents, listings, locations, users } from "../src/db/schema";

@@ -482,15 +482,14 @@ merging any PR that touches `schema.ts`** and **again immediately after
 Local `DATABASE_URL` is `mysql://ftse:ftse@127.0.0.1:3306/ftse` — the
 docker-compose service, DB name and user are all `ftse`, not `propia`.
 
+`db:push` was removed; migrations are files, reviewed in a PR and applied by a
+human. A writing script picks `DATABASE_URL_RW ?? DATABASE_URL` (`AGENTS.md` §3).
+
 ## Working agreements with the founder
 
-- **Autonomous build + merge is authorised** for well-verified, low-risk work
-  (CSS, UI, copy, docs). Zero live users, everything git-revertible.
-- **Flag before merging** anything touching auth, payments, or the DB schema.
-- **Always** `git fetch origin main && git reset --hard origin/main` before
-  branching. Merges happen through the GitHub API, so local `main` goes stale
-  and a merged PR can look "missing".
-- Verify with `npx tsc --noEmit` **and** `npm run build` before merging;
-  Hostinger auto-deploys `main` with no staging environment.
-- Branch naming: `phase/<id>` for a phased-build phase (`plan.md`'s own
-  numbering); `claude/<feature-name>` for any other ad hoc session.
+@AGENTS.md
+
+The working agreements moved to `AGENTS.md` on 2026-09-11 — git and
+verification discipline, what an agent may and may not merge, the read-only
+`DATABASE_URL` / owner `DATABASE_URL_RW` split, and when to stop and ask. That
+file is self-contained; read it before touching anything.

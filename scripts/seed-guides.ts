@@ -23,6 +23,7 @@
  * script, no page template reads the column yet (KNOWN-ISSUES.md); this is
  * the data half only.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { db } from "../src/db";
 import { locations } from "../src/db/schema";
 import { eq } from "drizzle-orm";

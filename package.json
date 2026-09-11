@@ -14,7 +14,6 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:status": "tsx --tsconfig scripts/tsconfig.json scripts/check-migrations.ts",
-    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "seed:costs": "tsx --tsconfig scripts/tsconfig.json scripts/seed-acquisition-costs.ts",
     "seed:locations": "tsx --tsconfig scripts/tsconfig.json scripts/seed-locations.ts",

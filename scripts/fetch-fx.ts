@@ -21,6 +21,7 @@
  * data cache. `CACHE_TTL.fx` (one hour) is the invalidation mechanism, which
  * is documented in src/lib/cache.ts.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { db } from "../src/db";
 import { fxRates } from "../src/db/schema";
 

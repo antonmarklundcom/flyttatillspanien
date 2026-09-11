@@ -24,6 +24,7 @@
  * non-zero if any occurred, so a cron that mails its output says something
  * went wrong without pretending the whole batch died.
  */
+import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { and, asc, eq, gt, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { listings } from "../src/db/schema";

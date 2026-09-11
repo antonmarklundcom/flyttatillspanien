@@ -26,10 +26,13 @@
  *   $env:DATABASE_URL = "mysql://<user>:<pass>@<host>:3306/<db>"   # PowerShell
  *   npm run db:status
  *
- * With `--probe` it additionally tries one INSERT of a `routed_to = 'owner'`
- * lead inside a transaction and **always rolls it back**, which is the only
- * way to prove the enum accepts the value end to end. The rollback is in a
- * `finally`, so it happens even if the insert throws.
+ * The read-only user is enough for everything above, and is what an agent gets
+ * (see AGENTS.md §3). With `--probe` it additionally tries one INSERT of a
+ * `routed_to = 'owner'` lead inside a transaction and **always rolls it back**,
+ * which is the only way to prove the enum accepts the value end to end. That
+ * needs write access, so the probe alone opens its own connection on
+ * `DATABASE_URL_RW ?? DATABASE_URL`. The rollback is in a `finally`, so it
+ * happens even if the insert throws.
  *
  *   npm run db:status -- --probe
  */
@@ -338,24 +341,36 @@ async function main() {
       if (!db) {
         console.log("  skipped — no leads table located.");
       } else {
+        // The one write in this file, so it is the one place that may use the
+        // owner credential: everything above is a SELECT and runs on the
+        // read-only DATABASE_URL an agent holds (AGENTS.md §3).
+        const pc = await mysql.createConnection(process.env.DATABASE_URL_RW ?? url);
         let inserted = false;
-        await c.beginTransaction();
         try {
-          await c.query(
-            `INSERT INTO \`${db}\`.leads (lead_type, vertical, whatsapp, name, message, routed_to)
-             VALUES ('buyer', 'probe', '+000000000', 'migration probe', 'rolled back', 'owner')`,
-          );
-          inserted = true;
-          const [warns] = (await c.query("SHOW WARNINGS")) as [Array<{ Message: string }>, unknown];
-          for (const w of warns) console.log(`  warning: ${w.Message}`);
-          console.log(warns.length === 0 ? "  INSERT OK, no warnings — the owner lane works." : "  INSERT stored a value but MySQL warned; read the warning above.");
-        } catch (err) {
-          console.log(`  INSERT FAILED: ${(err as Error).message}`);
-          console.log("  The enum still does not accept 'owner'.");
+          await pc.beginTransaction();
+          try {
+            await pc.query(
+              `INSERT INTO \`${db}\`.leads (lead_type, vertical, email, phone, name, message, routed_to)
+               VALUES ('buyer', 'probe', 'probe@example.invalid', '+000000000', 'migration probe', 'rolled back', 'owner')`,
+            );
+            inserted = true;
+            const [warns] = (await pc.query("SHOW WARNINGS")) as [Array<{ Message: string }>, unknown];
+            for (const w of warns) console.log(`  warning: ${w.Message}`);
+            console.log(warns.length === 0 ? "  INSERT OK, no warnings — the owner lane works." : "  INSERT stored a value but MySQL warned; read the warning above.");
+          } catch (err) {
+            console.log(`  INSERT FAILED: ${(err as Error).message}`);
+            // Do not name a cause the error has not established: this insert
+            // can fail for a missing column or a refused credential just as
+            // easily as for the enum, and an alert that guesses is an alert
+            // that lies.
+            console.log("  Read the message above — the enum is only one of the things it can mean.");
+          } finally {
+            // Always. The probe must never leave a row behind in production.
+            await pc.rollback();
+            if (inserted) console.log("  rolled back.");
+          }
         } finally {
-          // Always. The probe must never leave a row behind in production.
-          await c.rollback();
-          if (inserted) console.log("  rolled back.");
+          await pc.end();
         }
       }
     } else {
