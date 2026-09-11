@@ -160,40 +160,6 @@ Format: `- [phase found] area — what, and what would fix it.`
   longer linked from the header or footer. Consolidating or redirecting one
   into the other is an editorial call for Phase 5, not a Phase 3 fix.
 
-- [4] **`DATABASE_URL=<local> npm run verify:import`'s rollback exercise fails,
-  pre-existing.** The check `rollback restored the old prices` reports six
-  rows for the three `Flat` fixtures (`["299000.00" × 3, "285000.00" × 3]`)
-  instead of three rows all back at 285000 — as if the batch's price-update
-  rollback restored the old value onto three *extra* rows rather than the
-  three it updated, while the three rows still at the new price were left
-  untouched. Confirmed **not** caused by this phase: `git stash` back to the
-  merged Phase 3 tree and re-running the same command reproduces the
-  identical failure and the identical row counts. `rollbackImportJob()`'s
-  `updated`-outcome path (`src/lib/import/jobs.ts`) does the right shape of
-  thing at a glance — an `UPDATE … WHERE id = row.listingId` keyed off the
-  snapshot in `previous_json`, not an insert — so the six-row count needs a
-  session with license to touch `src/lib/import/jobs.ts` (core logic, out of
-  a Sonnet phase's reach per §4.7) tracing why the `updated` restore leaves
-  two generations of the row instead of one. Every other `verify:import`
-  check, including the pure half and the rest of the database half (dedup on
-  both paths, the publish gate, re-import idempotency), is green. Every
-  `verify:local`/`verify:scopes` run in this phase used a persistent local
-  MySQL the phase's own build never reset, so a stale fixture from an earlier
-  invocation cannot be ruled out as a contributing factor either — the
-  cleanest next step is reproducing it once against a freshly
-  `docker compose up`'d database before touching `jobs.ts`.
-
-  **[5] Update: does not reproduce against a fresh database.** Phase 5 ran
-  `docker compose up -d` from nothing (a brand-new named volume, never
-  reused from an earlier phase) and `db:migrate` on it, then
-  `DATABASE_URL=<local> npm run verify:import` — `rollback restored the old
-  prices` passed cleanly, three rows all back at 285000, no extra
-  generations. This does not prove `jobs.ts` is bug-free (one clean run
-  isn't a proof of absence), but it does support the "stale fixture from a
-  reused local database" theory over a real rollback defect strongly enough
-  that the next person hitting this should try a fresh database FIRST,
-  before spending a core-logic session tracing `rollbackImportJob()`.
-
 - [5] `locations.guide_content_sv` is seeded (`npm run seed:guides`, all 41
   municipios) but **no page template reads the column yet**. Content is a
   short, factual, general-geography note (comunidad/provincia/coast region,
@@ -214,3 +180,45 @@ Format: `- [phase found] area — what, and what would fix it.`
   page used it only as a React `key`, harmless functionally but the file's
   own comment claimed it "mirrors the `agencies.plan` enum". All three fixed
   in this phase (mechanical rename, not a schema or algorithm change).
+
+## Resolved
+
+- [4/5 → PR-4, resolved] **`verify:import`'s "rollback restored the old prices"
+  check reporting six rows (`["299000.00" × 3, "285000.00" × 3]`).** Recorded
+  in [4] as a suspected over-restore in `rollbackImportJob()`'s `updated`
+  path and in [5] as "does not reproduce on a fresh database". Neither reading
+  was right. There were **two** independent things going on, and neither was a
+  bug in `src/lib/import/jobs.ts`:
+
+  **(a) The assertion was not scoped to the rows the job touched.** The
+  fixture deliberately imports the same three `Flat` rows a second time under
+  **agency B** (`another agency's ids 1-3 do not overwrite the first agency's`),
+  so `like(listings.title, '<MARKER> Flat%')` selects **six** rows by design —
+  agency A's three (updated to 299000 by `planC`, restored by the rollback) and
+  agency B's three (created at 285000, never part of the job). Instrumented on
+  MySQL 8.4, before the rollback: `id=31 agency=A 299000`, `32 A 299000`,
+  `33 A 299000`, `34 B 285000`, `35 B 285000`, `36 B 285000`; after it, all six
+  at 285000. Every row the job updated was restored exactly once, and no row it
+  did not update was written. The `every()` therefore passed only because
+  agency B's rows happened to hold the same value — an assertion that could not
+  distinguish "restored" from "never touched". Fixed here by filtering
+  `afterRollback` to `agencyId === agencyA` and asserting exactly three rows.
+
+  **(b) The six-row *failure* shape reproduces only on a MariaDB stand-in.**
+  MariaDB stores `json` columns as `longtext`, so `mysql2` hands
+  `import_rows.previous_json` back as an unparsed string; the destructure
+  yields no column keys and the restore `UPDATE` sets nothing, leaving agency
+  A's three flats at 299000 beside agency B's three at 285000 — exactly the
+  recorded `["299000.00" × 3, "285000.00" × 3]`. Established by the director,
+  who reproduced it failing on MariaDB 10.11 and passing on MySQL 8.4 against
+  the unmodified base commit; this PR verified the MySQL 8.4 side only. That is
+  `AGENTS.md` §3's documented sandbox caveat, not a code defect. Phase 5 saw
+  green because it ran on MySQL, not because its database was fresh.
+
+  The "stale fixture from a reused database" theory in [4] is also ruled out on
+  MySQL: `dbChecks()` calls `cleanup()` at the *start* of every run, and a run
+  deliberately aborted mid-flight (leaving three marker rows at 299000 behind)
+  was absorbed by the next run's opening cleanup with every check green.
+  `cleanup()` now additionally runs in a `finally`, so an exception mid-fixture
+  cannot leave marker rows either.
+

@@ -285,296 +285,313 @@ async function dbChecks() {
   };
   await cleanup();
 
-  const [agA] = await db.insert(agencies).values({
-    name: `${MARKER} A`,
-    slug: `zz-verify-a-${Date.now()}`,
-  });
-  const [agB] = await db.insert(agencies).values({
-    name: `${MARKER} B`,
-    slug: `zz-verify-b-${Date.now()}`,
-  });
-  const agencyA = Number((agA as unknown as { insertId: number }).insertId);
-  const agencyB = Number((agB as unknown as { insertId: number }).insertId);
+  try {
+    const [agA] = await db.insert(agencies).values({
+      name: `${MARKER} A`,
+      slug: `zz-verify-a-${Date.now()}`,
+    });
+    const [agB] = await db.insert(agencies).values({
+      name: `${MARKER} B`,
+      slug: `zz-verify-b-${Date.now()}`,
+    });
+    const agencyA = Number((agA as unknown as { insertId: number }).insertId);
+    const agencyB = Number((agB as unknown as { insertId: number }).insertId);
 
-  /** Three near-identical flats, no phone — the exact shape that used to merge. */
-  const flats: RawListing[] = [1, 2, 3].map((n) => ({
-    source: "whiteglove",
-    sourceExternalId: String(n),
-    operation: "venta",
-    propertyType: "apartamento",
-    title: `${MARKER} Flat ${n}`,
-    priceEur: 285000,
-    builtM2: 60,
-    locationName: loc.name,
-  }));
+    /** Three near-identical flats, no phone — the exact shape that used to merge. */
+    const flats: RawListing[] = [1, 2, 3].map((n) => ({
+      source: "whiteglove",
+      sourceExternalId: String(n),
+      operation: "venta",
+      propertyType: "apartamento",
+      title: `${MARKER} Flat ${n}`,
+      priceEur: 285000,
+      builtM2: 60,
+      locationName: loc.name,
+    }));
 
-  const plan1 = await planImport(db, flats, { agencyId: agencyA });
-  const committed1 = await commitImport(db, plan1, { agencyId: agencyA });
-  const report1 = reportFromCommitted(committed1);
-  check(
-    "three phone-less flats create three listings",
-    report1.created === 3,
-    `created=${report1.created} deduped=${report1.deduped}`,
-  );
+    const plan1 = await planImport(db, flats, { agencyId: agencyA });
+    const committed1 = await commitImport(db, plan1, { agencyId: agencyA });
+    const report1 = reportFromCommitted(committed1);
+    check(
+      "three phone-less flats create three listings",
+      report1.created === 3,
+      `created=${report1.created} deduped=${report1.deduped}`,
+    );
 
-  // Re-run the identical file: the M2 gate.
-  const plan2 = await planImport(db, flats, { agencyId: agencyA });
-  const report2 = reportFromCommitted(await commitImport(db, plan2, { agencyId: agencyA }));
-  check(
-    "re-importing the same file changes nothing",
-    report2.unchanged === 3 && report2.created === 0,
-    `unchanged=${report2.unchanged} created=${report2.created}`,
-  );
+    // Re-run the identical file: the M2 gate.
+    const plan2 = await planImport(db, flats, { agencyId: agencyA });
+    const report2 = reportFromCommitted(await commitImport(db, plan2, { agencyId: agencyA }));
+    check(
+      "re-importing the same file changes nothing",
+      report2.unchanged === 3 && report2.created === 0,
+      `unchanged=${report2.unchanged} created=${report2.created}`,
+    );
 
-  // Ownership.
-  const owned = await db
-    .select({ id: listings.id, agencyId: listings.agencyId })
-    .from(listings)
-    .where(like(listings.title, `${MARKER} Flat%`));
-  check(
-    "imported listings belong to the agency",
-    owned.length === 3 && owned.every((l) => l.agencyId === agencyA),
-    JSON.stringify(owned.map((l) => l.agencyId)),
-  );
+    // Ownership. Deliberately NOT scoped to agency A: this runs before agency
+    // B's import below, so the three matching rows are the ones just created,
+    // and the point of the check is that they came out owned by A. `cleanup()`
+    // runs both before the fixture and in the `finally` below, so a stale
+    // marker row from an earlier run cannot inflate the count here.
+    const owned = await db
+      .select({ id: listings.id, agencyId: listings.agencyId })
+      .from(listings)
+      .where(like(listings.title, `${MARKER} Flat%`));
+    check(
+      "imported listings belong to the agency",
+      owned.length === 3 && owned.every((l) => l.agencyId === agencyA),
+      JSON.stringify(owned.map((l) => l.agencyId)),
+    );
 
-  // A second agency reusing the same external ids 1,2,3.
-  const planB = await planImport(db, flats, { agencyId: agencyB });
-  const reportB = reportFromCommitted(await commitImport(db, planB, { agencyId: agencyB }));
-  check(
-    "another agency's ids 1-3 do not overwrite the first agency's",
-    reportB.created === 3,
-    `created=${reportB.created} updated=${reportB.updated}`,
-  );
+    // A second agency reusing the same external ids 1,2,3.
+    const planB = await planImport(db, flats, { agencyId: agencyB });
+    const reportB = reportFromCommitted(await commitImport(db, planB, { agencyId: agencyB }));
+    check(
+      "another agency's ids 1-3 do not overwrite the first agency's",
+      reportB.created === 3,
+      `created=${reportB.created} updated=${reportB.updated}`,
+    );
 
-  /* ---------------------------------------------------------------- */
-  /* The two dedup paths, both exercised.                               */
-  /* ---------------------------------------------------------------- */
+    /* ---------------------------------------------------------------- */
+    /* The two dedup paths, both exercised.                               */
+    /* ---------------------------------------------------------------- */
 
-  /**
-   * The EXACT path. Two rows for one physical property, from two different
-   * sources (so the external-id branch cannot claim them), carrying the same
-   * cadastral reference written two different ways. Nothing else about them
-   * matches: different title, different price bucket, no phone at all — so a
-   * merge here can only have come from the reference.
-   */
-  const catastralA: RawListing = {
-    source: "whiteglove",
-    sourceExternalId: "rc-1",
-    operation: "venta",
-    propertyType: "villa",
-    title: `${MARKER} Villa con RC`,
-    priceEur: 495000,
-    builtM2: 210,
-    referenciaCatastral: RC_A,
-    locationName: loc.name,
-  };
-  const catastralB: RawListing = {
-    ...catastralA,
-    source: "import_idealista",
-    sourceExternalId: "rc-2",
-    title: `${MARKER} Villa con RC (otro portal)`,
-    priceEur: 519000, // a different 5 000 € bucket
-    builtM2: 245, // a different 10 m² bucket
-    referenciaCatastral: ` ${RC_A.toLowerCase()} `,
-  };
+    /**
+     * The EXACT path. Two rows for one physical property, from two different
+     * sources (so the external-id branch cannot claim them), carrying the same
+     * cadastral reference written two different ways. Nothing else about them
+     * matches: different title, different price bucket, no phone at all — so a
+     * merge here can only have come from the reference.
+     */
+    const catastralA: RawListing = {
+      source: "whiteglove",
+      sourceExternalId: "rc-1",
+      operation: "venta",
+      propertyType: "villa",
+      title: `${MARKER} Villa con RC`,
+      priceEur: 495000,
+      builtM2: 210,
+      referenciaCatastral: RC_A,
+      locationName: loc.name,
+    };
+    const catastralB: RawListing = {
+      ...catastralA,
+      source: "import_idealista",
+      sourceExternalId: "rc-2",
+      title: `${MARKER} Villa con RC (otro portal)`,
+      priceEur: 519000, // a different 5 000 € bucket
+      builtM2: 245, // a different 10 m² bucket
+      referenciaCatastral: ` ${RC_A.toLowerCase()} `,
+    };
 
-  const planRc1 = reportFromCommitted(
+    const planRc1 = reportFromCommitted(
+      await commitImport(
+        db,
+        await planImport(db, [catastralA], { agencyId: agencyA }),
+        { agencyId: agencyA },
+      ),
+    );
+    check("a row with a cadastral reference creates a listing", planRc1.created === 1);
+
+    const planRc2 = reportFromCommitted(
+      await commitImport(
+        db,
+        await planImport(db, [catastralB], { agencyId: agencyA }),
+        { agencyId: agencyA },
+      ),
+    );
+    check(
+      "a second source with the same referencia catastral dedups onto it",
+      planRc2.deduped === 1 && planRc2.created === 0,
+      `deduped=${planRc2.deduped} created=${planRc2.created}`,
+    );
+
+    const rcRows = await db
+      .select({ id: listings.id, rc: listings.referenciaCatastral })
+      .from(listings)
+      .where(like(listings.title, `${MARKER} Villa con RC%`));
+    check(
+      "…as one listing, holding the normalized reference",
+      rcRows.length === 1 && rcRows[0].rc === RC_A,
+      JSON.stringify(rcRows),
+    );
+
+    /**
+     * The FUZZY path, unchanged. Same physical flat re-listed by the same agent
+     * at a slightly different price, no cadastral reference anywhere — so the
+     * bucketed phone key is the only thing that can match it, and it must still
+     * do so. This is the fallback the exact path skips, not a replacement for it.
+     */
+    const phoneA: RawListing = {
+      source: "whiteglove",
+      sourceExternalId: "ph-1",
+      operation: "venta",
+      propertyType: "apartamento",
+      title: `${MARKER} Piso sin RC`,
+      priceEur: 312000,
+      builtM2: 95,
+      contactPhone: "+34 952 99 88 77",
+      locationName: loc.name,
+    };
+    const phoneB: RawListing = {
+      ...phoneA,
+      source: "import_fotocasa",
+      sourceExternalId: "ph-2",
+      title: `${MARKER} Piso sin RC (otro portal)`,
+      priceEur: 311000, // same 5 000 € bucket (both round to 310 000)
+      builtM2: 96, // same 10 m² bucket
+      contactPhone: "0034952998877", // same number, written differently
+    };
+
+    const planPh1 = reportFromCommitted(
+      await commitImport(
+        db,
+        await planImport(db, [phoneA], { agencyId: agencyA }),
+        { agencyId: agencyA },
+      ),
+    );
+    check("a row with no cadastral reference creates a listing", planPh1.created === 1);
+
+    const planPh2 = reportFromCommitted(
+      await commitImport(
+        db,
+        await planImport(db, [phoneB], { agencyId: agencyA }),
+        { agencyId: agencyA },
+      ),
+    );
+    check(
+      "the phone-bucket fallback still dedups when there is no reference",
+      planPh2.deduped === 1 && planPh2.created === 0,
+      `deduped=${planPh2.deduped} created=${planPh2.created}`,
+    );
+
+    /**
+     * And the rule that makes the two paths safe together: a row carrying a
+     * reference must not ALSO leave a bucketed key on its provenance row, or a
+     * later reference-less row could match the fuzzy key of a property the fuzzy
+     * path was explicitly skipped for.
+     */
+    const rcSources = await db
+      .select({ dedupKey: listingSources.dedupKey })
+      .from(listingSources)
+      .where(inArray(listingSources.listingId, rcRows.map((r) => r.id)));
+    check(
+      "a catastral row carries no fuzzy key alongside its exact one",
+      rcSources.length > 0 && rcSources.every((r) => r.dedupKey === null),
+      JSON.stringify(rcSources),
+    );
+
+    /* ---------------------------------------------------------------- */
+    /* The publish gate, at the one transition that matters.             */
+    /* ---------------------------------------------------------------- */
+
+    const gated: RawListing = {
+      source: "whiteglove",
+      sourceExternalId: "gate-1",
+      operation: "venta",
+      propertyType: "villa",
+      title: `${MARKER} Villa sin energia`,
+      priceEur: 400000,
+      builtM2: 180,
+      locationName: loc.name,
+    };
+    const gatedReport = reportFromCommitted(
+      await commitImport(
+        db,
+        await planImport(db, [gated], { agencyId: agencyA }),
+        { agencyId: agencyA, publish: true },
+      ),
+    );
+    const [gatedRow] = await db
+      .select({ status: listings.status })
+      .from(listings)
+      .where(like(listings.title, `${MARKER} Villa sin energia%`));
+    check(
+      "publish:true does not publish a row with no energy rating",
+      gatedRow?.status === "pending_review",
+      String(gatedRow?.status),
+    );
+    check(
+      "…and the report says so rather than reporting a clean import",
+      gatedReport.errors.some((e) => e.reason.includes("Energiklass")),
+      JSON.stringify(gatedReport.errors),
+    );
+
+    const publishable: RawListing = {
+      ...gated,
+      sourceExternalId: "gate-2",
+      title: `${MARKER} Villa con energia`,
+      energyRating: "en_tramite",
+    };
     await commitImport(
       db,
-      await planImport(db, [catastralA], { agencyId: agencyA }),
-      { agencyId: agencyA },
-    ),
-  );
-  check("a row with a cadastral reference creates a listing", planRc1.created === 1);
-
-  const planRc2 = reportFromCommitted(
-    await commitImport(
-      db,
-      await planImport(db, [catastralB], { agencyId: agencyA }),
-      { agencyId: agencyA },
-    ),
-  );
-  check(
-    "a second source with the same referencia catastral dedups onto it",
-    planRc2.deduped === 1 && planRc2.created === 0,
-    `deduped=${planRc2.deduped} created=${planRc2.created}`,
-  );
-
-  const rcRows = await db
-    .select({ id: listings.id, rc: listings.referenciaCatastral })
-    .from(listings)
-    .where(like(listings.title, `${MARKER} Villa con RC%`));
-  check(
-    "…as one listing, holding the normalized reference",
-    rcRows.length === 1 && rcRows[0].rc === RC_A,
-    JSON.stringify(rcRows),
-  );
-
-  /**
-   * The FUZZY path, unchanged. Same physical flat re-listed by the same agent
-   * at a slightly different price, no cadastral reference anywhere — so the
-   * bucketed phone key is the only thing that can match it, and it must still
-   * do so. This is the fallback the exact path skips, not a replacement for it.
-   */
-  const phoneA: RawListing = {
-    source: "whiteglove",
-    sourceExternalId: "ph-1",
-    operation: "venta",
-    propertyType: "apartamento",
-    title: `${MARKER} Piso sin RC`,
-    priceEur: 312000,
-    builtM2: 95,
-    contactPhone: "+34 952 99 88 77",
-    locationName: loc.name,
-  };
-  const phoneB: RawListing = {
-    ...phoneA,
-    source: "import_fotocasa",
-    sourceExternalId: "ph-2",
-    title: `${MARKER} Piso sin RC (otro portal)`,
-    priceEur: 311000, // same 5 000 € bucket (both round to 310 000)
-    builtM2: 96, // same 10 m² bucket
-    contactPhone: "0034952998877", // same number, written differently
-  };
-
-  const planPh1 = reportFromCommitted(
-    await commitImport(
-      db,
-      await planImport(db, [phoneA], { agencyId: agencyA }),
-      { agencyId: agencyA },
-    ),
-  );
-  check("a row with no cadastral reference creates a listing", planPh1.created === 1);
-
-  const planPh2 = reportFromCommitted(
-    await commitImport(
-      db,
-      await planImport(db, [phoneB], { agencyId: agencyA }),
-      { agencyId: agencyA },
-    ),
-  );
-  check(
-    "the phone-bucket fallback still dedups when there is no reference",
-    planPh2.deduped === 1 && planPh2.created === 0,
-    `deduped=${planPh2.deduped} created=${planPh2.created}`,
-  );
-
-  /**
-   * And the rule that makes the two paths safe together: a row carrying a
-   * reference must not ALSO leave a bucketed key on its provenance row, or a
-   * later reference-less row could match the fuzzy key of a property the fuzzy
-   * path was explicitly skipped for.
-   */
-  const rcSources = await db
-    .select({ dedupKey: listingSources.dedupKey })
-    .from(listingSources)
-    .where(inArray(listingSources.listingId, rcRows.map((r) => r.id)));
-  check(
-    "a catastral row carries no fuzzy key alongside its exact one",
-    rcSources.length > 0 && rcSources.every((r) => r.dedupKey === null),
-    JSON.stringify(rcSources),
-  );
-
-  /* ---------------------------------------------------------------- */
-  /* The publish gate, at the one transition that matters.             */
-  /* ---------------------------------------------------------------- */
-
-  const gated: RawListing = {
-    source: "whiteglove",
-    sourceExternalId: "gate-1",
-    operation: "venta",
-    propertyType: "villa",
-    title: `${MARKER} Villa sin energia`,
-    priceEur: 400000,
-    builtM2: 180,
-    locationName: loc.name,
-  };
-  const gatedReport = reportFromCommitted(
-    await commitImport(
-      db,
-      await planImport(db, [gated], { agencyId: agencyA }),
+      await planImport(db, [publishable], { agencyId: agencyA }),
       { agencyId: agencyA, publish: true },
-    ),
-  );
-  const [gatedRow] = await db
-    .select({ status: listings.status })
-    .from(listings)
-    .where(like(listings.title, `${MARKER} Villa sin energia%`));
-  check(
-    "publish:true does not publish a row with no energy rating",
-    gatedRow?.status === "pending_review",
-    String(gatedRow?.status),
-  );
-  check(
-    "…and the report says so rather than reporting a clean import",
-    gatedReport.errors.some((e) => e.reason.includes("Energiklass")),
-    JSON.stringify(gatedReport.errors),
-  );
+    );
+    const [publishedRow] = await db
+      .select({ status: listings.status })
+      .from(listings)
+      .where(like(listings.title, `${MARKER} Villa con energia%`));
+    check(
+      "…while `en_tramite` is an answer and publishes",
+      publishedRow?.status === "published",
+      String(publishedRow?.status),
+    );
 
-  const publishable: RawListing = {
-    ...gated,
-    sourceExternalId: "gate-2",
-    title: `${MARKER} Villa con energia`,
-    energyRating: "en_tramite",
-  };
-  await commitImport(
-    db,
-    await planImport(db, [publishable], { agencyId: agencyA }),
-    { agencyId: agencyA, publish: true },
-  );
-  const [publishedRow] = await db
-    .select({ status: listings.status })
-    .from(listings)
-    .where(like(listings.title, `${MARKER} Villa con energia%`));
-  check(
-    "…while `en_tramite` is an answer and publishes",
-    publishedRow?.status === "published",
-    String(publishedRow?.status),
-  );
+    // A price change is an update, and the old price is captured for rollback.
+    const changed = flats.map((f) => ({ ...f, priceEur: 299000 }));
+    const planC = await planImport(db, changed, { agencyId: agencyA });
+    const committedC = await commitImport(db, planC, { agencyId: agencyA });
+    const reportC = reportFromCommitted(committedC);
+    check("a changed price updates, not duplicates", reportC.updated === 3);
+    check(
+      "the previous price is snapshotted",
+      committedC.every((r) => (r.previous as { priceEur?: string })?.priceEur === "285000.00"),
+      JSON.stringify(committedC.map((r) => (r.previous as { priceEur?: string })?.priceEur)),
+    );
 
-  // A price change is an update, and the old price is captured for rollback.
-  const changed = flats.map((f) => ({ ...f, priceEur: 299000 }));
-  const planC = await planImport(db, changed, { agencyId: agencyA });
-  const committedC = await commitImport(db, planC, { agencyId: agencyA });
-  const reportC = reportFromCommitted(committedC);
-  check("a changed price updates, not duplicates", reportC.updated === 3);
-  check(
-    "the previous price is snapshotted",
-    committedC.every((r) => (r.previous as { priceEur?: string })?.priceEur === "285000.00"),
-    JSON.stringify(committedC.map((r) => (r.previous as { priceEur?: string })?.priceEur)),
-  );
+    // Rollback: restore the updates, delete what agency B created.
+    const jobId = await createImportJob({
+      agencyId: agencyA,
+      source: "whiteglove",
+      kind: "csv",
+      filename: "verify.csv",
+      status: "committed",
+      report: reportC,
+      totalRows: 3,
+      permission: { granted: true, grantedBy: "verify", note: null },
+      createdByUserId: null,
+    });
+    await recordImportRows(jobId, committedC);
+    const rollback = await rollbackImportJob(jobId);
+    check("rollback reports success", rollback.ok, rollback.note);
 
-  // Rollback: restore the updates, delete what agency B created.
-  const jobId = await createImportJob({
-    agencyId: agencyA,
-    source: "whiteglove",
-    kind: "csv",
-    filename: "verify.csv",
-    status: "committed",
-    report: reportC,
-    totalRows: 3,
-    permission: { granted: true, grantedBy: "verify", note: null },
-    createdByUserId: null,
-  });
-  await recordImportRows(jobId, committedC);
-  const rollback = await rollbackImportJob(jobId);
-  check("rollback reports success", rollback.ok, rollback.note);
+    /**
+     * Scoped to agency A on purpose. The fixture deliberately imports the same
+     * three flats a second time under agency B above, so
+     * `like(title, '<MARKER> Flat%')` matches SIX rows by design — A's three
+     * (updated to 299000 by `planC`, restored here) and B's three (created at
+     * 285000, never part of this job). Only A's three are rows the job
+     * touched, so only those are what the rollback is being asked about, and
+     * there must be exactly three of them.
+     */
+    const afterRollback = (
+      await db
+        .select({ agencyId: listings.agencyId, priceEur: listings.priceEur })
+        .from(listings)
+        .where(like(listings.title, `${MARKER} Flat%`))
+    ).filter((l) => l.agencyId === agencyA);
+    check(
+      "rollback restored the old prices",
+      afterRollback.length === 3 && afterRollback.every((l) => l.priceEur === "285000.00"),
+      JSON.stringify(afterRollback.map((l) => l.priceEur)),
+    );
 
-  const afterRollback = await db
-    .select({ priceEur: listings.priceEur })
-    .from(listings)
-    .where(like(listings.title, `${MARKER} Flat%`));
-  check(
-    "rollback restored the old prices",
-    afterRollback.every((l) => l.priceEur === "285000.00"),
-    JSON.stringify(afterRollback.map((l) => l.priceEur)),
-  );
-
-  const second = await rollbackImportJob(jobId);
-  check("a job cannot be rolled back twice", !second.ok, second.note);
-
-  await cleanup();
-  console.log("  cleaned up");
+    const second = await rollbackImportJob(jobId);
+    check("a job cannot be rolled back twice", !second.ok, second.note);
+  } finally {
+    await cleanup();
+    console.log("  cleaned up");
+  }
 }
 
 /* ------------------------------------------------------------------ */
