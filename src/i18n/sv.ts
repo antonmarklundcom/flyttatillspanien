@@ -292,6 +292,8 @@ export const svPanel = {
   registerErrorPassword: "Lösenordet behöver minst 8 tecken.",
   registerErrorAgencyName: "Skriv mäklarbyråns namn.",
   registerErrorGeneric: "Vi kunde inte skapa kontot. Försök igen.",
+  registerErrorThrottled:
+    "För många försök från den här anslutningen. Vänta tio minuter och försök igen.",
 
   // Registrering via inbjudan från en byrå
   registerKindInvite: (agencyName: string) => `Gå med i ${agencyName}`,
