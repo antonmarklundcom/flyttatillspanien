@@ -321,134 +321,144 @@ export async function rollbackImportJob(
    */
   const revertedRowIds: number[] = [];
 
-  if (deletableIds.length > 0) {
-    // Children first — the schema has no FK constraints doing this for us, so
-    // anything keyed by listing_id that is left behind is an orphan row.
-    await db
-      .delete(listingImages)
-      .where(inArray(listingImages.listingId, deletableIds));
-    await db
-      .delete(listingSources)
-      .where(inArray(listingSources.listingId, deletableIds));
-    await db
-      .delete(listingViewsDaily)
-      .where(inArray(listingViewsDaily.listingId, deletableIds));
-    await db.delete(listings).where(inArray(listings.id, deletableIds));
-    deleted = deletableIds.length;
-  }
-
-  const deletedSet = new Set(deletableIds);
-
-  for (const row of rows) {
-    if (row.revertedAt) continue;
-    if (row.listingId == null) continue;
-
-    if (row.outcome === "created") {
-      if (deletedSet.has(row.listingId)) revertedRowIds.push(row.id);
-      continue;
-    }
-
-    // `paused` is a resync sweep's outcome and its snapshot is just the status
-    // it had, so the same restore puts it back.
-    if (
-      (row.outcome === "updated" || row.outcome === "paused") &&
-      row.previousJson
-    ) {
-      // The snapshot carries two non-column keys the commit rode along:
-      // `_images` (the image rows syncImages replaced) and `_source` (the
-      // content_hash the commit advanced). Restoring only the scalar columns
-      // left curated photos deleted and — because the hash still described the
-      // bad import — re-importing a *corrected* file reported `unchanged`.
-      const { _images, _source, ...columns } = row.previousJson as {
-        _images?: {
-          r2Key: string;
-          position: number;
-          width: number | null;
-          height: number | null;
-          watermarkScore: number | null;
-        }[];
-        _source?: { id: number; contentHash: string | null };
-      } & Record<string, unknown>;
-
-      if (Object.keys(columns).length > 0) {
-        await db
-          .update(listings)
-          .set(columns as Record<string, never>)
-          .where(eq(listings.id, row.listingId));
-        // The snapshot carries lat, lng and location_id (SNAPSHOT_COLUMNS in
-        // upsert.ts), so restoring it moves the pin back too. Derived from the
-        // restored row, never snapshotted itself — one source of truth.
-        await syncDisplayCoords(db, row.listingId);
-      }
-      if (Array.isArray(_images)) {
-        await db
-          .delete(listingImages)
-          .where(eq(listingImages.listingId, row.listingId));
-        if (_images.length > 0) {
-          await db.insert(listingImages).values(
-            _images.map((img) => ({ ...img, listingId: row.listingId as number })),
-          );
-        }
-      }
-      if (_source && typeof _source.id === "number") {
-        await db
-          .update(listingSources)
-          .set({ contentHash: _source.contentHash ?? "" })
-          .where(eq(listingSources.id, _source.id));
-      }
-      restored++;
-      revertedRowIds.push(row.id);
-    }
-
-    if (row.outcome === "deduped") {
-      // Only the extra provenance row this batch attached goes; the listing it
-      // attached to predates the batch and is not ours to remove. Newer jobs
-      // recorded the exact row id at commit (F12: the timestamp predicate never
-      // matched, because the job header is written after commit).
-      const sourceRowId = (
-        row.previousJson as { _sourceRowId?: number } | null
-      )?._sourceRowId;
-      if (typeof sourceRowId === "number") {
-        await db
-          .delete(listingSources)
-          .where(eq(listingSources.id, sourceRowId));
-      } else {
-        // Legacy jobs committed before the id was recorded: best effort.
-        await db
-          .delete(listingSources)
-          .where(
-            and(
-              eq(listingSources.listingId, row.listingId),
-              eq(listingSources.source, job.source as never),
-              sql`${listingSources.firstSeenAt} >= ${job.createdAt}`,
-            ),
-          );
-      }
-      revertedRowIds.push(row.id);
-    }
-  }
-
   const now = new Date();
-  if (revertedRowIds.length > 0) {
-    await db
-      .update(importRows)
-      .set({ revertedAt: now })
-      .where(inArray(importRows.id, revertedRowIds));
-  }
-
   const note =
     protectedIds.size > 0
       ? `${protectedIds.size} propiedades se conservaron (${reasons.join(", ")}).`
       : "";
 
-  await db
-    .update(importJobs)
-    .set({
-      status: "rolled_back",
-      rolledBackAt: now,
-      rollbackNote: note.slice(0, 500) || null,
-    })
-    .where(eq(importJobs.id, jobId));
+  /**
+   * One transaction for the whole undo. The re-derivation is already
+   * idempotent — a retry converges, because every id is recomputed from
+   * `import_rows` — so this is defence in depth rather than a fix for a live
+   * bug: what it removes is the window where a crash mid-cascade leaves
+   * `import_rows` saying `created` for a listing that is already deleted, and
+   * the job header still saying `committed` over half-undone work.
+   */
+  await db.transaction(async (tx) => {
+    if (deletableIds.length > 0) {
+      // Children first — the schema has no FK constraints doing this for us, so
+      // anything keyed by listing_id that is left behind is an orphan row.
+      await tx
+        .delete(listingImages)
+        .where(inArray(listingImages.listingId, deletableIds));
+      await tx
+        .delete(listingSources)
+        .where(inArray(listingSources.listingId, deletableIds));
+      await tx
+        .delete(listingViewsDaily)
+        .where(inArray(listingViewsDaily.listingId, deletableIds));
+      await tx.delete(listings).where(inArray(listings.id, deletableIds));
+      deleted = deletableIds.length;
+    }
+
+    const deletedSet = new Set(deletableIds);
+
+    for (const row of rows) {
+      if (row.revertedAt) continue;
+      if (row.listingId == null) continue;
+
+      if (row.outcome === "created") {
+        if (deletedSet.has(row.listingId)) revertedRowIds.push(row.id);
+        continue;
+      }
+
+      // `paused` is a resync sweep's outcome and its snapshot is just the status
+      // it had, so the same restore puts it back.
+      if (
+        (row.outcome === "updated" || row.outcome === "paused") &&
+        row.previousJson
+      ) {
+        // The snapshot carries two non-column keys the commit rode along:
+        // `_images` (the image rows syncImages replaced) and `_source` (the
+        // content_hash the commit advanced). Restoring only the scalar columns
+        // left curated photos deleted and — because the hash still described the
+        // bad import — re-importing a *corrected* file reported `unchanged`.
+        const { _images, _source, ...columns } = row.previousJson as {
+          _images?: {
+            r2Key: string;
+            position: number;
+            width: number | null;
+            height: number | null;
+            watermarkScore: number | null;
+          }[];
+          _source?: { id: number; contentHash: string | null };
+        } & Record<string, unknown>;
+
+        if (Object.keys(columns).length > 0) {
+          await tx
+            .update(listings)
+            .set(columns as Record<string, never>)
+            .where(eq(listings.id, row.listingId));
+          // The snapshot carries lat, lng and location_id (SNAPSHOT_COLUMNS in
+          // upsert.ts), so restoring it moves the pin back too. Derived from the
+          // restored row, never snapshotted itself — one source of truth.
+          await syncDisplayCoords(tx, row.listingId);
+        }
+        if (Array.isArray(_images)) {
+          await tx
+            .delete(listingImages)
+            .where(eq(listingImages.listingId, row.listingId));
+          if (_images.length > 0) {
+            await tx.insert(listingImages).values(
+              _images.map((img) => ({ ...img, listingId: row.listingId as number })),
+            );
+          }
+        }
+        if (_source && typeof _source.id === "number") {
+          await tx
+            .update(listingSources)
+            .set({ contentHash: _source.contentHash ?? "" })
+            .where(eq(listingSources.id, _source.id));
+        }
+        restored++;
+        revertedRowIds.push(row.id);
+      }
+
+      if (row.outcome === "deduped") {
+        // Only the extra provenance row this batch attached goes; the listing it
+        // attached to predates the batch and is not ours to remove. Newer jobs
+        // recorded the exact row id at commit (F12: the timestamp predicate never
+        // matched, because the job header is written after commit).
+        const sourceRowId = (
+          row.previousJson as { _sourceRowId?: number } | null
+        )?._sourceRowId;
+        if (typeof sourceRowId === "number") {
+          await tx
+            .delete(listingSources)
+            .where(eq(listingSources.id, sourceRowId));
+        } else {
+          // Legacy jobs committed before the id was recorded: best effort.
+          await tx
+            .delete(listingSources)
+            .where(
+              and(
+                eq(listingSources.listingId, row.listingId),
+                eq(listingSources.source, job.source as never),
+                sql`${listingSources.firstSeenAt} >= ${job.createdAt}`,
+              ),
+            );
+        }
+        revertedRowIds.push(row.id);
+      }
+    }
+
+    if (revertedRowIds.length > 0) {
+      await tx
+        .update(importRows)
+        .set({ revertedAt: now })
+        .where(inArray(importRows.id, revertedRowIds));
+    }
+
+    await tx
+      .update(importJobs)
+      .set({
+        status: "rolled_back",
+        rolledBackAt: now,
+        rollbackNote: note.slice(0, 500) || null,
+      })
+      .where(eq(importJobs.id, jobId));
+  });
 
   return {
     ok: true,
