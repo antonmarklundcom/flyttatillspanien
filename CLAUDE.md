@@ -240,13 +240,6 @@ also exercises plan → commit → re-run → rollback, with fixtures covering
 **both** dedup paths (catastral-exact and phone-bucket fallback):
 `docker compose up -d && npm run db:migrate && DATABASE_URL="mysql://ftse:ftse@127.0.0.1:3306/ftse" npm run verify:import`
 
-**Known defect, not caused by this build's own phases**: the rollback
-exercise's `updated`-outcome path restores a batch's price update onto more
-rows than it changed (six rows instead of three for a three-row fixture).
-Confirmed pre-existing across multiple merged phases. Full symptom trace in
-`KNOWN-ISSUES.md`; fixing it needs a session with license to touch
-`src/lib/import/jobs.ts` (core logic, out of a Sonnet phase's reach).
-
 `npm run cron:resync` pauses listings whose sources have gone quiet (30 days
 by default, `--dry` first), recorded as a revertible import job, unchanged in
 mechanism.
