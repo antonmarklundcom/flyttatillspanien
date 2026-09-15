@@ -1053,6 +1053,64 @@ list (`CONTACT_EMAIL`/SMTP, acquisition-cost rate verification, R2 account,
 GDPR review, Hostinger plan confirmation) is the founder-input checklist
 Phase 6 will hit first.
 
+### Phase 6 — deploy (2026-09-15)
+
+Branch `claude/intelligent-gauss-bmxb46` (this session's assigned branch;
+`phase/6` in §4.2 is the naming intent, not load-bearing — same note Phase
+1's log made).
+
+**What this phase found.** This is a cloud Claude Code session with no
+hPanel GUI access, no SSH credentials, and no DNS panel access — none of
+which are things a build phase can conjure. Per this file's own §4.4 and the
+phase prompt's explicit instruction ("a missing Hostinger account or domain
+DNS access is a stop-and-ask… document the exact manual steps"), this phase
+does not guess at those. **Confirmed the network angle empirically rather
+than assuming it**: this session's egress is a hard HTTPS-allowlist proxy —
+`bash -c "cat < /dev/null > /dev/tcp/srv2067.hstgr.io/3306"` and the same
+against the raw IP both fail instantly. So even the one piece that looked
+possible (running `db:migrate`/`db:status` against production directly) is
+not reachable from here at all, independent of credentials or Remote MySQL
+IP allowlisting.
+
+**What was verified instead — the local equivalent of the exit checklist.**
+`npm install` clean; `npm run verify:local` green end to end (`typecheck`
+→ `build` → `verify:import` → `verify:facets` → `verify:i18n` → `verify:seo`,
+chained with `&&`, so every stage before `verify:seo`'s green output above
+also passed); `npm run typecheck` re-run standalone, zero errors. Docker
+daemon was not running in this sandbox by default (same as Phases 1 and 5);
+started `dockerd` directly, hit the same Docker-Hub-blocked-by-proxy pull
+failure Phases 1/5 documented, applied the same `mirror.gcr.io/library/mysql:8.4`
+→ retag fix, and `docker compose up -d` brought up a clean local MySQL 8.4 —
+proving the migration/seed commands below are exactly right syntactically,
+even though this session cannot point them at production.
+
+**Decision and deviation.** Anton pasted a freshly created Hostinger MySQL
+credential (`u556710939_spanienanton` / `u556710939_spanien`, host
+`srv2067.hstgr.io`) mid-session, apparently intending for this session to run
+the production migration directly. Per AGENTS.md §2/§3 ("You never hold the
+write database credential" / "You never run a migration against
+production… on the founder's machine"), this phase asked before using it
+rather than proceeding — and it turned out moot, since the connection is
+technically impossible from here regardless. **Logged in
+`docs/decisions-needed.md`** rather than silently discarding the credential
+question. Recommended Anton rotate that password once initial setup is done,
+since it was pasted into a chat transcript.
+
+**Where the next session (or Anton, by hand) starts.** Everything code-side
+is done and green on `main` (Phases 1–5). What remains is entirely manual,
+listed as the numbered checklist in this phase's closing report to Anton:
+run `db:migrate`/`db:status`/`seed:locations`/`seed:costs` from a machine
+that can reach Hostinger's MySQL (Anton's own, with Remote MySQL IP
+allowlisting for that machine — not this session's IP, which doesn't apply
+since raw TCP from here is blocked entirely); create the Hostinger Node.js
+app via GitHub import in hPanel; set the production env vars; map
+`flyttatillspanien.se` DNS; create the `CONTACT_EMAIL`/SMTP mailbox; register
+the six `cron:*` jobs in hPanel's Cron Jobs UI. No further Claude Code phase
+should be spawned for this — plan.md §6 Phase 6 names this the final phase,
+and a future session's job here is verification (curl the live URL,
+`db:status`) once Anton has a read-only `DATABASE_URL` to hand over, not
+another attempt at the manual hPanel steps.
+
 ## 10. Backlog
 
 Anything a phase session finds that is real but out of its scope goes here
