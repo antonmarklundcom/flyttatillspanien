@@ -28,9 +28,11 @@
  * it, so it is the AGENCY-facing channel now (`CONTACT_WHATSAPP`,
  * `agencies.phone`) and never the buyer's. Nothing in this file sends one.
  *
- * Both halves are provider-agnostic so the options stay open — swapping SMTP
- * for Resend or Postmark is a class in this file and an env var, not an
- * architecture change.
+ * Both halves are provider-agnostic so the options stay open. Email now has
+ * two interchangeable transports behind the same `MailTransport` interface —
+ * `ResendTransport` (preferred when `RESEND_API_KEY` is set) and the original
+ * `SmtpTransport` — exactly the "a class in this file and an env var, not an
+ * architecture change" swap this file always intended.
  *
  * **The one rule that outranks the rest: never log or return a line that says
  * a message was delivered when it was not.** A dev-console fallback that
@@ -99,8 +101,8 @@ export interface CrmProvider {
 }
 
 /**
- * Generic outbound webhook (the shape GoHighLevel's inbound webhooks accept,
- * and a trivial target for anything else that speaks JSON over HTTPS).
+ * Generic outbound webhook — a trivial target for anything that speaks JSON
+ * over HTTPS (a self-hosted CRM's inbound endpoint, n8n, etc).
  */
 class WebhookProvider implements CrmProvider {
   constructor(private webhookUrl: string) {}
@@ -158,8 +160,7 @@ class NoProvider implements CrmProvider {
 
 /** URL of the outbound webhook, if one is configured. */
 function webhookUrl(): string | undefined {
-  // GHL_WEBHOOK_URL is the historical name; either works.
-  return process.env.LEAD_WEBHOOK_URL || process.env.GHL_WEBHOOK_URL;
+  return process.env.LEAD_WEBHOOK_URL;
 }
 
 export function getCrm(): CrmProvider {
@@ -208,6 +209,58 @@ function smtpConfig(): SmtpConfig | null {
   // 587 (STARTTLS) is what Hostinger's mailboxes take; 465 is implicit TLS.
   const port = Number(process.env.SMTP_PORT) || 587;
   return { host, port, user, pass, from };
+}
+
+/** The Resend settings, when both are present. */
+interface ResendConfig {
+  apiKey: string;
+  from: string;
+}
+
+/**
+ * Read the Resend settings, or null when not configured. Same all-or-nothing
+ * rule as `smtpConfig()`: an API key with no verified `from` address is a
+ * deployment that believes it can send mail and cannot.
+ */
+function resendConfig(): ResendConfig | null {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.EMAIL_FROM?.trim();
+  if (!apiKey || !from) return null;
+  return { apiKey, from };
+}
+
+/**
+ * Real delivery, over Resend's HTTPS API. Preferred over SMTP when both are
+ * configured — see `getMail()`.
+ */
+class ResendTransport implements MailTransport {
+  constructor(private config: ResendConfig) {}
+
+  async send(message: MailMessage): Promise<CrmResult> {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: `Bearer ${this.config.apiKey}`,
+        },
+        body: JSON.stringify({
+          from: this.config.from,
+          to: message.to,
+          subject: message.subject,
+          text: message.text,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        return { ok: false, error: `resend ${res.status}: ${body}` };
+      }
+      return { ok: true };
+    } catch (e) {
+      // Returned, never swallowed — same rule as SmtpTransport below.
+      return { ok: false, error: String(e) };
+    }
+  }
 }
 
 /**
@@ -274,8 +327,13 @@ let cachedMail: MailTransport | null = null;
 
 export function getMail(): MailTransport {
   if (!cachedMail) {
-    const config = smtpConfig();
-    cachedMail = config ? new SmtpTransport(config) : new DevConsoleMail();
+    const resend = resendConfig();
+    const smtp = smtpConfig();
+    cachedMail = resend
+      ? new ResendTransport(resend)
+      : smtp
+        ? new SmtpTransport(smtp)
+        : new DevConsoleMail();
   }
   return cachedMail;
 }
@@ -287,7 +345,11 @@ export function getMail(): MailTransport {
  * a dev machine has.
  */
 export function isMailConfigured(): boolean {
-  return Boolean(smtpConfig()) || process.env.NODE_ENV !== "production";
+  return (
+    Boolean(resendConfig()) ||
+    Boolean(smtpConfig()) ||
+    process.env.NODE_ENV !== "production"
+  );
 }
 
 /**
