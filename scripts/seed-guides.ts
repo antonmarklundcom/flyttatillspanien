@@ -17,11 +17,11 @@
  *
  * Idempotent: upserts by `full_slug`, matching `seed-locations.ts`'s own key.
  * Zonas are left NULL on purpose — nullable means "not stated", and a
- * one-paragraph guide at the neighbourhood level (Nueva Andalucía, Old Town,
- * …) risks a confident-sounding but unverified specific claim for very little
- * SEO benefit at MVP. Grep `guideContentSv` before extending this: as of this
- * script, no page template reads the column yet (KNOWN-ISSUES.md); this is
- * the data half only.
+ * one-paragraph guide at the neighbourhood level (Nueva Andalucía, Casco
+ * Antiguo, …) risks a confident-sounding but unverified specific claim for
+ * very little SEO benefit at MVP. Grep `guideContentSv` before extending
+ * this: as of this script, no page template reads the column yet
+ * (KNOWN-ISSUES.md); this is the data half only.
  */
 import "./db-credential"; // MUST be first: it picks the credential before src/db builds its pool
 import { db } from "../src/db";

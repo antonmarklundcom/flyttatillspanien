@@ -40,20 +40,24 @@ Format: `- [phase found] area — what, and what would fix it.`
   notary/registry/legal estimates, is a research task for the founder, not a
   code task. Same status the Paraguayan AFD rate had upstream.
 
-- [1] `scripts/seed-locations.ts` — the Palma zona is seeded as `Old Town`, the
-  name the design doc's seed table gives. It is the one English name in an
-  otherwise Spanish/Catalan location set (`casc-antic`/`casco-antiguo` would be
-  the local form). Kept verbatim rather than silently deviating from the seed
-  table; renaming it is a one-line change plus a redirect if it has ever been
-  indexed.
+- [1, fixed 2026-09-16] `scripts/seed-locations.ts` — the Palma zona was
+  seeded as `Old Town`, the one English name in an otherwise Spanish/Catalan
+  location set. Renamed to `Casco Antiguo` (slug `casco-antiguo`), matching
+  the Castilian form `seed-dev-listings.ts`'s own fixture description already
+  used ("el casco antiguo de Palma"). No production database exists yet
+  (Phase 6, still manual/founder-only), so there is nothing to redirect —
+  updated `seed-dev-listings.ts`'s slug/title/map-key, `seed-guides.ts`'s
+  comment and the design doc's seed table to match in the same pass.
 
-- [1] Stale Paraguay narration survives in code comments wherever the file
-  otherwise compiles unchanged. Phase 1 cleared the routing/SEO/theme libs
-  (`alternates.ts`, `design/themes.ts`) and the config layer; Phase 2 owns the
-  same problem in `crm.ts`, `otp.ts`, `auth/password.ts` and `wa.ts` (plan
-  §5.2.4). **Phase 5's leftover-Paraguay grep only covers the four doc files**,
-  so a stale comment anywhere else survives as false documentation unless the
-  phase that touches the file fixes it.
+- [1, checked 2026-09-16] This entry previously said stale Paraguay
+  narration survived in `crm.ts`, `otp.ts`, `auth/password.ts` and `wa.ts`.
+  Re-grepped the whole `src/` tree for `Paraguay`/`Paraguayan`/`guaraní`/
+  `PYG`: those four files are clean, and the only three hits left
+  (`amortization.ts`, `acquisition-cost.ts`, `schema.ts`) are intentional
+  contrastive comments explaining what replaced the Paraguayan mechanism
+  (e.g. "the slot the Paraguayan cuota engine vacates") — not stale
+  documentation. No code change needed; leaving this note in place of the
+  original entry as the record that it was checked.
 
 - [2, fixed] The importer's operator-facing skip reasons were a mix of English
   ("unresolved location '…'") and inherited Spanish ("precio de venta

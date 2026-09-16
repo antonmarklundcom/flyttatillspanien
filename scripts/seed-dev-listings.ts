@@ -189,7 +189,7 @@ async function main() {
   const nuevaAndalucia = await mustResolveMunicipio("nueva-andalucia");
   const torrevieja = await mustResolveMunicipio("torrevieja");
   const palma = await mustResolveMunicipio("palma");
-  const oldTown = await mustResolveMunicipio("old-town");
+  const cascoAntiguo = await mustResolveMunicipio("casco-antiguo");
 
   // --- Listers -------------------------------------------------------------
   const inmobiliariaId = await upsertAgency({
@@ -530,14 +530,14 @@ async function main() {
       n: 16,
       operation: "alquiler_vacacional",
       propertyType: "apartamento",
-      title: "Apartamento de vacaciones en Palma, Old Town",
+      title: "Apartamento de vacaciones en Palma, Casco Antiguo",
       descriptionEs: "Apartamento de dos dormitorios en el casco antiguo de Palma, alquiler vacacional.",
       priceEur: 1400,
       bedrooms: 2,
       bathrooms: 1,
       builtM2: 65,
       propertyState: "segunda_mano",
-      locationSlug: "old-town",
+      locationSlug: "casco-antiguo",
       energyRating: "D",
       legalStatus: "desconocido",
       chargesStatus: "desconocido",
@@ -627,7 +627,7 @@ async function main() {
     "nueva-andalucia": nuevaAndalucia,
     torrevieja,
     palma,
-    "old-town": oldTown,
+    "casco-antiguo": cascoAntiguo,
   };
 
   let inserted = 0;
