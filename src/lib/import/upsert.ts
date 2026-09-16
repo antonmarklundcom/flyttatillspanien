@@ -224,6 +224,26 @@ function emptyReport(): ImportReport {
   };
 }
 
+/**
+ * Operator-facing skip reasons, in Swedish — these surface in `/admin`'s
+ * import report, a staff-only surface. Kept here rather than in `sv.ts`, same
+ * reasoning as `PUBLISH_BLOCK_MESSAGE` in `publish-gate.ts`: this is the
+ * planner's own vocabulary, and a new skip reason must not be able to ship
+ * without its Swedish message sitting right next to the code that produces
+ * it. (KNOWN-ISSUES.md previously tracked these as leftover English/Spanish;
+ * moving them here follows the established pattern instead of a bare
+ * relocation into `sv.ts`.)
+ */
+const SKIP_REASON = {
+  unresolvedLocation: (location: string) => `okänt område: '${location}'`,
+  suspiciouslyLowPrice: (priceEur: number) =>
+    `misstänkt lågt försäljningspris (€ ${priceEur}) — kontrollera tusentalsavgränsaren`,
+  duplicateSourceExternalId: (id: string, otherRow: number) =>
+    `dubblett av source_external_id '${id}' (finns även på rad ${otherRow})`,
+  catastralTaken: (catastral: string, holderListingId: number) =>
+    `referencia catastral ${catastral} tillhör redan en annan annons (#${holderListingId})`,
+} as const;
+
 /* ------------------------------------------------------------------ */
 /* Plan — read-only                                                    */
 /* ------------------------------------------------------------------ */
@@ -263,7 +283,7 @@ export async function planImport(
       const locationId = resolveLocation(raw);
       if (locationId === null) {
         skip(
-          `unresolved location '${raw.locationFullSlug ?? raw.locationName ?? ""}'`,
+          SKIP_REASON.unresolvedLocation(raw.locationFullSlug ?? raw.locationName ?? ""),
         );
         continue;
       }
@@ -274,9 +294,7 @@ export async function planImport(
       // truncated cell), and one bad price poisons the medians, /precios and
       // /tasacion. Rejecting loudly beats importing quietly.
       if (raw.operation === "venta" && priceEur < 1000) {
-        skip(
-          `precio de venta sospechosamente bajo (€ ${priceEur}) — revisá el separador de miles`,
-        );
+        skip(SKIP_REASON.suspiciouslyLowPrice(priceEur));
         continue;
       }
       const cHash = computeContentHash(raw, priceEur);
@@ -309,7 +327,7 @@ export async function planImport(
         const inBatch = seenExternal.get(raw.sourceExternalId);
         if (inBatch !== undefined) {
           skip(
-            `duplicate source_external_id '${raw.sourceExternalId}' (also on row ${planned[inBatch].rowNumber})`,
+            SKIP_REASON.duplicateSourceExternalId(raw.sourceExternalId, planned[inBatch].rowNumber),
           );
           continue;
         }
@@ -344,9 +362,7 @@ export async function planImport(
           if (catastral) {
             const holder = await catastralHolder(db, catastral);
             if (holder != null && holder !== existing.listingId) {
-              skip(
-                `referencia catastral ${catastral} ya pertenece a otro aviso (#${holder})`,
-              );
+              skip(SKIP_REASON.catastralTaken(catastral, holder));
               continue;
             }
           }

@@ -171,7 +171,7 @@ const TREE: Node[] = [
                   { name: "Santa Catalina", level: "zona", lat: 39.572, lng: 2.636 },
                   { name: "Portixol", level: "zona", lat: 39.561, lng: 2.669 },
                   { name: "Son Vida", level: "zona", lat: 39.585, lng: 2.618 },
-                  { name: "Old Town", level: "zona", lat: 39.571, lng: 2.649 },
+                  { name: "Casco Antiguo", level: "zona", lat: 39.571, lng: 2.649 },
                 ],
               },
               { name: "Calvià", level: "municipio", lat: 39.565, lng: 2.506 },

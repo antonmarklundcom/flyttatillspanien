@@ -9,7 +9,7 @@ import {
   listAllLeads,
   type AdminLeadRow,
 } from "@/lib/panel-queries";
-import { svPanel, svAgencyProfile } from "@/i18n/sv";
+import { svPanel, svAgencyProfile, leadTypeLabel, leadRoutedLabel } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
@@ -33,21 +33,7 @@ const LEAD_TYPES = [
 
 const LEAD_TYPE_LABEL: Record<string, string> = {
   all: svPanel.filterAll,
-  buyer: "Compra",
-  renter: "Alquiler",
-  seller: "Venta",
-  valuation: "Tasación",
-  developer: "Desarrolladora",
-  agent_signup: "Alta de agente",
-};
-
-/** Who the lead was routed to — 'internal' means it is yours to work. */
-const ROUTED_LABEL: Record<string, string> = {
-  agency: "Inmobiliaria",
-  agent: "Agente",
-  owner: "Particular",
-  internal: "Interno",
-  developer: "Desarrolladora",
+  ...leadTypeLabel,
 };
 
 /**
@@ -213,7 +199,7 @@ export default async function AdminLeadsPage({
                         ? agencyLabel(lead.agencyName, lead.agencyKind)
                         : lead.ownerEmail
                           ? `${svPanel.leadOwnerRouted}: ${lead.ownerName ?? lead.ownerEmail}`
-                          : (ROUTED_LABEL[lead.routedTo] ?? lead.routedTo)}
+                          : (leadRoutedLabel[lead.routedTo] ?? lead.routedTo)}
                     </span>
                     {/* Which door captured it — matters once feeders are on. */}
                     <span>{lead.vertical}</span>

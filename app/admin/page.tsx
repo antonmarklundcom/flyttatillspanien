@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countRecentLeads, getReviewQueue } from "@/lib/panel-queries";
-import { svPanel } from "@/i18n/sv";
+import { svPanel, listingOperationLabel } from "@/i18n/sv";
 import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { adminTabs } from "./tabs";
@@ -15,12 +15,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const OPERATION_LABEL: Record<string, string> = {
-  venta: "Venta",
-  alquiler: "Alquiler",
-  alquiler_temporal: "Alquiler temporal",
-};
 
 export default async function AdminReviewPage() {
   const user = await requireSuperAdmin();
@@ -49,10 +43,10 @@ export default async function AdminReviewPage() {
                 <div>
                   <h3 className="panel-card__title">{row.title}</h3>
                   <div className="panel-card__meta">
-                    <span>{OPERATION_LABEL[row.operation] ?? row.operation}</span>
+                    <span>{listingOperationLabel[row.operation] ?? row.operation}</span>
                     <span>{PROPERTY_TYPE_LABELS[row.propertyType]}</span>
                     {row.locationName ? <span>{row.locationName}</span> : null}
-                    <span>{row.agencyName ?? "Particular"}</span>
+                    <span>{row.agencyName ?? svPanel.leadOwnerRouted}</span>
                     <span>#{row.publicId}</span>
                   </div>
                 </div>

@@ -40,28 +40,33 @@ Format: `- [phase found] area — what, and what would fix it.`
   notary/registry/legal estimates, is a research task for the founder, not a
   code task. Same status the Paraguayan AFD rate had upstream.
 
-- [1] `scripts/seed-locations.ts` — the Palma zona is seeded as `Old Town`, the
-  name the design doc's seed table gives. It is the one English name in an
-  otherwise Spanish/Catalan location set (`casc-antic`/`casco-antiguo` would be
-  the local form). Kept verbatim rather than silently deviating from the seed
-  table; renaming it is a one-line change plus a redirect if it has ever been
-  indexed.
+- [1, fixed 2026-09-16] `scripts/seed-locations.ts` — the Palma zona was
+  seeded as `Old Town`, the one English name in an otherwise Spanish/Catalan
+  location set. Renamed to `Casco Antiguo` (slug `casco-antiguo`), matching
+  the Castilian form `seed-dev-listings.ts`'s own fixture description already
+  used ("el casco antiguo de Palma"). No production database exists yet
+  (Phase 6, still manual/founder-only), so there is nothing to redirect —
+  updated `seed-dev-listings.ts`'s slug/title/map-key, `seed-guides.ts`'s
+  comment and the design doc's seed table to match in the same pass.
 
-- [1] Stale Paraguay narration survives in code comments wherever the file
-  otherwise compiles unchanged. Phase 1 cleared the routing/SEO/theme libs
-  (`alternates.ts`, `design/themes.ts`) and the config layer; Phase 2 owns the
-  same problem in `crm.ts`, `otp.ts`, `auth/password.ts` and `wa.ts` (plan
-  §5.2.4). **Phase 5's leftover-Paraguay grep only covers the four doc files**,
-  so a stale comment anywhere else survives as false documentation unless the
-  phase that touches the file fixes it.
+- [1, checked 2026-09-16] This entry previously said stale Paraguay
+  narration survived in `crm.ts`, `otp.ts`, `auth/password.ts` and `wa.ts`.
+  Re-grepped the whole `src/` tree for `Paraguay`/`Paraguayan`/`guaraní`/
+  `PYG`: those four files are clean, and the only three hits left
+  (`amortization.ts`, `acquisition-cost.ts`, `schema.ts`) are intentional
+  contrastive comments explaining what replaced the Paraguayan mechanism
+  (e.g. "the slot the Paraguayan cuota engine vacates") — not stale
+  documentation. No code change needed; leaving this note in place of the
+  original entry as the record that it was checked.
 
-- [2] The importer's operator-facing skip reasons are a mix of English
+- [2, fixed] The importer's operator-facing skip reasons were a mix of English
   ("unresolved location '…'") and inherited Spanish ("precio de venta
   sospechosamente bajo"), while everything else the operator reads is Swedish.
-  They are produced in `src/lib/import/upsert.ts` and surface in the import
-  report. Moving them into `sv.ts` is the fix; Phase 2 corrected the one that
-  was factually wrong (it quoted US$) and left the language to whichever phase
-  is already editing that copy. `PUBLISH_BLOCK_MESSAGE` is the shape to follow.
+  Fixed by moving all four into a `SKIP_REASON` map in
+  `src/lib/import/upsert.ts` itself, following the `PUBLISH_BLOCK_MESSAGE`
+  pattern in `publish-gate.ts` (kept next to the code that produces them,
+  not in `sv.ts`, because it is the planner's own staff-only vocabulary) —
+  not the bare relocation into `sv.ts` this entry originally suggested.
 
 - [2] `/admin` and `/agencia` still carry inline Spanish labels
   (`LEAD_TYPE_LABEL`, `ROUTED_LABEL`, `OPERATION_OPTIONS`, the panel's inline
@@ -107,18 +112,14 @@ Format: `- [phase found] area — what, and what would fix it.`
   not a code task; the four old Paraguay-named files were deleted so nothing
   keeps two copies.
 
-- [3] The publish wizard (`PublishWizard.tsx` / `app/publicar/actions.ts`)
-  collects `referencia_catastral`, `energy_rating`, `legal_status`,
-  `charges_status` and `tourist_licence`, but **not** `ibi_annual_eur` /
-  `community_monthly_eur` — `DraftPayload` and `saveDraft()`'s `DraftInput`
-  (`src/lib/publish-queries.ts`) never gained fields for them in Phase 2, and
-  extending that file is query-layer/core-logic territory a Sonnet phase's
-  hard limits (§4.7) put out of reach. The columns exist and the detail page
-  already renders them when present (via CSV import or a future `/admin`
-  edit) — a self-published FSBO listing just cannot state them yet. Whichever
-  phase next has license to touch `publish-queries.ts` should add the two
-  fields following the exact `referenciaCatastral`/`energyRating` pattern
-  already there.
+- [3, fixed by Phase 4] This entry described the publish wizard as missing
+  `ibi_annual_eur` / `community_monthly_eur`. Checked while doing unrelated
+  cleanup (2026-09-16): `DraftInput`/`draftFields()` in `publish-queries.ts`,
+  `app/publicar/actions.ts`, `PublishWizard.tsx`'s form, and the detail page
+  render all already carry both fields end to end, following the
+  `referenciaCatastral`/`energyRating` pattern this entry asked for. Left
+  here as a record that it was checked rather than deleted outright — no
+  code change was needed.
 
 - [3] `svListing.priceRentPeriod` ("/mån") renders under the price for every
   non-`venta` operation, `alquiler_vacacional` (a holiday let) included — a

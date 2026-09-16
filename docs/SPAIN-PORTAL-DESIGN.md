@@ -990,7 +990,7 @@ municipio → zona`; only municipio and zona appear in URLs.**
 
 Seed `zona` children only for Marbella (Nueva Andalucía, Golden Mile, San
 Pedro de Alcántara, Puerto Banús, Elviria, Nagüeles) and Palma (Santa Catalina,
-Portixol, Son Vida, Old Town). Everywhere else, municipio depth is enough for
+Portixol, Son Vida, Casco Antiguo). Everywhere else, municipio depth is enough for
 MVP — the same "pages only exist where listings will" rule the Paraguay seed
 states.
 

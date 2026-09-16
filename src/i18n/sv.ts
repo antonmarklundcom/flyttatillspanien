@@ -942,6 +942,37 @@ export const svPublish = {
   } as Record<string, string>,
 } as const;
 
+/**
+ * Operation labels — nouns, never verb forms, so they read the same whether
+ * the sentence around them is "byt till" or "denna annons är en". Shared by
+ * the panel edit forms (ListingForm, ImportByUrl), the admin queue/listing
+ * tables and the public `/precios` price table.
+ */
+export const listingOperationLabel: Record<string, string> = {
+  venta: "Försäljning",
+  alquiler: "Uthyrning",
+  alquiler_vacacional: "Korttidsuthyrning",
+};
+
+/** Lead type labels — /admin/leads, /agencia/leads, /mis-avisos/consultas. */
+export const leadTypeLabel: Record<string, string> = {
+  buyer: "Köpare",
+  renter: "Hyresgäst",
+  seller: "Säljare",
+  valuation: "Värdering",
+  developer: "Byggherre",
+  agent_signup: "Mäklaranmälan",
+};
+
+/** Who a lead was routed to — 'internal' means it is the operator's own. */
+export const leadRoutedLabel: Record<string, string> = {
+  agency: "Mäklarbyrå",
+  agent: "Mäklare",
+  owner: "Privatperson",
+  internal: "Internt",
+  developer: "Byggherre",
+};
+
 /** Swedish labels for listing statuses shown in the panel. */
 export const listingStatusLabel: Record<string, string> = {
   draft: "Utkast",
@@ -1185,6 +1216,8 @@ export const svHome = {
     palma: "Mallorca, året runt-stad",
     javea: "Costa Blanca norr, lugnare tempo",
   } as Record<string, string>,
+
+  recentlyViewedTitle: "🕓 Nyligen visade",
 
   howTitle: "Så fungerar det",
   howSubtitle:

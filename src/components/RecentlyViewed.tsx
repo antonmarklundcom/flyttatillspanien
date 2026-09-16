@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { getDictionary, DEFAULT_LOCALE } from "@/i18n";
 
 /**
- * "Vistos recientemente" — client-only, backed by localStorage (no accounts
+ * "Nyligen visade" — client-only, backed by localStorage (no accounts
  * yet, ARCHITECTURE.md M5). The listing page records a compact snapshot via
  * <RecentlyViewedRecorder>; this component renders the row on the homepage.
  * Renders nothing until hydration and nothing when the visitor has no
@@ -54,6 +55,7 @@ export function recordRecent(entry: Omit<RecentEntry, "viewedAt">) {
 
 export function RecentlyViewed() {
   const [entries, setEntries] = useState<RecentEntry[]>([]);
+  const t = getDictionary(DEFAULT_LOCALE);
 
   useEffect(() => {
     setEntries(readRecent());
@@ -64,12 +66,12 @@ export function RecentlyViewed() {
   return (
     <section className="home-section">
       <div className="home-section__head">
-        <h2 className="home-section__title">🕓 Vistos recientemente</h2>
+        <h2 className="home-section__title">{t.home.recentlyViewedTitle}</h2>
       </div>
       <div className="home-row">
         {entries.map((e) => (
-          /* Same markup as <ListingCard>: this row sits directly above
-             "Propiedades recomendadas", and a white bordered card next to a
+          /* Same markup as <ListingCard>: this row sits directly above the
+             recommended-listings row, and a white bordered card next to a
              row of photo cards read as a different site. It can't reuse the
              component itself — that takes a DB row, and all this has is the
              localStorage snapshot. */
@@ -85,10 +87,10 @@ export function RecentlyViewed() {
             />
             <div className="ds-photo-card__scrim" />
             <span className="ds-photo-card__chip">
-              {e.operation === "venta" ? "Venta" : "Alquiler"}
+              {t.card.operationBadge[e.operation] ?? e.operation}
             </span>
             {!e.img && (
-              <span className="listing-card__nophoto">Foto próximamente</span>
+              <span className="listing-card__nophoto">{t.card.noPhoto}</span>
             )}
             <div className="ds-photo-card__body">
               <div className="listing-card__title">{e.title}</div>

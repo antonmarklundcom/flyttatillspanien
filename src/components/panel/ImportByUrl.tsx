@@ -10,16 +10,22 @@
  * checkbox is required before anything is written.
  */
 import { useState } from "react";
-import { svPanel } from "@/i18n/sv";
+import { svPanel, listingOperationLabel } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PublishLocation } from "@/lib/publish-queries";
 import type { ParsedListing } from "@/lib/import/from-url";
 import type { ReadUrlResult } from "../../../app/agencia/importar/actions";
 
+/**
+ * Was `alquiler_temporal` — not a value `listings.operation` accepts
+ * (`src/db/schema.ts`), so picking it always failed `confirmImportAction`'s
+ * `OPERATIONS.includes()` check and bounced the agent to `?msg=invalid` with
+ * no clue why. Fixed to the real third enum value.
+ */
 const OPERATION_OPTIONS = [
-  { value: "venta", label: "Venta" },
-  { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_temporal", label: "Alquiler temporal" },
+  { value: "venta", label: listingOperationLabel.venta },
+  { value: "alquiler", label: listingOperationLabel.alquiler },
+  { value: "alquiler_vacacional", label: listingOperationLabel.alquiler_vacacional },
 ] as const;
 
 const ERROR_TEXT: Record<string, string> = {
