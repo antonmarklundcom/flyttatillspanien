@@ -22,22 +22,6 @@ import type {
   UploadPayload,
 } from "../../../app/admin/importar/actions";
 
-const SOURCE_LABELS: Record<string, string> = {
-  whiteglove: "Planilla enviada por la inmobiliaria",
-  import_agency_site: "Sitio propio de la inmobiliaria",
-  import_tulugar: "TuLugar",
-  import_infocasas: "InfoCasas",
-  import_clasipar: "Clasipar",
-};
-
-const OUTCOME_LABELS: Record<string, string> = {
-  created: "Nueva",
-  updated: "Actualiza",
-  unchanged: "Sin cambios",
-  deduped: "Duplicada",
-  skipped: "Se omite",
-};
-
 /** File → base64 without pulling the whole thing through a JS string twice. */
 function readAsBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -90,7 +74,7 @@ export function ImportUpload({
 
   async function runDry() {
     if (!file) {
-      setError("Elegí un archivo .csv o .xlsx.");
+      setError(svPanel.uploadChooseFile);
       return;
     }
     setBusy(true);
@@ -103,7 +87,7 @@ export function ImportUpload({
       setDry(result);
       if (!result.ok) setError(result.error);
     } catch {
-      setError("No pudimos procesar el archivo.");
+      setError(svPanel.uploadProcessError);
     } finally {
       setBusy(false);
     }
@@ -123,7 +107,7 @@ export function ImportUpload({
         setError(result.error);
       }
     } catch {
-      setError("No pudimos confirmar la importación.");
+      setError(svPanel.uploadConfirmError);
     } finally {
       setBusy(false);
     }
@@ -141,34 +125,31 @@ export function ImportUpload({
     <>
       <form ref={formRef} className="panel-form" onChange={invalidate}>
         <label className="panel-form__field">
-          <span className="auth-field__label">Inmobiliaria</span>
+          <span className="auth-field__label">{svPanel.colAgency}</span>
           <select className="panel-select" name="agencyId" defaultValue="">
-            <option value="">Sin inmobiliaria</option>
+            <option value="">{svPanel.uploadNoAgencyOption}</option>
             {agencies.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
               </option>
             ))}
           </select>
-          <span className="panel-card__meta">
-            Define de quién son las propiedades y aísla la deduplicación: dos
-            inmobiliarias pueden usar los mismos códigos internos sin pisarse.
-          </span>
+          <span className="panel-card__meta">{svPanel.uploadAgencyHint}</span>
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">Origen</span>
+          <span className="auth-field__label">{svPanel.uploadSourceLabelHeading}</span>
           <select className="panel-select" name="source" defaultValue="whiteglove">
             {sources.map((s) => (
               <option key={s} value={s}>
-                {SOURCE_LABELS[s] ?? s}
+                {svPanel.uploadSourceLabel[s] ?? s}
               </option>
             ))}
           </select>
         </label>
 
         <label className="panel-form__field">
-          <span className="auth-field__label">Archivo (.csv o .xlsx)</span>
+          <span className="auth-field__label">{svPanel.uploadFileLabel}</span>
           <input
             className="auth-field__input"
             type="file"
@@ -179,26 +160,24 @@ export function ImportUpload({
             }}
           />
           <span className="panel-card__meta">
-            Usá la plantilla: las columnas son fijas.{" "}
+            {svPanel.uploadTemplateHint}{" "}
             <a href="/admin/importar/plantilla.csv" download>
-              Descargar plantilla
+              {svPanel.uploadTemplateDownload}
             </a>
           </span>
         </label>
 
         <fieldset className="panel-form__field">
-          <legend className="auth-field__label">Autorización</legend>
+          <legend className="auth-field__label">{svPanel.colAuthorization}</legend>
           <label style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
             <input type="checkbox" name="permissionGranted" />
-            <span>
-              La inmobiliaria autorizó publicar estas propiedades en el portal.
-            </span>
+            <span>{svPanel.uploadAuthorizationCheckbox}</span>
           </label>
           <input
             className="auth-field__input"
             name="permissionGrantedBy"
             type="text"
-            placeholder="Quién lo autorizó (nombre y cargo)"
+            placeholder={svPanel.uploadAuthorizedByPlaceholder}
             maxLength={160}
             style={{ marginTop: 8 }}
           />
@@ -206,21 +185,16 @@ export function ImportUpload({
             className="auth-field__input"
             name="permissionNote"
             type="text"
-            placeholder="Cómo y cuándo (ej. WhatsApp del 2/8, audio de Marta)"
+            placeholder={svPanel.uploadAuthorizedNotePlaceholder}
             maxLength={500}
             style={{ marginTop: 8 }}
           />
-          <span className="panel-card__meta">
-            Queda guardado con el lote. Sin esto no se puede confirmar la
-            importación.
-          </span>
+          <span className="panel-card__meta">{svPanel.uploadAuthorizationHint}</span>
         </fieldset>
 
         <label className="panel-form__field" style={{ display: "flex", gap: 8 }}>
           <input type="checkbox" name="publish" />
-          <span>
-            Publicar directamente (si no, quedan en revisión — recomendado)
-          </span>
+          <span>{svPanel.uploadPublishDirectly}</span>
         </label>
 
         <div className="panel-form__field panel-form__field--action">
@@ -230,7 +204,7 @@ export function ImportUpload({
             onClick={runDry}
             disabled={busy || !file}
           >
-            {busy ? "Revisando…" : "Revisar sin importar"}
+            {busy ? svPanel.uploadReviewing : svPanel.uploadReviewOnly}
           </button>
         </div>
       </form>
@@ -239,9 +213,9 @@ export function ImportUpload({
 
       {done ? (
         <p className="panel-flash">
-          Importación confirmada.{" "}
+          {svPanel.uploadCommitted}{" "}
           <a href={`/admin/importar/${done.jobId}`}>
-            Ver el lote #{done.jobId} y revertirlo si hace falta
+            {svPanel.uploadCommittedLink(done.jobId)}
           </a>
           .
         </p>
@@ -250,39 +224,36 @@ export function ImportUpload({
       {dry?.ok && report ? (
         <article className="panel-card" style={{ marginTop: 20 }}>
           <h3 className="panel-section__title" style={{ marginTop: 0 }}>
-            Vista previa — no se escribió nada todavía
+            {svPanel.uploadPreviewTitle}
           </h3>
 
           {dry.missingRequired.length > 0 ? (
             <p className="auth-error">
-              Faltan columnas obligatorias: {dry.missingRequired.join(", ")}.
+              {svPanel.uploadMissingColumns(dry.missingRequired.join(", "))}
             </p>
           ) : null}
           {dry.unknownColumns.length > 0 ? (
             <p className="panel-card__meta">
-              Columnas que no reconocemos y vamos a ignorar:{" "}
-              {dry.unknownColumns.join(", ")}.
+              {svPanel.uploadUnknownColumns(dry.unknownColumns.join(", "))}
             </p>
           ) : null}
 
           <p className="panel-card__meta">
-            {dry.totalRows} filas ({dry.kind.toUpperCase()})
-            {dry.agencyName ? ` · ${dry.agencyName}` : " · sin inmobiliaria"}
+            {svPanel.uploadRowsSummary(dry.totalRows, dry.kind.toUpperCase())}
+            {dry.agencyName ? ` · ${dry.agencyName}` : svPanel.uploadNoAgencySuffix}
           </p>
 
           <ul className="panel-card__meta" style={{ lineHeight: 1.8 }}>
-            <li>Nuevas: {report.created}</li>
-            <li>Actualizan una existente: {report.updated}</li>
-            <li>Sin cambios: {report.unchanged}</li>
-            <li>Duplicadas (se adjuntan a otra): {report.deduped}</li>
-            <li>Se omiten: {report.skipped}</li>
+            <li>{svPanel.uploadReportNew(report.created)}</li>
+            <li>{svPanel.uploadReportUpdated(report.updated)}</li>
+            <li>{svPanel.uploadReportUnchanged(report.unchanged)}</li>
+            <li>{svPanel.uploadReportDeduped(report.deduped)}</li>
+            <li>{svPanel.uploadReportSkipped(report.skipped)}</li>
           </ul>
 
           {dry.withoutDedupKey > 0 ? (
             <p className="panel-card__meta">
-              {dry.withoutDedupKey} filas no traen teléfono de contacto. Se
-              importan igual, pero no podemos detectar si ya existen bajo otro
-              origen — conviene revisarlas en la cola.
+              {svPanel.uploadNoDedupKeyWarning(dry.withoutDedupKey)}
             </p>
           ) : null}
 
@@ -291,17 +262,17 @@ export function ImportUpload({
               <table className="panel-table">
                 <thead>
                   <tr>
-                    <th>Fila</th>
-                    <th>Qué pasa</th>
-                    <th>Título</th>
-                    <th>Motivo</th>
+                    <th>{svPanel.colRow}</th>
+                    <th>{svPanel.colWhatHappens}</th>
+                    <th>{svPanel.colTitle}</th>
+                    <th>{svPanel.colReason}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {dry.preview.map((r) => (
                     <tr key={`${r.rowNumber}-${r.outcome}-${r.title}`}>
                       <td>{r.rowNumber}</td>
-                      <td>{OUTCOME_LABELS[r.outcome] ?? r.outcome}</td>
+                      <td>{svPanel.importOutcomeLabel[r.outcome] ?? r.outcome}</td>
                       <td>{r.title}</td>
                       <td>{r.reason ?? ""}</td>
                     </tr>
@@ -319,8 +290,8 @@ export function ImportUpload({
               disabled={busy || dry.missingRequired.length > 0}
             >
               {busy
-                ? "Importando…"
-                : `Importar ${report.created + report.updated + report.deduped} filas`}
+                ? svPanel.uploadImporting
+                : svPanel.uploadImportRows(report.created + report.updated + report.deduped)}
             </button>
           </div>
           <p className="panel-card__meta">{svPanel.importRollbackHint}</p>

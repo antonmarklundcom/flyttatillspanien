@@ -23,7 +23,7 @@ import {
 } from "./photo-actions";
 
 export const metadata: Metadata = {
-  title: `Editar aviso`,
+  title: `Redigera annons`,
   robots: { index: false, follow: false },
 };
 

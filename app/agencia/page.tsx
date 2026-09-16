@@ -21,7 +21,7 @@ import { agencyTabs } from "./tabs";
 import { setListingStatusAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Tus propiedades`,
+  title: `Dina bostäder`,
   robots: { index: false, follow: false },
 };
 
@@ -42,7 +42,7 @@ export default async function AgencyListingsPage({
   return (
     <>
       <PanelBar
-        title="Panel de la inmobiliaria"
+        title={svPanel.agencyPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={agencyTabs("listings", canManageTeam(ctx))}
@@ -98,7 +98,7 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
         <strong>{totals.views}</strong> {svPanel.statsViews.toLowerCase()} ·{" "}
         <strong>{totals.leads}</strong> {svPanel.statsLeads.toLowerCase()}{" "}
         <span className="panel-stats-summary__hint">
-          ({STATS_WINDOW_DAYS} días — {svPanel.statsViewsHint})
+          ({svPanel.daysUnit(STATS_WINDOW_DAYS)} — {svPanel.statsViewsHint})
         </span>
       </p>
 
@@ -106,13 +106,13 @@ async function AgencyListings({ scope }: { scope: EditScope }) {
       <table className="panel-table">
         <thead>
           <tr>
-            <th>Propiedad</th>
-            <th>Tipo</th>
-            <th>Precio</th>
+            <th>{svPanel.colProperty}</th>
+            <th>{svPanel.listingTypeLabel}</th>
+            <th>{svPanel.colPrice}</th>
             <th>{svPanel.statusLabel}</th>
             <th title={svPanel.statsViewsHint}>{svPanel.statsViews}</th>
             <th>{svPanel.statsLeads}</th>
-            <th>Cambiar estado</th>
+            <th>{svPanel.colChangeStatus}</th>
           </tr>
         </thead>
         <tbody>

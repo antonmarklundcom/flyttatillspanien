@@ -14,20 +14,11 @@ import { adminTabs } from "../../tabs";
 import { rollbackImportAction } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Lote importado`,
+  title: `Importerad batch`,
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
-
-const OUTCOME_LABELS: Record<string, string> = {
-  created: "Nueva",
-  updated: "Actualizada",
-  unchanged: "Sin cambios",
-  deduped: "Duplicada",
-  skipped: "Omitida",
-  paused: "Pausada",
-};
 
 const FLASH: Record<string, { text: string; error?: boolean }> = {
   rolled_back: { text: svPanel.importJobRolledBack },
@@ -65,14 +56,14 @@ export default async function ImportJobPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("import", reviewCount)}
       />
       <main className="panel site-main">
         <p className="panel-card__meta">
-          <Link href="/admin/importar">← Volver a importaciones</Link>
+          <Link href="/admin/importar">{svPanel.importBackToJobs}</Link>
         </p>
 
         {flash ? (
@@ -82,23 +73,27 @@ export default async function ImportJobPage({
         ) : null}
 
         <h2 className="panel-section__title">
-          Lote #{job.id} — {job.filename ?? job.kind}
+          {svPanel.importBatchTitle(job.id, job.filename ?? job.kind)}
         </h2>
 
         <article className="panel-card">
           <ul className="panel-card__meta" style={{ lineHeight: 1.9 }}>
-            <li>Inmobiliaria: {job.agencyName ?? "sin inmobiliaria"}</li>
-            <li>Origen: {job.source}</li>
-            <li>Filas en el archivo: {job.totalRows}</li>
+            <li>{svPanel.importAgencyLine(job.agencyName ?? svPanel.importNoAgency)}</li>
+            <li>{svPanel.importSourceLine(job.source)}</li>
+            <li>{svPanel.importTotalRowsLine(job.totalRows)}</li>
             <li>
-              Nuevas {job.createdCount} · actualizadas {job.updatedCount} · sin
-              cambios {job.unchangedCount} · duplicadas {job.dedupedCount} ·
-              omitidas {job.skippedCount}
+              {svPanel.importResultLine(
+                job.createdCount,
+                job.updatedCount,
+                job.unchangedCount,
+                job.dedupedCount,
+                job.skippedCount,
+              )}
             </li>
             <li>
-              Autorización:{" "}
+              {svPanel.importAuthorizationLine}{" "}
               {job.permissionGranted
-                ? `${job.permissionGrantedBy ?? "sí"}${
+                ? `${job.permissionGrantedBy ?? svPanel.importPermissionYes}${
                     job.permissionNote ? ` — ${job.permissionNote}` : ""
                   }`
                 : svPanel.importPermissionMissing}
@@ -107,8 +102,8 @@ export default async function ImportJobPage({
 
           {job.status === "rolled_back" ? (
             <p className="panel-card__meta">
-              Revertido{job.rolledBackAt ? "" : ""}.{" "}
-              {job.rollbackNote ?? "Se deshizo todo lo que había escrito."}
+              {svPanel.importRolledBackLabel}{" "}
+              {job.rollbackNote ?? svPanel.importRolledBackDefaultNote}
             </p>
           ) : job.status === "committed" ? (
             <form action={rollbackImportAction}>
@@ -122,30 +117,29 @@ export default async function ImportJobPage({
         </article>
 
         <h3 className="panel-section__title" style={{ marginTop: 28 }}>
-          Filas
+          {svPanel.importRowsTitle}
         </h3>
         {totalLogged > rows.length ? (
           <p className="panel-card__meta" style={{ marginTop: 0 }}>
-            Mostramos las primeras {rows.length} de {totalLogged} filas
-            registradas.
+            {svPanel.importRowsTruncatedNote(rows.length, totalLogged)}
           </p>
         ) : null}
         <div className="panel-table__wrap">
           <table className="panel-table">
             <thead>
               <tr>
-                <th>Fila</th>
-                <th>Resultado</th>
-                <th>Título</th>
-                <th>Propiedad</th>
-                <th>Detalle</th>
+                <th>{svPanel.colRow}</th>
+                <th>{svPanel.colResult}</th>
+                <th>{svPanel.colTitle}</th>
+                <th>{svPanel.colProperty}</th>
+                <th>{svPanel.colDetail}</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td>{r.rowNumber}</td>
-                  <td>{OUTCOME_LABELS[r.outcome] ?? r.outcome}</td>
+                  <td>{svPanel.importOutcomeLabel[r.outcome] ?? r.outcome}</td>
                   <td>{r.title ?? ""}</td>
                   <td>
                     {/* A reverted `created` row is the only case where the

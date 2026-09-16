@@ -13,7 +13,7 @@ import { ownerTabs } from "./tabs";
 import { setOwnerListingStatusAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Tus avisos`,
+  title: `Dina bostäder`,
   robots: { index: false, follow: false },
 };
 
@@ -53,13 +53,13 @@ export default async function OwnerListingsPage() {
               <table className="panel-table">
                 <thead>
                   <tr>
-                    <th>Propiedad</th>
-                    <th>Tipo</th>
-                    <th>Pris</th>
+                    <th>{svPanel.colProperty}</th>
+                    <th>{svPanel.listingTypeLabel}</th>
+                    <th>{svPanel.colPrice}</th>
                     <th>{svOwner.statusLabel}</th>
                     <th title={svPanel.statsViewsHint}>{svPanel.statsViews}</th>
                     <th>{svPanel.statsLeads}</th>
-                    <th>Cambiar estado</th>
+                    <th>{svPanel.colChangeStatus}</th>
                   </tr>
                 </thead>
                 <tbody>

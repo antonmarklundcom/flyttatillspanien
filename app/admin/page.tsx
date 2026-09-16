@@ -10,7 +10,7 @@ import { approveAction, rejectAction } from "./actions";
 import { publishBlockReason } from "@/lib/publish-gate";
 
 export const metadata: Metadata = {
-  title: `Cola de revisión`,
+  title: `Granskningskö`,
   robots: { index: false, follow: false },
 };
 
@@ -26,7 +26,7 @@ export default async function AdminReviewPage() {
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("review", queue.length, undefined, recentLeads)}

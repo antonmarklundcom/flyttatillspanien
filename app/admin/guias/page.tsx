@@ -10,18 +10,19 @@ import {
   POST_CATEGORY_LABEL,
 } from "@/lib/post-queries";
 import { readingMinutes } from "@/lib/markdown";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: `Guías y notas`,
+  title: `Guider och anteckningar`,
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
 
 const FLASH: Record<string, string> = {
-  deleted: "Nota eliminada.",
-  not_found: "No encontramos esa nota.",
+  deleted: svPanel.postsDeleted,
+  not_found: svPanel.postsNotFound,
 };
 
 function formatDate(d: Date | null): string {
@@ -51,47 +52,38 @@ export default async function AdminPostsPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("posts", reviewCount, drafts)}
       />
       <main className="panel site-main">
-        <h2 className="panel-section__title">Guías y notas</h2>
+        <h2 className="panel-section__title">{svPanel.postsListTitle}</h2>
 
         {flash && <p className="panel-flash">{flash}</p>}
 
         {!ready && (
           <p className="panel-flash panel-flash--error">
-            La tabla de notas todavía no existe en esta base de datos. Ejecutá{" "}
-            <code>npm run db:migrate</code> con el DATABASE_URL de producción y
-            recargá esta página.
+            {svPanel.postsTableMissing}
           </p>
         )}
 
-        <p className="panel-post__intro">
-          Lo que publiques acá aparece en <strong>/guias</strong> y en el menú
-          del sitio. Las notas en borrador no son visibles para nadie más que
-          vos.
-        </p>
+        <p className="panel-post__intro">{svPanel.postsIntro}</p>
 
         <div className="panel-form__field panel-form__field--action">
           <Link
             className="panel-btn panel-btn--primary"
             href="/admin/guias/nueva"
           >
-            Escribir nota
+            {svPanel.postsWrite}
           </Link>
           <Link className="panel-btn" href="/guias" target="_blank">
-            Ver la sección pública ↗
+            {svPanel.postsViewPublic}
           </Link>
         </div>
 
         {posts.length === 0 ? (
-          <p className="panel-empty">
-            Todavía no escribiste ninguna nota. La primera guía es la que
-            empieza a traer visitas desde Google.
-          </p>
+          <p className="panel-empty">{svPanel.postsEmpty}</p>
         ) : (
           posts.map((p) => (
             <article className="panel-card" key={p.id}>
@@ -110,21 +102,23 @@ export default async function AdminPostsPage({
                           : ""
                       }`}
                     >
-                      {p.status === "published" ? "Publicada" : "Borrador"}
+                      {p.status === "published"
+                        ? svPanel.postsStatusPublished
+                        : svPanel.postsStatusDraft}
                     </span>
                     <span>{POST_CATEGORY_LABEL[p.category]}</span>
                     <span>/guias/{p.slug}</span>
-                    <span>{readingMinutes(p.body)} min de lectura</span>
+                    <span>{svPanel.postsReadingMinutes(readingMinutes(p.body))}</span>
                     <span>
                       {p.status === "published"
-                        ? `Publicada ${formatDate(p.publishedAt)}`
-                        : `Editada ${formatDate(p.updatedAt)}`}
+                        ? svPanel.postsPublishedOn(formatDate(p.publishedAt))
+                        : svPanel.postsEditedOn(formatDate(p.updatedAt))}
                     </span>
                   </div>
                 </div>
                 <div className="panel-card__actions">
                   <Link className="panel-btn" href={`/admin/guias/${p.id}`}>
-                    Editar
+                    {svPanel.postsEdit}
                   </Link>
                   {p.status === "published" && (
                     <Link
@@ -132,7 +126,7 @@ export default async function AdminPostsPage({
                       href={`/guias/${p.slug}`}
                       target="_blank"
                     >
-                      Ver ↗
+                      {svPanel.postsView}
                     </Link>
                   )}
                 </div>

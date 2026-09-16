@@ -93,17 +93,17 @@ interface Resolved {
 async function resolvePayload(payload: UploadPayload): Promise<Resolved> {
   const source = payload.source as ListingSource;
   if (!UPLOAD_SOURCES.includes(source))
-    throw new IntakeError("Origen no válido.");
+    throw new IntakeError("Ogiltig källa.");
 
   let bytes: Buffer;
   try {
     bytes = Buffer.from(payload.base64, "base64");
   } catch {
-    throw new IntakeError("No pudimos leer el archivo.");
+    throw new IntakeError("Vi kunde inte läsa filen.");
   }
   if (bytes.length > MAX_UPLOAD_BYTES)
     throw new IntakeError(
-      `El archivo supera los ${Math.floor(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`,
+      `Filen är större än ${Math.floor(MAX_UPLOAD_BYTES / 1024 / 1024)} MB.`,
     );
 
   // The agency id decides the dedup scope and the listings' owner, so it is
@@ -116,7 +116,7 @@ async function resolvePayload(payload: UploadPayload): Promise<Resolved> {
       .from(agencies)
       .where(eq(agencies.id, payload.agencyId))
       .limit(1);
-    if (!row) throw new IntakeError("Esa inmobiliaria no existe.");
+    if (!row) throw new IntakeError("Den byrån finns inte.");
     agencyId = row.id;
     agencyName = row.name;
   }
@@ -198,7 +198,7 @@ export async function dryRunImportAction(
       error:
         e instanceof IntakeError
           ? e.message
-          : "No pudimos procesar el archivo.",
+          : "Vi kunde inte bearbeta filen.",
     };
   }
 }
@@ -224,7 +224,7 @@ export async function commitImportAction(
     const grantedBy = payload.permissionGrantedBy.trim();
     if (!payload.permissionGranted || grantedBy.length < 2)
       throw new IntakeError(
-        "Registrá quién autorizó la importación antes de confirmarla.",
+        "Registrera vem som gav tillstånd innan du bekräftar importen.",
       );
 
     const intake = readIntake(bytes, payload.filename, source);
@@ -274,7 +274,7 @@ export async function commitImportAction(
     return {
       ok: false,
       error:
-        e instanceof IntakeError ? e.message : "No pudimos confirmar la importación.",
+        e instanceof IntakeError ? e.message : "Vi kunde inte bekräfta importen.",
     };
   }
 }

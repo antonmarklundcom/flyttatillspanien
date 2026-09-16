@@ -3,13 +3,13 @@ import Link from "next/link";
 import { PanelBar } from "@/components/panel/PanelBar";
 import { requireOwnerContext } from "@/lib/auth/guards";
 import { getPanelLeads } from "@/lib/panel-queries";
-import { svOwner, leadTypeLabel as LEAD_TYPE_LABEL } from "@/i18n/sv";
+import { svOwner, svPanel, leadTypeLabel as LEAD_TYPE_LABEL } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { ownerTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: `Consultas`,
+  title: `Förfrågningar`,
   robots: { index: false, follow: false },
 };
 
@@ -26,7 +26,7 @@ function replyHref(email: string): string {
 }
 
 function formatWhen(d: Date): string {
-  return new Intl.DateTimeFormat("es-PY", {
+  return new Intl.DateTimeFormat("sv-SE", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",
@@ -61,7 +61,7 @@ export default async function OwnerLeadsPage() {
                 <div className="panel-card__head">
                   <div>
                     <h3 className="panel-card__title">
-                      {lead.name ?? "Consulta"}
+                      {lead.name ?? svPanel.leadNoName}
                     </h3>
                     <div className="panel-card__meta">
                       <span>

@@ -19,7 +19,7 @@ import {
 } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Usuarios`,
+  title: `Användare`,
   robots: { index: false, follow: false },
 };
 
@@ -81,7 +81,7 @@ export default async function AdminUsersPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("users", reviewCount)}
@@ -185,7 +185,7 @@ function UserCard({
             <span>{roleLabel(row.role)}</span>
             <span>{row.agencyName ?? svPanel.agencyNone}</span>
             {row.hasPassword ? null : <span>{svPanel.noPasswordBadge}</span>}
-            {isSelf ? <span>· vos</span> : null}
+            {isSelf ? <span>{svPanel.selfMarker}</span> : null}
           </div>
         </div>
       </div>

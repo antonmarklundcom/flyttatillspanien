@@ -13,18 +13,11 @@ import { adminTabs } from "../tabs";
 import { commitImportAction, dryRunImportAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Importar planilla`,
+  title: `Importera kalkylblad`,
   robots: { index: false, follow: false },
 };
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABELS: Record<string, string> = {
-  dry_run: "Solo revisado",
-  committed: "Confirmado",
-  rolled_back: "Revertido",
-  failed: "Falló",
-};
 
 function formatDate(d: Date): string {
   return new Date(d).toLocaleDateString("sv-SE", {
@@ -46,7 +39,7 @@ export default async function AdminImportPage() {
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("import", reviewCount)}
@@ -76,13 +69,13 @@ export default async function AdminImportPage() {
             <table className="panel-table">
               <thead>
                 <tr>
-                  <th>Lote</th>
-                  <th>Fecha</th>
-                  <th>Inmobiliaria</th>
-                  <th>Archivo</th>
-                  <th>Resultado</th>
-                  <th>Autorización</th>
-                  <th>Estado</th>
+                  <th>{svPanel.colBatch}</th>
+                  <th>{svPanel.colDate}</th>
+                  <th>{svPanel.colAgency}</th>
+                  <th>{svPanel.colFile}</th>
+                  <th>{svPanel.colResult}</th>
+                  <th>{svPanel.colAuthorization}</th>
+                  <th>{svPanel.statusLabel}</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,15 +88,18 @@ export default async function AdminImportPage() {
                     <td>{j.agencyName ?? "—"}</td>
                     <td>{j.filename ?? j.kind}</td>
                     <td>
-                      {j.createdCount} nuevas · {j.updatedCount} act. ·{" "}
-                      {j.skippedCount} omitidas
+                      {svPanel.importResultSummary(
+                        j.createdCount,
+                        j.updatedCount,
+                        j.skippedCount,
+                      )}
                     </td>
                     <td>
                       {j.permissionGranted
-                        ? (j.permissionGrantedBy ?? "sí")
+                        ? (j.permissionGrantedBy ?? svPanel.importPermissionYes)
                         : svPanel.importPermissionMissing}
                     </td>
-                    <td>{STATUS_LABELS[j.status] ?? j.status}</td>
+                    <td>{svPanel.importJobStatusLabel[j.status] ?? j.status}</td>
                   </tr>
                 ))}
               </tbody>
@@ -114,20 +110,19 @@ export default async function AdminImportPage() {
         {priceChanges.length > 0 ? (
           <>
             <h2 className="panel-section__title" style={{ marginTop: 32 }}>
-              Cambios de precio detectados
+              {svPanel.priceChangesTitle}
             </h2>
             <p className="panel-card__meta" style={{ marginTop: 0 }}>
-              Cada re-importación compara contra lo que ya estaba. Esto es lo
-              que se movió.
+              {svPanel.priceChangesHint}
             </p>
             <div className="panel-table__wrap">
               <table className="panel-table">
                 <thead>
                   <tr>
-                    <th>Propiedad</th>
-                    <th>Antes</th>
-                    <th>Ahora</th>
-                    <th>Fecha</th>
+                    <th>{svPanel.colProperty}</th>
+                    <th>{svPanel.colBefore}</th>
+                    <th>{svPanel.colAfter}</th>
+                    <th>{svPanel.colDate}</th>
                   </tr>
                 </thead>
                 <tbody>

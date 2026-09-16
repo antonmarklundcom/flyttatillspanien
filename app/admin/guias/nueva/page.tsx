@@ -5,11 +5,12 @@ import { PostForm } from "@/components/panel/PostForm";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { countDraftPosts, isPostsTableReady } from "@/lib/post-queries";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../../tabs";
 import { createPostAction } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Nueva nota`,
+  title: `Ny anteckning`,
   robots: { index: false, follow: false },
 };
 
@@ -30,37 +31,32 @@ export default async function NewPostPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("posts", reviewCount, drafts)}
       />
       <main className="panel site-main">
         <Link className="panel-post__back" href="/admin/guias">
-          ← Volver a guías y notas
+          {svPanel.postsBackToList}
         </Link>
-        <h2 className="panel-section__title">Nueva nota</h2>
+        <h2 className="panel-section__title">{svPanel.newPostTitle}</h2>
 
         {/* Without this the editor would render fine and only fail on submit,
             which is a 500 the author has to read logs to understand. */}
         {!ready && (
           <p className="panel-flash panel-flash--error">
-            La tabla de notas todavía no existe en esta base de datos. Ejecutá{" "}
-            <code>npm run db:migrate</code> con el DATABASE_URL de producción
-            antes de escribir la primera nota.
+            {svPanel.postsTableMissing}
           </p>
         )}
 
         {params.msg === "invalid" && (
           <p className="panel-flash panel-flash--error">
-            La nota necesita al menos un título y contenido.
+            {svPanel.newPostInvalid}
           </p>
         )}
 
-        <p className="panel-post__intro">
-          Guardá como borrador cuantas veces quieras — nadie la ve hasta que
-          toques «Publicar». La imagen de portada se agrega después de guardar.
-        </p>
+        <p className="panel-post__intro">{svPanel.newPostIntro}</p>
 
         {ready && <PostForm action={createPostAction} />}
       </main>

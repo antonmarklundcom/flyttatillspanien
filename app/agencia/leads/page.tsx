@@ -10,7 +10,7 @@ import { waLink } from "@/lib/wa";
 import { agencyTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: `Consultas`,
+  title: `Förfrågningar`,
   robots: { index: false, follow: false },
 };
 
@@ -43,7 +43,7 @@ export default async function AgencyLeadsPage() {
   return (
     <>
       <PanelBar
-        title="Panel de la inmobiliaria"
+        title={svPanel.agencyPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={agencyTabs("leads", canManageTeam(ctx))}
@@ -73,7 +73,7 @@ async function AgencyLeads({ scope }: { scope: EditScope }) {
         <article className="panel-card" key={lead.id}>
           <div className="panel-card__head">
             <div>
-              <h3 className="panel-card__title">{lead.name ?? "Consulta"}</h3>
+              <h3 className="panel-card__title">{lead.name ?? svPanel.leadNoName}</h3>
               <div className="panel-card__meta">
                 <span>{LEAD_TYPE_LABEL[lead.leadType] ?? lead.leadType}</span>
                 <span>{formatWhen(lead.createdAt)}</span>

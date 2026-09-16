@@ -53,7 +53,7 @@ export default async function AdminReferencePage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("reference", reviewCount)}

@@ -8,7 +8,7 @@ import { agencyTabs } from "../tabs";
 import { confirmImportAction, readListingUrlAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Importar aviso`,
+  title: `Importera annons`,
   robots: { index: false, follow: false },
 };
 
@@ -35,7 +35,7 @@ export default async function ImportPage({
   return (
     <>
       <PanelBar
-        title="Panel de la inmobiliaria"
+        title={svPanel.agencyPanelTitle}
         role={ctx.user.role}
         userName={ctx.user.name}
         tabs={agencyTabs("import", canManageTeam(ctx))}

@@ -31,7 +31,7 @@ import {
 } from "./photo-actions";
 
 export const metadata: Metadata = {
-  title: `Editar aviso`,
+  title: `Redigera annons`,
   robots: { index: false, follow: false },
 };
 
@@ -85,7 +85,7 @@ export default async function AdminListingEditPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("listings", reviewCount)}

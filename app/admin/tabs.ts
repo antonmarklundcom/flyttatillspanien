@@ -51,7 +51,7 @@ export function adminTabs(
     {
       href: "/admin/guias",
       group: "manage",
-      label: "Guías y notas",
+      label: svPanel.postsListTitle,
       count: draftPostCount,
       active: active === "posts",
     },
