@@ -25,20 +25,6 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-const FLASH: Record<string, { text: string; error?: boolean }> = {
-  created: { text: "Nota creada." },
-  saved: { text: "Cambios guardados." },
-  invalid: { text: "La nota necesita título y contenido.", error: true },
-  cover_saved: { text: "Portada actualizada." },
-  cover_removed: { text: "Portada eliminada." },
-  no_file: { text: "Elegí una imagen antes de subir.", error: true },
-  bad_image: { text: "No pudimos procesar esa imagen.", error: true },
-  no_storage: {
-    text: "El almacenamiento de imágenes (R2) no está configurado.",
-    error: true,
-  },
-};
-
 export default async function EditPostPage({
   params,
   searchParams,
@@ -62,7 +48,7 @@ export default async function EditPostPage({
   ]);
   if (!post) notFound();
 
-  const flash = sp.msg ? FLASH[sp.msg] : undefined;
+  const flash = sp.msg ? svPanel.postFlash[sp.msg] : undefined;
   const coverUrl = imageUrl(post.coverR2Key);
 
   return (
@@ -75,7 +61,7 @@ export default async function EditPostPage({
       />
       <main className="panel site-main">
         <Link className="panel-post__back" href="/admin/guias">
-          ← Volver a guías y notas
+          {svPanel.postsBackToList}
         </Link>
 
         <div className="panel-post__title-row">
@@ -85,7 +71,9 @@ export default async function EditPostPage({
               post.status === "published" ? " panel-post__badge--live" : ""
             }`}
           >
-            {post.status === "published" ? "Publicada" : "Borrador"}
+            {post.status === "published"
+              ? svPanel.postsStatusPublished
+              : svPanel.postsStatusDraft}
           </span>
           {post.status === "published" && (
             <Link
@@ -93,7 +81,7 @@ export default async function EditPostPage({
               href={`/guias/${post.slug}`}
               target="_blank"
             >
-              Ver en el sitio ↗
+              {svPanel.postsViewOnSite}
             </Link>
           )}
         </div>
@@ -111,13 +99,9 @@ export default async function EditPostPage({
         {/* Cover: its own form because a file upload needs a saved post to
             attach to, and it must not be lost if the editor form fails. */}
         <section className="panel-post__cover">
-          <h3 className="panel-section__title">Imagen de portada</h3>
+          <h3 className="panel-section__title">{svPanel.postCoverTitle}</h3>
           {!isR2Configured() ? (
-            <p className="panel-empty">
-              El almacenamiento de imágenes no está configurado en este entorno
-              (faltan las variables R2_*), así que no se pueden subir portadas.
-              La nota funciona igual sin imagen.
-            </p>
+            <p className="panel-empty">{svPanel.postCoverNotConfigured}</p>
           ) : (
             <>
               {coverUrl && (
@@ -125,14 +109,14 @@ export default async function EditPostPage({
                 <img
                   className="panel-post__cover-img"
                   src={coverUrl}
-                  alt="Portada actual"
+                  alt={svPanel.postCoverAlt}
                 />
               )}
               <form action={uploadPostCoverAction} className="panel-form">
                 <input type="hidden" name="postId" value={post.id} />
                 <label className="panel-form__field" style={{ flexBasis: "100%" }}>
                   <span className="auth-field__label">
-                    {coverUrl ? "Reemplazar portada" : "Subir portada"}
+                    {coverUrl ? svPanel.postCoverReplace : svPanel.postCoverUpload}
                   </span>
                   <input
                     className="auth-field__input"
@@ -140,14 +124,11 @@ export default async function EditPostPage({
                     name="cover"
                     accept="image/jpeg,image/png,image/webp,image/avif"
                   />
-                  <span className="panel-hint">
-                    Se reescala y convierte a WebP automáticamente. Ideal
-                    horizontal, mínimo 1200px de ancho.
-                  </span>
+                  <span className="panel-hint">{svPanel.postCoverHint}</span>
                 </label>
                 <div className="panel-form__field panel-form__field--action">
                   <button className="panel-btn panel-btn--primary" type="submit">
-                    Subir portada
+                    {svPanel.postCoverUpload}
                   </button>
                 </div>
               </form>
@@ -155,7 +136,7 @@ export default async function EditPostPage({
                 <form action={removePostCoverAction}>
                   <input type="hidden" name="postId" value={post.id} />
                   <button className="panel-btn" type="submit">
-                    Quitar portada
+                    {svPanel.postCoverRemove}
                   </button>
                 </form>
               )}
@@ -164,10 +145,8 @@ export default async function EditPostPage({
         </section>
 
         <section className="panel-post__preview">
-          <h3 className="panel-section__title">Vista previa</h3>
-          <p className="panel-post__intro">
-            Así se va a ver el contenido en el sitio.
-          </p>
+          <h3 className="panel-section__title">{svPanel.postPreviewTitle}</h3>
+          <p className="panel-post__intro">{svPanel.postPreviewHint}</p>
           <div className="panel-post__preview-body">
             <Markdown source={post.body} />
           </div>
@@ -177,7 +156,7 @@ export default async function EditPostPage({
           <form action={deletePostAction}>
             <input type="hidden" name="postId" value={post.id} />
             <button className="panel-btn panel-btn--danger" type="submit">
-              Eliminar nota
+              {svPanel.postDelete}
             </button>
           </form>
         </section>

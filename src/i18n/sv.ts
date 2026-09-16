@@ -674,6 +674,42 @@ export const svPanel = {
   postsEditedOn: (date: string) => `Redigerad ${date}`,
   postsEdit: "Redigera",
   postsView: "Visa ↗",
+  postsBackToList: "← Tillbaka till guider och anteckningar",
+  postsViewOnSite: "Visa på sajten ↗",
+  postFlash: {
+    created: { text: "Anteckningen är skapad." },
+    saved: { text: "Ändringarna är sparade." },
+    invalid: { text: "Anteckningen behöver en titel och ett innehåll.", error: true },
+    cover_saved: { text: "Omslagsbilden är uppdaterad." },
+    cover_removed: { text: "Omslagsbilden är borttagen." },
+    no_file: { text: "Välj en bild innan du laddar upp.", error: true },
+    bad_image: { text: "Vi kunde inte bearbeta den bilden.", error: true },
+    no_storage: {
+      text: "Bildlagringen (R2) är inte konfigurerad.",
+      error: true,
+    },
+  } as Record<string, { text: string; error?: boolean }>,
+  postCoverTitle: "Omslagsbild",
+  postCoverNotConfigured:
+    "Bildlagringen är inte konfigurerad i den här miljön (R2_*-variablerna " +
+    "saknas), så omslagsbilder går inte att ladda upp. Anteckningen " +
+    "fungerar ändå utan bild.",
+  postCoverAlt: "Nuvarande omslagsbild",
+  postCoverReplace: "Byt omslagsbild",
+  postCoverUpload: "Ladda upp omslagsbild",
+  postCoverHint:
+    "Skalas om och konverteras automatiskt till WebP. Helst liggande, " +
+    "minst 1200px bred.",
+  postCoverRemove: "Ta bort omslagsbild",
+  postPreviewTitle: "Förhandsgranskning",
+  postPreviewHint: "Så här kommer innehållet att se ut på sajten.",
+  postDelete: "Radera anteckning",
+  newPostTitle: "Ny anteckning",
+  newPostInvalid: "Anteckningen behöver minst en titel och ett innehåll.",
+  newPostIntro:
+    "Spara som utkast så många gånger du vill — ingen ser den förrän du " +
+    "trycker på ”Publicera”. Omslagsbilden lägger du till efter att du " +
+    "har sparat.",
 
   /**
    * The Spain legal block, as the operator edits it. Two of these are the
@@ -850,6 +886,56 @@ export const svPanel = {
     "Du importerar för tätt. Vänta några minuter och försök igen.",
   importLegalNote:
     "Vi importerar en annons i taget, på begäran av den som äger den. Vi kopierar inte andra portalers kataloger.",
+
+  // Massimport — ImportUpload.tsx (dry run + bekräfta)
+  uploadSourceLabel: {
+    whiteglove: "Kalkylblad från byrån",
+    import_agency_site: "Byråns egen webbplats",
+    import_idealista: "Idealista",
+    import_fotocasa: "Fotocasa",
+    import_kyero: "Kyero",
+  } as Record<string, string>,
+  uploadChooseFile: "Välj en .csv- eller .xlsx-fil.",
+  uploadProcessError: "Vi kunde inte bearbeta filen.",
+  uploadConfirmError: "Vi kunde inte bekräfta importen.",
+  uploadAgencyHint:
+    "Bestämmer vems bostäderna är och isolerar dedupliceringen: två byråer " +
+    "kan använda samma interna koder utan att krocka.",
+  uploadNoAgencyOption: "Ingen byrå",
+  uploadSourceLabelHeading: "Källa",
+  uploadFileLabel: "Fil (.csv eller .xlsx)",
+  uploadTemplateHint: "Använd mallen: kolumnerna är fasta.",
+  uploadTemplateDownload: "Ladda ner mallen",
+  uploadAuthorizationCheckbox: "Byrån har gett tillstånd att publicera de här bostäderna på portalen.",
+  uploadAuthorizedByPlaceholder: "Vem som gav tillstånd (namn och roll)",
+  uploadAuthorizedNotePlaceholder: "Hur och när (t.ex. WhatsApp 2/8, röstmeddelande från Marta)",
+  uploadAuthorizationHint:
+    "Sparas tillsammans med satsen. Utan det går importen inte att bekräfta.",
+  uploadPublishDirectly:
+    "Publicera direkt (annars läggs de i granskningskön — rekommenderas)",
+  uploadReviewing: "Granskar…",
+  uploadReviewOnly: "Granska utan att importera",
+  uploadCommitted: "Importen är bekräftad.",
+  uploadCommittedLink: (jobId: number) =>
+    `Visa sats #${jobId} och återställ den vid behov`,
+  uploadPreviewTitle: "Förhandsgranskning — inget har skrivits ännu",
+  uploadMissingColumns: (cols: string) => `Obligatoriska kolumner saknas: ${cols}.`,
+  uploadUnknownColumns: (cols: string) =>
+    `Kolumner vi inte känner igen och kommer att ignorera: ${cols}.`,
+  uploadRowsSummary: (n: number, kind: string) => `${n} rader (${kind})`,
+  uploadNoAgencySuffix: " · ingen byrå",
+  uploadReportNew: (n: number) => `Nya: ${n}`,
+  uploadReportUpdated: (n: number) => `Uppdaterar en befintlig: ${n}`,
+  uploadReportUnchanged: (n: number) => `Oförändrade: ${n}`,
+  uploadReportDeduped: (n: number) => `Sammanslås med en befintlig: ${n}`,
+  uploadReportSkipped: (n: number) => `Hoppas över: ${n}`,
+  uploadNoDedupKeyWarning: (n: number) =>
+    `${n} rader saknar kontakttelefon. De importeras ändå, men vi kan inte ` +
+    "avgöra om de redan finns under en annan källa — värt att granska i kön.",
+  colWhatHappens: "Vad händer",
+  colReason: "Orsak",
+  uploadImporting: "Importerar…",
+  uploadImportRows: (n: number) => `Importera ${n} rader`,
 
   // Statistik per annons
   statsViews: "Visningar",
