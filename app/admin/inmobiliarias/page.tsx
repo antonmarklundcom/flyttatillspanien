@@ -140,20 +140,20 @@ export default async function AdminAgenciesPage({
         </article>
 
         <h2 className="panel-section__title" style={{ marginTop: 32 }}>
-          Inmobiliarias
+          {svPanel.agenciesListTitle}
         </h2>
         {agencies.length === 0 ? (
-          <p className="panel-empty">Todavía no hay inmobiliarias.</p>
+          <p className="panel-empty">{svPanel.agenciesEmpty}</p>
         ) : (
           <div className="panel-table__wrap">
             <table className="panel-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Plan</th>
+                  <th>{svPanel.colName}</th>
+                  <th>{svPanel.planLabel}</th>
                   <th>Typ</th>
-                  <th>Contacto</th>
-                  <th>Estado</th>
+                  <th>{svPanel.colContact}</th>
+                  <th>{svPanel.statusLabel}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -206,19 +206,19 @@ export default async function AdminAgenciesPage({
         )}
 
         <h2 className="panel-section__title" style={{ marginTop: 32 }}>
-          Agentes
+          {svPanel.agentsListTitle}
         </h2>
         {agents.length === 0 ? (
-          <p className="panel-empty">Todavía no hay agentes.</p>
+          <p className="panel-empty">{svPanel.agentsEmpty}</p>
         ) : (
           <div className="panel-table__wrap">
             <table className="panel-table">
               <thead>
                 <tr>
-                  <th>Nombre</th>
-                  <th>Inmobiliaria</th>
-                  <th>Contacto</th>
-                  <th>Estado</th>
+                  <th>{svPanel.colName}</th>
+                  <th>{svPanel.colAgency}</th>
+                  <th>{svPanel.colContact}</th>
+                  <th>{svPanel.statusLabel}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -226,7 +226,7 @@ export default async function AdminAgenciesPage({
                 {agents.map((a) => (
                   <tr key={a.id}>
                     <td className="panel-table__name">{a.name}</td>
-                    <td>{a.agencyName ?? "Independiente"}</td>
+                    <td>{a.agencyName ?? svPanel.agentIndependent}</td>
                     <td>{a.phone ?? "—"}</td>
                     <td>
                       <VerifiedPill on={a.isVerified} />
