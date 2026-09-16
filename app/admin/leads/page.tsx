@@ -15,7 +15,7 @@ import { waLink } from "@/lib/wa";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: `Consultas`,
+  title: `Förfrågningar`,
   robots: { index: false, follow: false },
 };
 
@@ -116,7 +116,7 @@ export default async function AdminLeadsPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("leads", reviewCount, undefined, recentLeads)}
@@ -183,7 +183,7 @@ export default async function AdminLeadsPage({
               <div className="panel-card__head">
                 <div>
                   <h3 className="panel-card__title">
-                    {lead.name ?? "Consulta"}
+                    {lead.name ?? svPanel.leadNoName}
                   </h3>
                   <div className="panel-card__meta">
                     <span>

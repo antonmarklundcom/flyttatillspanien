@@ -15,7 +15,7 @@ import {
 } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Tu perfil`,
+  title: `Din profil`,
   robots: { index: false, follow: false },
 };
 
@@ -63,7 +63,7 @@ export default async function AgencyProfilePage({
   return (
     <>
       <PanelBar
-        title="Panel de la inmobiliaria"
+        title={svPanel.agencyPanelTitle}
         role={ctx.user.role}
         userName={ctx.user.name}
         tabs={agencyTabs("profile", canManageTeam(ctx))}

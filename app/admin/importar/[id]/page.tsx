@@ -14,7 +14,7 @@ import { adminTabs } from "../../tabs";
 import { rollbackImportAction } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Lote importado`,
+  title: `Importerad batch`,
   robots: { index: false, follow: false },
 };
 
@@ -65,7 +65,7 @@ export default async function ImportJobPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("import", reviewCount)}

@@ -13,7 +13,7 @@ import { adminTabs } from "../tabs";
 import { commitImportAction, dryRunImportAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Importar planilla`,
+  title: `Importera kalkylblad`,
   robots: { index: false, follow: false },
 };
 
@@ -46,7 +46,7 @@ export default async function AdminImportPage() {
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("import", reviewCount)}

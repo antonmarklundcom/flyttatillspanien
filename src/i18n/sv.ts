@@ -258,6 +258,10 @@ export const svPrecios = {
  * (`users.locale` already carries `es`); nothing switches on it at MVP.
  */
 export const svPanel = {
+  /** <PanelBar title=…> on every super-admin page. */
+  adminPanelTitle: "Adminpanel",
+  /** <PanelBar title=…> on every agency-scoped page. */
+  agencyPanelTitle: "Byråpanel",
   loginTitle: "Logga in i din panel",
   loginSubtitle: "Ange din e-postadress och ditt lösenord.",
   emailLabel: "E-post",
@@ -550,6 +554,33 @@ export const svPanel = {
   viewListing: "Visa annons",
   backToListings: "← Tillbaka till bostäder",
 
+  // Admin — bostäder: bulkåtgärder på tabellen
+  filterByStatusAriaLabel: "Filtrera efter status",
+  selectRowAriaLabel: (title: string) => `Välj ${title}`,
+  colProperty: "Bostad",
+  colAgency: "Byrå",
+  colPrice: "Pris",
+  colChangeStatus: "Ändra status",
+  /** A lead with no name filled in — the card title falls back to this. */
+  leadNoName: "Förfrågan",
+  /** Marks the signed-in user's own row in a team/agent list. */
+  selfMarker: "· du",
+  bulkActionLabel: "Åtgärd",
+  bulkActionPlaceholder: "Välj en åtgärd",
+  bulkMarkAs: (status: string) => `Markera som ${status}`,
+  bulkDeletePermanently: "Radera permanent",
+  bulkApply: "Verkställ",
+  bulkConfirmLabel: "Skriv RADERA för att bekräfta raderingen",
+  bulkSelectAllAriaLabel: "Välj alla",
+  bulkCount: (n: number) =>
+    n === 0 ? "Ingen vald" : n === 1 ? "1 bostad vald" : `${n} bostäder valda`,
+  bulkHint:
+    "Att byta status går att ångra: ”Utkast” eller ”Borttagen” tar bort " +
+    "bostaden från sajten men behåller annonsen, bilderna och " +
+    "förfrågningarna. ”Radera permanent” går inte att ångra och gör de " +
+    "mottagna förfrågningarna föräldralösa — därför krävs " +
+    "bekräftelseordet. Max 500 åt gången.",
+
   // Redigeringsformulär för annons (delas av admin + byrå)
   listingTitleLabel: "Annonsens rubrik",
   listingDescriptionLabel: "Beskrivning",
@@ -577,6 +608,65 @@ export const svPanel = {
   listingDeleted: "Annonsen är raderad.",
   listingNotFound: "Vi hittar inte den annonsen.",
   listingInvalid: "Kontrollera uppgifterna: obligatoriska fält saknas.",
+
+  // Admin — guideredigeraren (PostForm, delas av /admin/guias/nueva och /[id])
+  postCategoryOptions: {
+    guia: "Guide — evigt aktuellt innehåll",
+    mercado: "Marknad — analys och data",
+    noticia: "Nyhet — aktuellt",
+  } as Record<string, string>,
+  postTitleLabel: "Titel",
+  postTitlePlaceholder: "Så köper du din första bostad i Spanien",
+  postUrlLabel: "URL (valfritt — genereras från titeln)",
+  postUrlPlaceholder: "kopa-din-forsta-bostad-i-spanien",
+  postUrlHint: (slug: string) =>
+    `Blir /guias/${slug}. Ändrar du den efter publicering slutar de gamla länkarna fungera.`,
+  postCategoryLabel: "Kategori",
+  postExcerptLabel: "Sammanfattning (visas i listan och i Google)",
+  postExcerptPlaceholder: "Två till tre rader som förklarar vad texten handlar om.",
+  postBodyLabel: "Innehåll",
+  postBodyPlaceholder:
+    "Skriv texten här.\n\n## En underrubrik\n\nEtt vanligt stycke.\n\n- En punkt i en lista\n- En till punkt",
+  postCheatsheetSummary: "Så formaterar du texten",
+  postCheatsheetHeading: "underrubrik",
+  postCheatsheetHeadingSmall: "mindre underrubrik",
+  postCheatsheetBulletList: "punktlista (en per rad)",
+  postCheatsheetNumberedList: "numrerad lista",
+  postCheatsheetBold: "fet stil",
+  postCheatsheetItalic: "kursiv",
+  postCheatsheetLink: "intern eller extern länk",
+  postCheatsheetQuote: "citat",
+  postCheatsheetRule: "avskiljare",
+  postCheatsheetHint:
+    "Lämna en tom rad mellan stycken. Allt annat visas precis som du skriver det.",
+  postUnpublishSaveDraft: "Avpublicera och spara som utkast",
+  postSaveDraft: "Spara utkast",
+  postSaveAndPublish: "Spara och publicera",
+  postPublish: "Publicera",
+
+  // Admin — guidelistan (/admin/guias)
+  postsListTitle: "Guider och anteckningar",
+  postsDeleted: "Anteckningen är raderad.",
+  postsNotFound: "Vi hittar inte den anteckningen.",
+  postsTableMissing:
+    "Tabellen för anteckningar finns inte i den här databasen än. Kör " +
+    "npm run db:migrate med produktionens DATABASE_URL och ladda om " +
+    "sidan.",
+  postsIntro:
+    "Det du publicerar här visas på /guias och i sajtens meny. " +
+    "Anteckningar som är utkast syns bara för dig.",
+  postsWrite: "Skriv anteckning",
+  postsViewPublic: "Visa den publika sidan ↗",
+  postsEmpty:
+    "Du har inte skrivit någon anteckning än. Den första guiden är den " +
+    "som börjar dra besökare från Google.",
+  postsStatusPublished: "Publicerad",
+  postsStatusDraft: "Utkast",
+  postsReadingMinutes: (n: number) => `${n} min lästid`,
+  postsPublishedOn: (date: string) => `Publicerad ${date}`,
+  postsEditedOn: (date: string) => `Redigerad ${date}`,
+  postsEdit: "Redigera",
+  postsView: "Visa ↗",
 
   /**
    * The Spain legal block, as the operator edits it. Two of these are the
@@ -705,6 +795,7 @@ export const svPanel = {
   statsViews: "Visningar",
   statsLeads: "Förfrågningar",
   statsWindow: "Senaste 30 dagarna",
+  daysUnit: (n: number) => `${n} dagar`,
   statsSummary: "Under de senaste 30 dagarna",
   statsNoData:
     "Det finns inga registrerade visningar ännu. Statistiken börjar räknas när annonsen är publicerad.",

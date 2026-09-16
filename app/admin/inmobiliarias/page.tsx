@@ -16,7 +16,7 @@ import {
 import { createAgencyAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Inmobiliarias y agentes`,
+  title: `Mäklarbyråer och mäklare`,
   robots: { index: false, follow: false },
 };
 
@@ -75,7 +75,7 @@ export default async function AdminAgenciesPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("agencies", reviewCount)}

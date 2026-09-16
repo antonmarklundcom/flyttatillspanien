@@ -30,7 +30,7 @@ import {
 } from "./photo-actions";
 
 export const metadata: Metadata = {
-  title: `Editar aviso`,
+  title: `Redigera annons`,
   robots: { index: false, follow: false },
 };
 
@@ -85,7 +85,7 @@ export default async function AgencyListingEditPage({
   return (
     <>
       <PanelBar
-        title="Panel de la inmobiliaria"
+        title={svPanel.agencyPanelTitle}
         role={ctx.user.role}
         userName={ctx.user.name}
         tabs={agencyTabs("listings", canManageTeam(ctx))}

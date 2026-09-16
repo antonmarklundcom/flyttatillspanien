@@ -10,10 +10,11 @@ import {
   POST_CATEGORY_LABEL,
 } from "@/lib/post-queries";
 import { readingMinutes } from "@/lib/markdown";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../tabs";
 
 export const metadata: Metadata = {
-  title: `Guías y notas`,
+  title: `Guider och anteckningar`,
   robots: { index: false, follow: false },
 };
 
@@ -51,7 +52,7 @@ export default async function AdminPostsPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("posts", reviewCount, drafts)}

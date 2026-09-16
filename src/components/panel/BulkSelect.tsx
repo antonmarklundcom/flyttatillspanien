@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { svPanel } from "@/i18n/sv";
 
 /**
  * The two pieces of the bulk table that need a browser: the header
@@ -31,7 +32,7 @@ export function BulkSelectAll({ formId }: { formId: string }) {
     <input
       ref={ref}
       type="checkbox"
-      aria-label="Seleccionar todas"
+      aria-label={svPanel.bulkSelectAllAriaLabel}
       onChange={(e) => toggle(e.currentTarget.checked)}
     />
   );
@@ -54,12 +55,6 @@ export function BulkCount({ formId }: { formId: string }) {
   }, [formId]);
 
   return (
-    <span className="panel-bulk__count">
-      {n === 0
-        ? "Ninguna seleccionada"
-        : n === 1
-          ? "1 propiedad seleccionada"
-          : `${n} propiedades seleccionadas`}
-    </span>
+    <span className="panel-bulk__count">{svPanel.bulkCount(n)}</span>
   );
 }

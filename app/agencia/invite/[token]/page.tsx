@@ -8,7 +8,7 @@ import { joinPreflight } from "@/lib/team-queries";
 import { acceptInviteAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Invitación`,
+  title: `Inbjudan`,
   robots: { index: false, follow: false },
 };
 

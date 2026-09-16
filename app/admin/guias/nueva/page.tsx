@@ -5,11 +5,12 @@ import { PostForm } from "@/components/panel/PostForm";
 import { requireSuperAdmin } from "@/lib/auth/guards";
 import { countReviewQueue } from "@/lib/panel-queries";
 import { countDraftPosts, isPostsTableReady } from "@/lib/post-queries";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../../tabs";
 import { createPostAction } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Nueva nota`,
+  title: `Ny anteckning`,
   robots: { index: false, follow: false },
 };
 
@@ -30,7 +31,7 @@ export default async function NewPostPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("posts", reviewCount, drafts)}

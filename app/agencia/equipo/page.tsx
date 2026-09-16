@@ -20,7 +20,7 @@ import {
 } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Tu equipo`,
+  title: `Ditt team`,
   robots: { index: false, follow: false },
 };
 
@@ -108,7 +108,7 @@ export default async function AgencyTeamPage({
   return (
     <>
       <PanelBar
-        title="Panel de la inmobiliaria"
+        title={svPanel.agencyPanelTitle}
         role={ctx.user.role}
         userName={ctx.user.name}
         tabs={agencyTabs("team", true)}
@@ -240,7 +240,7 @@ function MemberRow({
     <tr>
       <td className="panel-table__name">
         {member.name}
-        {isSelf ? <span className="panel-card__meta"> · vos</span> : null}
+        {isSelf ? <span className="panel-card__meta"> {svPanel.selfMarker}</span> : null}
       </td>
       <td>{member.email ?? "—"}</td>
       <td>{roleName(member.role)}</td>

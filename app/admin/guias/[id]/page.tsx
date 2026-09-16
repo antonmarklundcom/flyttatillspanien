@@ -9,6 +9,7 @@ import { countReviewQueue } from "@/lib/panel-queries";
 import { countDraftPosts, getPostById } from "@/lib/post-queries";
 import { imageUrl } from "@/lib/format";
 import { isR2Configured } from "@/lib/r2";
+import { svPanel } from "@/i18n/sv";
 import { adminTabs } from "../../tabs";
 import {
   deletePostAction,
@@ -18,7 +19,7 @@ import {
 } from "../actions";
 
 export const metadata: Metadata = {
-  title: `Editar nota`,
+  title: `Redigera anteckning`,
   robots: { index: false, follow: false },
 };
 
@@ -67,7 +68,7 @@ export default async function EditPostPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("posts", reviewCount, drafts)}

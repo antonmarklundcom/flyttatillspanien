@@ -18,7 +18,7 @@ import { adminTabs } from "../tabs";
 import { bulkListingAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Propiedades`,
+  title: `Bostäder`,
   robots: { index: false, follow: false },
 };
 
@@ -56,7 +56,7 @@ export default async function AdminListingsPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("listings", reviewCount)}
@@ -86,7 +86,7 @@ export default async function AdminListingsPage({
           </div>
         </form>
 
-        <nav className="panel-chips" aria-label="Filtrar por estado">
+        <nav className="panel-chips" aria-label={svPanel.filterByStatusAriaLabel}>
           {chips.map((s) => {
             const href = `/admin/propiedades?status=${s}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
             const label = s === "all" ? svPanel.filterAll : listingStatusLabel[s];
@@ -116,37 +116,30 @@ export default async function AdminListingsPage({
             <div className="panel-bulk">
               <BulkCount formId={BULK_FORM_ID} />
               <label className="panel-bulk__field">
-                <span className="auth-field__label">Acción</span>
+                <span className="auth-field__label">{svPanel.bulkActionLabel}</span>
                 <select className="panel-select" name="op" defaultValue="">
                   <option value="" disabled>
-                    Elegí una acción
+                    {svPanel.bulkActionPlaceholder}
                   </option>
                   {ADMIN_STATUSES.map((s) => (
                     <option key={s} value={s}>
-                      Marcar como {listingStatusLabel[s] ?? s}
+                      {svPanel.bulkMarkAs(listingStatusLabel[s] ?? s)}
                     </option>
                   ))}
-                  <option value="delete">Borrar definitivamente</option>
+                  <option value="delete">{svPanel.bulkDeletePermanently}</option>
                 </select>
               </label>
               <label className="panel-bulk__field">
                 <span className="auth-field__label">
-                  Escribí BORRAR para confirmar el borrado
+                  {svPanel.bulkConfirmLabel}
                 </span>
                 <input className="auth-field__input" name="confirm" />
               </label>
               <button className="panel-btn" type="submit">
-                Aplicar
+                {svPanel.bulkApply}
               </button>
             </div>
-            <p className="panel-bulk__hint">
-              Cambiar el estado es reversible: <strong>Borrador</strong> o{" "}
-              <strong>Eliminada</strong> saca la propiedad del sitio pero
-              conserva la ficha, sus fotos y sus consultas.{" "}
-              <strong>Borrar definitivamente</strong> no se puede deshacer y
-              deja huérfanas las consultas recibidas — por eso pide la palabra
-              de confirmación. Máximo 500 por vez.
-            </p>
+            <p className="panel-bulk__hint">{svPanel.bulkHint}</p>
 
           <div className="panel-table__wrap">
             <table className="panel-table">
@@ -155,11 +148,11 @@ export default async function AdminListingsPage({
                   <th className="panel-table__check">
                     <BulkSelectAll formId={BULK_FORM_ID} />
                   </th>
-                  <th>Propiedad</th>
-                  <th>Operación</th>
-                  <th>Tipo</th>
-                  <th>Inmobiliaria</th>
-                  <th>Precio</th>
+                  <th>{svPanel.colProperty}</th>
+                  <th>{svPanel.listingOperationLabel}</th>
+                  <th>{svPanel.listingTypeLabel}</th>
+                  <th>{svPanel.colAgency}</th>
+                  <th>{svPanel.colPrice}</th>
                   <th>{svPanel.statusLabel}</th>
                   <th></th>
                 </tr>
@@ -172,7 +165,7 @@ export default async function AdminListingsPage({
                         type="checkbox"
                         name="ids"
                         value={row.id}
-                        aria-label={`Seleccionar ${row.title}`}
+                        aria-label={svPanel.selectRowAriaLabel(row.title)}
                       />
                     </td>
                     <td className="panel-table__name">

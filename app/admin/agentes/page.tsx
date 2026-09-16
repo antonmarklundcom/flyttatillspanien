@@ -13,7 +13,7 @@ import { adminTabs } from "../tabs";
 import { moveAgentAction } from "./actions";
 
 export const metadata: Metadata = {
-  title: `Agentes`,
+  title: `Mäklare`,
   robots: { index: false, follow: false },
 };
 
@@ -59,7 +59,7 @@ export default async function AdminAgentsPage({
   return (
     <>
       <PanelBar
-        title="Panel de administración"
+        title={svPanel.adminPanelTitle}
         role={user.role}
         userName={user.name}
         tabs={adminTabs("agents", reviewCount)}

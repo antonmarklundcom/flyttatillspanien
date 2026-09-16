@@ -31,9 +31,9 @@ export interface PostCard {
 }
 
 export const POST_CATEGORY_LABEL: Record<PostRow["category"], string> = {
-  guia: "Guía",
-  mercado: "Mercado",
-  noticia: "Noticia",
+  guia: "Guide",
+  mercado: "Marknad",
+  noticia: "Nyhet",
 };
 
 /**
