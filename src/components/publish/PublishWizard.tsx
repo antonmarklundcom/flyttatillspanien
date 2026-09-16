@@ -486,7 +486,7 @@ export function PublishWizard({
 
   return (
     <div className="wizard">
-      <ol className="wizard-steps" aria-label="Pasos">
+      <ol className="wizard-steps" aria-label={svPublish.stepsAriaLabel}>
         {svPublish.stepLabels.map((label, i) => (
           <li
             key={label}

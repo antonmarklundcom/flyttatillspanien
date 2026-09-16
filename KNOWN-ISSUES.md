@@ -8,6 +8,26 @@ Format: `- [phase found] area — what, and what would fix it.`
 
 ## Open
 
+- [fixed 2026-09-16] **The entire `/admin` and `/agencia` panel UI, plus
+  two public-facing spots, still carried untranslated Spanish left over
+  from the propia.node fork.** An Explore-agent audit (prompted by finding
+  the PanelBar `title=` prop hardcoded as "Panel de administración" on
+  every single admin page) found it was far more widespread than any
+  single KNOWN-ISSUES entry had tracked: the blog-post editor
+  (`PostForm.tsx`), the CSV import upload form (`ImportUpload.tsx`), the
+  bulk-listing-status UI, the agencies/agents tables, both import job
+  list/detail pages, and roughly 20 browser-tab titles. Two real bugs
+  surfaced while fixing it, not just missing copy: `mis-avisos/consultas`
+  formatted dates with `Intl` locale `"es-PY"` instead of `"sv-SE"`, and
+  three components (`ImportByUrl.tsx`, `admin/page.tsx`,
+  `admin/propiedades/page.tsx`) offered an operation value,
+  `"alquiler_temporal"`, that `listings.operation`'s enum has never
+  accepted — picking it always failed silently. All fixed across several
+  commits on `claude/keen-mayer-qwrhtn`; `npm run verify:local` green
+  throughout. `POST_CATEGORY_LABEL` (`src/lib/post-queries.ts`) was the
+  one genuinely public-facing miss — it renders on `/guias` and
+  `/guias/[slug]`, not just the admin panel.
+
 - [3, decided] `src/lib/urls.ts` — `agencyUrl()`/`agentUrl()` keep the Spanish
   segments `/inmobiliaria/{slug}` and `/agente/{slug}`. Phase 3 had the choice
   (§4.6 build log left it open) and decided to keep them rather than move the

@@ -206,7 +206,7 @@ export async function linkAgencyAction(formData: FormData): Promise<void> {
   await linkUserToAgency({
     userId,
     agencyId,
-    fallbackName: str(formData.get("name")) || str(formData.get("email")) || "Agente",
+    fallbackName: str(formData.get("name")) || str(formData.get("email")) || "Mäklare",
   });
 
   done("agency_linked");

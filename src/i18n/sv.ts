@@ -1063,6 +1063,7 @@ export const svPublish = {
     "Vi har fyllt i det du redan angav i värderingen. Kontrollera och gå vidare — allt går att ändra.",
 
   stepLabels: ["Detaljer", "Läge", "Pris och publicering"] as const,
+  stepsAriaLabel: "Steg",
 
   // Steg 1
   operationLabel: "Vad vill du göra?",
