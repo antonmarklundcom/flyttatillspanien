@@ -4,7 +4,7 @@ import { PanelBar } from "@/components/panel/PanelBar";
 import { canManageTeam, panelScope, requireAgencyContext } from "@/lib/auth/guards";
 import type { EditScope } from "@/lib/listing-edit";
 import { getPanelLeads } from "@/lib/panel-queries";
-import { svPanel } from "@/i18n/sv";
+import { svPanel, leadTypeLabel as LEAD_TYPE_LABEL } from "@/i18n/sv";
 import { listingUrl } from "@/lib/urls";
 import { waLink } from "@/lib/wa";
 import { agencyTabs } from "../tabs";
@@ -15,15 +15,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const LEAD_TYPE_LABEL: Record<string, string> = {
-  buyer: "Compra",
-  renter: "Alquiler",
-  seller: "Venta",
-  valuation: "Tasación",
-  developer: "Desarrolladora",
-  agent_signup: "Alta de agente",
-};
 
 /** wa.me deep link to reply to the lead's own WhatsApp number. */
 /**

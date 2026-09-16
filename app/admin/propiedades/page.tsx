@@ -9,7 +9,7 @@ import {
   listAllListings,
   type ListingStatusValue,
 } from "@/lib/listing-edit";
-import { svPanel, listingStatusLabel } from "@/i18n/sv";
+import { svPanel, listingStatusLabel, listingOperationLabel } from "@/i18n/sv";
 import { formatEur } from "@/lib/format";
 import { PROPERTY_TYPE_LABELS } from "@/lib/property-types";
 import { listingUrl } from "@/lib/urls";
@@ -23,12 +23,6 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
-
-const OPERATION_LABEL: Record<string, string> = {
-  venta: "Venta",
-  alquiler: "Alquiler",
-  alquiler_temporal: "Alquiler temporal",
-};
 
 const FLASH: Record<string, string> = {
   deleted: svPanel.listingDeleted,
@@ -188,9 +182,9 @@ export default async function AdminListingsPage({
                         {row.locationName ? <span>{row.locationName}</span> : null}
                       </div>
                     </td>
-                    <td>{OPERATION_LABEL[row.operation] ?? row.operation}</td>
+                    <td>{listingOperationLabel[row.operation] ?? row.operation}</td>
                     <td>{PROPERTY_TYPE_LABELS[row.propertyType]}</td>
-                    <td>{row.agencyName ?? "Particular"}</td>
+                    <td>{row.agencyName ?? svPanel.leadOwnerRouted}</td>
                     <td>
                       {formatEur(row.priceEur)}
                     </td>

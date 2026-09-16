@@ -314,7 +314,7 @@ async function main() {
     for (const col of cols) {
       const ok = col.column_type.includes("'owner'");
       console.log(`  \`${col.table_schema}\`.leads.routed_to  ${col.column_type}`);
-      console.log(`  accepts 'owner': ${ok ? "YES — migration 0009 is applied" : "NO  — migration 0009 is NOT applied; FSBO leads are failing"}`);
+      console.log(`  accepts 'owner': ${ok ? "YES — the D8 owner lane is present" : "NO  — the D8 owner lane is missing; FSBO leads are failing"}`);
 
       /**
        * Only meaningful on a non-strict server, where the failed inserts did not
@@ -327,8 +327,8 @@ async function main() {
       if (bad.n > 0) {
         console.log(
           `\n  ${bad.n} lead row(s) have routed_to = '' — silently truncated writes.\n` +
-            "  These are recoverable: after 0009 is applied, re-route the ones whose\n" +
-            "  listing has no agent and no agency to 'owner'. Review before updating.",
+            "  These are recoverable: once the D8 owner lane is present, re-route the ones\n" +
+            "  whose listing has no agent and no agency to 'owner'. Review before updating.",
         );
       }
     }

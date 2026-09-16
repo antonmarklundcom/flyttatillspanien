@@ -26,18 +26,18 @@ export function isAgencyRole(role: UserRole): boolean {
   return role === "agency_admin" || role === "agent";
 }
 
-/** Human-readable, es-PY label for a role — used in the panel header. */
+/** Human-readable Swedish label for a role — used in the panel header. */
 export function roleLabel(role: UserRole): string {
   switch (role) {
     case "admin":
-      return "Administrador";
+      return "Administratör";
     case "agency_admin":
-      return "Inmobiliaria";
+      return "Mäklarbyrå";
     case "agent":
-      return "Agente";
+      return "Mäklare";
     case "developer":
-      return "Desarrolladora";
+      return "Byggherre";
     case "consumer":
-      return "Usuario";
+      return "Användare";
   }
 }

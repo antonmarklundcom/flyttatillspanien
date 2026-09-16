@@ -55,13 +55,14 @@ Format: `- [phase found] area — what, and what would fix it.`
   so a stale comment anywhere else survives as false documentation unless the
   phase that touches the file fixes it.
 
-- [2] The importer's operator-facing skip reasons are a mix of English
+- [2, fixed] The importer's operator-facing skip reasons were a mix of English
   ("unresolved location '…'") and inherited Spanish ("precio de venta
   sospechosamente bajo"), while everything else the operator reads is Swedish.
-  They are produced in `src/lib/import/upsert.ts` and surface in the import
-  report. Moving them into `sv.ts` is the fix; Phase 2 corrected the one that
-  was factually wrong (it quoted US$) and left the language to whichever phase
-  is already editing that copy. `PUBLISH_BLOCK_MESSAGE` is the shape to follow.
+  Fixed by moving all four into a `SKIP_REASON` map in
+  `src/lib/import/upsert.ts` itself, following the `PUBLISH_BLOCK_MESSAGE`
+  pattern in `publish-gate.ts` (kept next to the code that produces them,
+  not in `sv.ts`, because it is the planner's own staff-only vocabulary) —
+  not the bare relocation into `sv.ts` this entry originally suggested.
 
 - [2] `/admin` and `/agencia` still carry inline Spanish labels
   (`LEAD_TYPE_LABEL`, `ROUTED_LABEL`, `OPERATION_OPTIONS`, the panel's inline
@@ -107,18 +108,14 @@ Format: `- [phase found] area — what, and what would fix it.`
   not a code task; the four old Paraguay-named files were deleted so nothing
   keeps two copies.
 
-- [3] The publish wizard (`PublishWizard.tsx` / `app/publicar/actions.ts`)
-  collects `referencia_catastral`, `energy_rating`, `legal_status`,
-  `charges_status` and `tourist_licence`, but **not** `ibi_annual_eur` /
-  `community_monthly_eur` — `DraftPayload` and `saveDraft()`'s `DraftInput`
-  (`src/lib/publish-queries.ts`) never gained fields for them in Phase 2, and
-  extending that file is query-layer/core-logic territory a Sonnet phase's
-  hard limits (§4.7) put out of reach. The columns exist and the detail page
-  already renders them when present (via CSV import or a future `/admin`
-  edit) — a self-published FSBO listing just cannot state them yet. Whichever
-  phase next has license to touch `publish-queries.ts` should add the two
-  fields following the exact `referenciaCatastral`/`energyRating` pattern
-  already there.
+- [3, fixed by Phase 4] This entry described the publish wizard as missing
+  `ibi_annual_eur` / `community_monthly_eur`. Checked while doing unrelated
+  cleanup (2026-09-16): `DraftInput`/`draftFields()` in `publish-queries.ts`,
+  `app/publicar/actions.ts`, `PublishWizard.tsx`'s form, and the detail page
+  render all already carry both fields end to end, following the
+  `referenciaCatastral`/`energyRating` pattern this entry asked for. Left
+  here as a record that it was checked rather than deleted outright — no
+  code change was needed.
 
 - [3] `svListing.priceRentPeriod` ("/mån") renders under the price for every
   non-`venta` operation, `alquiler_vacacional` (a holiday let) included — a

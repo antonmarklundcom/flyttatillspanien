@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 import { notFound } from "next/navigation";
-import { svPrecios } from "@/i18n/sv";
+import { svPrecios, listingOperationLabel } from "@/i18n/sv";
 import { brandName } from "@/lib/brand-server";
 import { formatEur } from "@/lib/format";
 import { getCityPrices, MIN_RELIABLE_SAMPLE } from "@/lib/precios-queries";
@@ -11,15 +11,8 @@ import { categoryUrl } from "@/lib/urls";
 import { siteOrigin } from "@/lib/origin";
 import { breadcrumbJsonLd } from "@/lib/jsonld";
 import { JsonLd } from "@/components/JsonLd";
-import type { Operation } from "@/lib/import/types";
 
 export const dynamic = "force-dynamic";
-
-const OPERATION_LABEL: Record<Operation, string> = {
-  venta: "Venta",
-  alquiler: "Alquiler",
-  alquiler_vacacional: "Alquiler vacacional",
-};
 
 type Params = { params: Promise<{ ciudad: string }> };
 
@@ -103,7 +96,7 @@ export default async function CityPricesPage({ params }: Params) {
                   className={cell.reliable ? undefined : "precios-row--thin"}
                 >
                   <td>{PROPERTY_TYPE_LABELS[cell.propertyType]}</td>
-                  <td>{OPERATION_LABEL[cell.operation]}</td>
+                  <td>{listingOperationLabel[cell.operation]}</td>
                   <td className="panel-table__num">
                     {cell.medianPriceEur != null
                       ? formatEur(cell.medianPriceEur)

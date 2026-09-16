@@ -1,13 +1,12 @@
-import { svPanel, listingStatusLabel } from "@/i18n/sv";
+import { svPanel, listingStatusLabel, listingOperationLabel } from "@/i18n/sv";
 import { PROPERTY_TYPE_OPTIONS } from "@/lib/property-types";
 import type { PublishLocation } from "@/lib/publish-queries";
 import type { EditableListing, ListingStatusValue } from "@/lib/listing-edit";
 
-/** Operation labels — nouns, never verb forms (ARCHITECTURE.md §4). */
 const OPERATION_OPTIONS = [
-  { value: "venta", label: "Venta" },
-  { value: "alquiler", label: "Alquiler" },
-  { value: "alquiler_vacacional", label: "Alquiler vacacional" },
+  { value: "venta", label: listingOperationLabel.venta },
+  { value: "alquiler", label: listingOperationLabel.alquiler },
+  { value: "alquiler_vacacional", label: listingOperationLabel.alquiler_vacacional },
 ] as const;
 
 /** Energy rating, incl. the two answers that are not letters (RD 390/2021). */
