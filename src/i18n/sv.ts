@@ -43,6 +43,15 @@ export const sv = {
     "Det finns inga bostäder här ännu — skapa en bevakning så hör vi av oss",
   inquiryPrefill: "Hej, jag är intresserad av den här bostaden.",
   quickQuestions: ["Är den ledig?", "Kan jag boka visning?", "Vad krävs?"],
+
+  // Route- and root-level error boundaries (app/error.tsx, app/global-error.tsx)
+  errorTitle: "Något gick fel",
+  errorTextPage:
+    "Vi kunde inte ladda den här sidan. Försök igen om en liten stund — " +
+    "fortsätter det, gå tillbaka till startsidan.",
+  errorTextSite: "Vi kunde inte ladda sajten. Försök igen om en liten stund.",
+  errorRetry: "Försök igen",
+  errorGoHome: "Till startsidan",
 } as const;
 
 /**

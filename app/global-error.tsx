@@ -1,5 +1,7 @@
 "use client";
 
+import { getDictionary, DEFAULT_LOCALE } from "@/i18n";
+
 /**
  * Last-resort boundary (audit F53): catches errors thrown by the root layout
  * itself, where app/error.tsx can't help. Must render its own <html>/<body>
@@ -12,8 +14,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = getDictionary(DEFAULT_LOCALE).common;
+
   return (
-    <html lang="es">
+    <html lang="sv">
       <body
         style={{
           fontFamily: "system-ui, sans-serif",
@@ -26,11 +30,8 @@ export default function GlobalError({
         }}
       >
         <div>
-          <h1 style={{ fontSize: 22, marginBottom: 8 }}>Algo salió mal</h1>
-          <p style={{ color: "#555", marginBottom: 16 }}>
-            Tuvimos un problema al cargar el sitio. Probá de nuevo en unos
-            segundos.
-          </p>
+          <h1 style={{ fontSize: 22, marginBottom: 8 }}>{t.errorTitle}</h1>
+          <p style={{ color: "#555", marginBottom: 16 }}>{t.errorTextSite}</p>
           <button
             onClick={() => reset()}
             style={{
@@ -42,7 +43,7 @@ export default function GlobalError({
               cursor: "pointer",
             }}
           >
-            Reintentar
+            {t.errorRetry}
           </button>
         </div>
       </body>
