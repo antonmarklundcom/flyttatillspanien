@@ -22,3 +22,11 @@ until the founder answers. Delete a bullet once the answer is recorded in
   registration — none of which any Claude Code cloud session can do without
   hPanel GUI or SSH access. **Rotate that MySQL password** since it was
   pasted into a chat transcript, once no longer needed for the initial setup.
+
+- **Plan for the best Spanish-property site for Swedes (2026-09-23).** Built:
+  `docs/plan-best-portal-2026-09.md` — a gap analysis against propia.node since
+  the 2026-08-27 copy, plus a seven-phase plan. Choices needed: F1–F7 in that
+  file's §6 (agency business model, Swedish profile-route slugs, a modelo 210
+  estimate, what "verified" means, who reviews tax copy, reviews, area facts).
+  Blocked until answered: Phase 5 scope (F1, F4), the profile-route renames in
+  Phase 2 (F2), and the cost panel's tax line and the tax guides in Phase 4 (F3, F5).
